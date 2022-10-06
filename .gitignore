@@ -4,6 +4,9 @@
 
 # Rust
 target
+app_nanos.json
+app_nanosplus.json
+app_nanox.json
 app.json
 
 
