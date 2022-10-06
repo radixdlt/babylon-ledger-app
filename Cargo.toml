@@ -1,0 +1,14 @@
+[package]
+name = "babylon-ledger-app"
+version = "0.0.1"
+authors = ["siy"]
+edition = "2021"
+description = "RDX Works Ledger App for Babylon Network"
+
+[dependencies]
+nanos_sdk = { git = "https://github.com/LedgerHQ/ledger-nanos-sdk.git" } 
+nanos_ui = { git = "https://github.com/LedgerHQ/ledger-nanos-ui.git" } 
+
+[profile.release]
+opt-level = 'z' 
+lto = true
