@@ -12,7 +12,10 @@ RUN apt-get update && apt-get upgrade -qy && \
         binutils-arm-none-eabi \
         gcc-multilib \
         python3 \
-        python3-pip && \
+        python3-pip \
+	python3-dev \
+        libusb-1.0-0-dev \
+        libudev-dev && \
     apt-get autoclean -y && \
     apt-get autoremove -y && \
     apt-get clean
@@ -25,6 +28,8 @@ RUN rustup update && \
     rustup target install thumbv7m-none-eabi && \
     cargo install --git https://github.com/LedgerHQ/cargo-ledger && \
     rustup component add rust-src --toolchain nightly-x86_64-unknown-linux-gnu
+RUN pip3 install --upgrade protobuf setuptools ecdsa && pip3 install ledgerwallet
+
 
 WORKDIR /app
 
