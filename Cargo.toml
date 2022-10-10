@@ -3,7 +3,7 @@ name = "babylon-ledger-app"
 version = "0.0.1"
 authors = ["siy"]
 edition = "2021"
-description = "RDX Works Ledger"
+description = "Radix Babylon"
 
 [dependencies]
 nanos_sdk = { git = "https://github.com/LedgerHQ/ledger-nanos-sdk.git" } 
