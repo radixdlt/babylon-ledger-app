@@ -4,7 +4,7 @@ use nanos_sdk::bindings::{
     CX_MEMORY_FULL, CX_NOT_INVERTIBLE, CX_NOT_LOCKED, CX_NOT_UNLOCKED, CX_NO_RESIDUE, CX_OK,
     CX_OVERFLOW, CX_UNLOCKED,
 };
-use nanos_sdk::io::Reply;
+use nanos_sdk::io::{Reply, StatusWords};
 
 #[derive(Eq, PartialEq)]
 pub enum AppErrors {
@@ -36,6 +36,20 @@ pub enum AppErrors {
 impl From<AppErrors> for Reply {
     fn from(sw: AppErrors) -> Reply {
         Reply(sw as u16)
+    }
+}
+
+impl From<StatusWords> for AppErrors {
+    fn from(sw: StatusWords) -> AppErrors {
+        match sw {
+            StatusWords::Ok => AppErrors::Ok,
+            StatusWords::NothingReceived => AppErrors::NothingReceived,
+            StatusWords::BadCla => AppErrors::BadCla,
+            StatusWords::BadLen => AppErrors::BadLen,
+            StatusWords::UserCancelled => AppErrors::UserCancelled,
+            StatusWords::Unknown => AppErrors::Unknown,
+            StatusWords::Panic => AppErrors::Panic,
+        }
     }
 }
 

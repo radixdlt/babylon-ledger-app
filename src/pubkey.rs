@@ -2,8 +2,8 @@ use core::ffi::{c_uchar, c_uint};
 use core::ptr::copy;
 use nanos_sdk::bindings::{
     cx_ecfp_256_private_key_t, cx_ecfp_256_public_key_t, cx_ecfp_generate_pair2_no_throw,
-    cx_ecfp_init_private_key_no_throw, cx_ecfp_init_public_key_no_throw,
-    os_perso_derive_node_with_seed_key, CX_SHA512, HDW_ED25519_SLIP10,
+    cx_ecfp_init_private_key_no_throw, cx_ecfp_init_public_key_no_throw, cx_hash_sha256,
+    os_perso_derive_node_with_seed_key, size_t, CX_SHA512, HDW_ED25519_SLIP10,
 };
 use nanos_sdk::ecc::CurvesId::Curve25519;
 //use nanos_sdk::ecc::CurvesId::Secp256k1;
@@ -54,27 +54,13 @@ pub const fn key_len(key_type: KeyType) -> usize {
 }
 
 pub struct Key {
-    key_type: KeyType,
-    key: [u8; MAX_KEY_LEN],
-}
-
-struct Seed {
-    seed: [u8; 32],
-}
-
-impl Default for Seed {
-    fn default() -> Self {
-        let mut s = core::mem::MaybeUninit::<Self>::uninit();
-        unsafe {
-            core::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
-            s.assume_init()
-        }
-    }
+    pub key_type: KeyType,
+    pub key: [u8; MAX_KEY_LEN],
 }
 
 pub fn derive_curve25519(path: &Bip32Path) -> Result<Key, AppErrors> {
     unsafe {
-        let mut pub_key = generate_pair_curve25519(path)?;
+        let pub_key = generate_pair_curve25519(path)?;
 
         let mut derived = Key {
             key_type: Curve25519Public,
@@ -137,18 +123,49 @@ fn init_public_key_curve25519() -> Result<cx_ecfp_256_public_key_t, AppErrors> {
     }
 }
 
+#[derive(Default, Copy, Clone)]
+pub struct Buffer32 {
+    pub buffer: [u8; 32],
+}
+
+pub fn double_sha256(input: &[u8]) -> Buffer32 {
+    let mut step1 = Buffer32 {
+        ..Default::default()
+    };
+    let mut step2 = Buffer32 {
+        ..Default::default()
+    };
+
+    unsafe {
+        cx_hash_sha256(
+            input.as_ptr(),
+            input.len() as size_t,
+            &mut step1.buffer as *mut u8,
+            step1.buffer.len() as size_t,
+        );
+        cx_hash_sha256(
+            &step1.buffer as *const u8,
+            step1.buffer.len() as size_t,
+            &mut step2.buffer as *mut u8,
+            step2.buffer.len() as size_t,
+        );
+    }
+
+    step2
+}
+
 fn derive_private_key_curve25519(
     path: &&Bip32Path,
 ) -> Result<cx_ecfp_256_private_key_t, AppErrors> {
     unsafe {
-        let mut seed = Seed { seed: [0; 32] };
+        let mut seed = Buffer32 { buffer: [0; 32] };
 
         os_perso_derive_node_with_seed_key(
             HDW_ED25519_SLIP10 as c_uint,
             Curve25519 as u8,
             &path.path as *const c_uint,
             path.len as c_uint,
-            &mut seed.seed as *mut c_uchar,
+            &mut seed.buffer as *mut c_uchar,
             core::ptr::null_mut(),
             core::ptr::null_mut(),
             0,
@@ -162,7 +179,7 @@ fn derive_private_key_curve25519(
 
         let rc: AppErrors = cx_ecfp_init_private_key_no_throw(
             Curve25519 as u8,
-            &seed.seed as *const u8,
+            &seed.buffer as *const u8,
             32u32,
             &mut priv_key,
         )
@@ -174,4 +191,88 @@ fn derive_private_key_curve25519(
             Err(rc)
         }
     }
+}
+
+pub const fn to_bip32_path(bytes: &[u8]) -> Bip32Path {
+    // Describes current parser state
+    //#[derive(Copy, Clone)]
+    enum Bip32ParserState {
+        FirstDigit,
+        Digit,
+        Hardened,
+    }
+
+    let mut path = Bip32Path {
+        len: 0,
+        path: [0; MAX_BIP32_PATH_LEN],
+    };
+
+    // Verify path starts with "m/"
+    if (bytes[0] != b'm') || (bytes[1] != b'/') {
+        panic!("path must start with \"m/\"")
+    }
+
+    // Iterate over all characters (skipping m/ header)
+    let mut i = 2; // parsed character index
+    let mut j = 0; // constructed path number index
+    let mut acc = 0; // constructed path number
+    let mut state = Bip32ParserState::FirstDigit;
+
+    while i < bytes.len() {
+        let c = bytes[i];
+        match state {
+            // We are expecting a digit, after a /
+            // This prevent having empty numbers, like //
+            Bip32ParserState::FirstDigit => match c {
+                b'0'..=b'9' => {
+                    acc = (c - b'0') as u32;
+                    path.path[j] = acc;
+                    state = Bip32ParserState::Digit
+                }
+                _ => panic!("expected digit after '/'"),
+            },
+            // We are parsing digits for the current path token. We may also
+            // find ' for hardening, or /.
+            Bip32ParserState::Digit => {
+                match c {
+                    b'0'..=b'9' => {
+                        acc = acc * 10 + (c - b'0') as u32;
+                        path.path[j] = acc;
+                    }
+                    // Hardening
+                    b'\'' => {
+                        path.path[j] = acc + 0x80000000;
+                        j += 1;
+                        state = Bip32ParserState::Hardened
+                    }
+                    // Separator for next number
+                    b'/' => {
+                        path.path[j] = acc;
+                        j += 1;
+                        state = Bip32ParserState::FirstDigit
+                    }
+                    _ => panic!("unexpected character in path"),
+                }
+
+                if j >= MAX_BIP32_PATH_LEN {
+                    panic!("too long derivation path")
+                }
+                path.len = j as u8;
+            }
+            // Previous number has hardening. Next character must be a /
+            // separator.
+            Bip32ParserState::Hardened => match c {
+                b'/' => state = Bip32ParserState::FirstDigit,
+                _ => panic!("expected '/' character after hardening"),
+            },
+        }
+        i += 1;
+    }
+
+    // Prevent last character from being /
+    if let Bip32ParserState::FirstDigit = state {
+        panic!("missing number in path")
+    }
+
+    path
 }
