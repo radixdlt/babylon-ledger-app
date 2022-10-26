@@ -67,6 +67,36 @@ const fn bytes_to_number(bytes: &[u8]) -> u8 {
     acc as u8
 }
 
+pub trait AsMut<T>
+where
+    T: ?Sized,
+{
+    fn as_mut(&mut self) -> &mut T;
+}
+
+impl<T> AsMut<[T]> for [T] {
+    fn as_mut(&mut self) -> &mut [T] {
+        self
+    }
+}
+
+impl<T, const N: usize> AsMut<[T]> for [T; N] {
+    #[inline]
+    fn as_mut(&mut self) -> &mut [T] {
+        &mut self[..]
+    }
+}
+
+pub fn clone_into_array<A, T>(slice: &[T]) -> A
+where
+    A: Default + AsMut<[T]>,
+    T: Clone,
+{
+    let mut a = A::default();
+    <A as AsMut<[T]>>::as_mut(&mut a).clone_from_slice(slice);
+    a
+}
+
 pub fn debug(message: &str) {
     ui::MessageScroller::new(message).event_loop();
 }

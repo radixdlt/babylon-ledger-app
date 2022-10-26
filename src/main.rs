@@ -13,13 +13,13 @@ use nanos_ui::ui::SingleMessage;
 use utils::MODEL_DATA;
 use utils::VERSION_DATA;
 
-use crate::app_errors::AppErrors;
+use crate::app_error::AppError;
 use crate::bip32::Bip32Path;
-use crate::key25519::{derive_private_key_curve25519__, derive_pub_key_curve25519};
+use crate::key25519::Key25519;
 use crate::sha256::Sha256;
 use crate::utils::debug;
 
-mod app_errors;
+mod app_error;
 mod bip32;
 mod key25519;
 mod sha256;
@@ -78,13 +78,13 @@ impl From<u8> for Ins {
     }
 }
 
-fn handle_apdu(comm: &mut Comm, ins: Ins) -> Result<(), AppErrors> {
+fn handle_apdu(comm: &mut Comm, ins: Ins) -> Result<(), AppError> {
     if comm.rx == 0 {
         return Err(io::StatusWords::NothingReceived.into());
     }
 
     if comm.get_cla_ins().0 != RADIX_CLASS {
-        return Err(AppErrors::BadCla);
+        return Err(AppError::BadCla);
     }
 
     match ins {
@@ -97,27 +97,21 @@ fn handle_apdu(comm: &mut Comm, ins: Ins) -> Result<(), AppErrors> {
     Ok(())
 }
 
-fn handle_get_device_id(comm: &mut Comm) -> Result<(), AppErrors> {
-    debug("Before derive");
-    //let pub_key = derive_pub_key_curve25519(&DEVICE_ID_DERIVATION_PATH)?;
-    derive_private_key_curve25519__()?;
-    debug("After derive");
-    //
-    // let hash = Sha256::double(&pub_key.W[..32]);
-    // debug("After hash");
-    //
-    // comm.append(hash.hash());
-    // debug("After append");
-
-    Ok(())
+fn handle_get_device_id(comm: &mut Comm) -> Result<(), AppError> {
+    Key25519::derive(&DEVICE_ID_DERIVATION_PATH)
+        .map(|key| Sha256::double(key.public()))
+        .map(|hash| {
+            comm.append(hash.hash());
+            ()
+        })
 }
 
-fn handle_get_public_key_curve25519(comm: &mut Comm) -> Result<(), AppErrors> {
+fn handle_get_public_key_curve25519(comm: &mut Comm) -> Result<(), AppError> {
     Bip32Path::read(comm)
         .and_then(|path| path.validate().map(|_| path))
-        .and_then(|path| derive_pub_key_curve25519(&path))
-        .map(|pub_key| {
-            comm.append(&pub_key.W[..32]);
+        .and_then(|path| Key25519::derive(&path))
+        .map(|key| {
+            comm.append(key.public());
             ()
         })
 }

@@ -1,4 +1,4 @@
-use crate::AppErrors;
+use crate::AppError;
 use core::intrinsics::{copy, write_bytes};
 use core::ptr::copy_nonoverlapping;
 use nanos_sdk::io::Comm;
@@ -119,60 +119,60 @@ impl Bip32Path {
         path
     }
 
-    pub fn validate(&self) -> Result<(), AppErrors> {
+    pub fn validate(&self) -> Result<(), AppError> {
         if self.len != BIP32_REQUIRED_LEN {
-            return Err(AppErrors::BadBip32PathLen);
+            return Err(AppError::BadBip32PathLen);
         }
 
         if self.path[BIP32_LEAD_WORD_INDEX] != BIP32_LEAD_WORD {
-            return Err(AppErrors::BadBip32PathLeadWord);
+            return Err(AppError::BadBip32PathLeadWord);
         }
 
         if self.path[BIP32_COIN_TYPE_INDEX] != BIP32_COIN_TYPE {
-            return Err(AppErrors::BadBip32PathCoinType);
+            return Err(AppError::BadBip32PathCoinType);
         }
 
         let mut network_id = self.path[BIP32_NETWORK_ID_INDEX];
 
         if (network_id & BIP32_HARDENED) == 0 {
-            return Err(AppErrors::BadBip32PathMustBeHardened);
+            return Err(AppError::BadBip32PathMustBeHardened);
         }
 
         network_id &= !BIP32_HARDENED;
 
         if network_id > BIP32_MAX_NETWORK_ID {
-            return Err(AppErrors::BadBip32PathNetworkId);
+            return Err(AppError::BadBip32PathNetworkId);
         }
 
         if self.path[BIP32_ENTITY_INDEX] != BIP32_ENTITY_ACCOUNT
             && self.path[BIP32_ENTITY_INDEX] != BIP32_ENTITY_IDENTITY
         {
-            return Err(AppErrors::BadBip32PathEntity);
+            return Err(AppError::BadBip32PathEntity);
         }
 
         if (self.path[BIP32_ENTITY_INDEX_INDEX] & BIP32_HARDENED) == 0 {
-            return Err(AppErrors::BadBip32PathMustBeHardened);
+            return Err(AppError::BadBip32PathMustBeHardened);
         }
 
         if self.path[BIP32_KEY_TYPE_INDEX] != BIP32_KEY_TYPE_SIGN_AUTH
             && self.path[BIP32_KEY_TYPE_INDEX] != BIP32_KEY_TYPE_SIGN_TRANSACTION
         {
-            return Err(AppErrors::BadBip32PathKeyType);
+            return Err(AppError::BadBip32PathKeyType);
         }
 
         Ok(())
     }
 
-    pub fn read(comm: &mut Comm) -> Result<Self, AppErrors> {
+    pub fn read(comm: &mut Comm) -> Result<Self, AppError> {
         if comm.rx <= 4 {
-            return Err(AppErrors::BadBip32PathLen);
+            return Err(AppError::BadBip32PathLen);
         }
 
         let path_len = comm.apdu_buffer[4];
         let count = (path_len * 4) as usize;
 
         if comm.rx != count + 5 {
-            return Err(AppErrors::BadBip32PathDataLen);
+            return Err(AppError::BadBip32PathDataLen);
         }
 
         unsafe {
@@ -189,5 +189,20 @@ impl Bip32Path {
             path: [0u32; MAX_BIP32_PATH_LEN],
             len,
         }
+    }
+
+    pub const fn for_path(some_path: &[u32]) -> Self {
+        let mut path = Bip32Path {
+            len: some_path.len() as u8,
+            path: [0; MAX_BIP32_PATH_LEN],
+        };
+
+        let mut i = 0;
+
+        while i < some_path.len() {
+            path.path[i] = some_path[i];
+            i += 1;
+        }
+        path
     }
 }
