@@ -1,3 +1,5 @@
+use crate::app_error::AppError;
+use crate::crypto::bip32::Bip32Path;
 use core::ffi::{c_uchar, c_uint};
 use core::ptr::{copy, null_mut, write_bytes};
 use core::str::from_utf8;
@@ -8,11 +10,7 @@ use nanos_sdk::bindings::{
     CX_CURVE_Ed25519, CX_SHA512, HDW_ED25519_SLIP10,
 };
 
-use crate::app_error::AppError;
-use crate::bip32::MAX_BIP32_PATH_LEN;
-use crate::sha256::Sha256;
-use crate::utils::{clone_into_array, to_hex, to_str};
-use crate::{debug, Bip32Path};
+use crate::utilities::clone::clone_into_array;
 
 pub struct Key25519 {
     public: [u8; 32],

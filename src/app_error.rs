@@ -21,6 +21,7 @@ pub enum AppError {
     BadBip32PathEntity = 0x6e08,
     BadBip32PathKeyType = 0x6e09,
     BadBip32PathMustBeHardened = 0x6e0a,
+    BadParam = 0x6e0b,
     NotImplemented = 0x6eff,
     Unknown = 0x6d00,
     CxErrorCarry = 0x6f01,
