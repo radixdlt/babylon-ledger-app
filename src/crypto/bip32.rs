@@ -1,7 +1,13 @@
-use crate::AppError;
 use core::intrinsics::{copy, write_bytes};
 use core::ptr::copy_nonoverlapping;
+use core::str::from_utf8;
+
 use nanos_sdk::io::Comm;
+use nanos_ui::ui;
+
+use crate::utilities::conversion::{read_u32_be, read_u32_le, to_hex, to_hex_str, to_str};
+use crate::utilities::{debug, debug_arr};
+use crate::AppError;
 
 const BIP32_REQUIRED_LEN: u8 = 6;
 const BIP32_LEAD_WORD_INDEX: usize = 0;
@@ -21,6 +27,8 @@ const BIP32_KEY_TYPE_SIGN_TRANSACTION: u32 = 1238u32 | BIP32_HARDENED; // 5
 const BIP32_KEY_TYPE_SIGN_AUTH: u32 = 706u32 | BIP32_HARDENED; // 5
 
 pub const MAX_BIP32_PATH_LEN: usize = 10;
+const BIP32_PATH_MIN_ENCODED_LEN: usize = 5;
+
 #[repr(C)]
 #[derive(Default, Clone)]
 pub struct Bip32Path {
@@ -163,25 +171,33 @@ impl Bip32Path {
         Ok(())
     }
 
+    // Following data layout is assumed (bytes):
+    // [0] - len (in number of BIP32 path elements)
+    // [1..5] - first path element (big endian)
+    // [5..9] - second path element (big endian)
+    // ...
     pub fn read(comm: &mut Comm) -> Result<Self, AppError> {
-        if comm.rx <= 4 {
-            return Err(AppError::BadBip32PathLen);
-        }
+        let data = comm.get_data()?;
 
-        let path_len = comm.apdu_buffer[4];
-        let count = (path_len * 4) as usize;
-
-        if comm.rx != count + 5 {
+        if data.len() < BIP32_PATH_MIN_ENCODED_LEN {
             return Err(AppError::BadBip32PathDataLen);
         }
 
-        unsafe {
-            let src = comm.apdu_buffer[5..(count + 5)].as_ptr();
-            let mut path = Bip32Path::new(path_len);
+        let path_len = data[0];
 
-            copy_nonoverlapping(src, path.path.as_mut_ptr() as *mut u8, count);
-            Ok(path)
+        if data.len() < ((path_len as usize) * 4 + 1) {
+            return Err(AppError::BadBip32PathDataLen);
         }
+
+        let mut path = Bip32Path::new(path_len);
+        let mut idx = 1usize;
+
+        for i in 0..path_len as usize {
+            path.path[i] = read_u32_be(&data[idx..]);
+            idx += 4;
+        }
+
+        Ok(path)
     }
 
     pub fn new(len: u8) -> Self {
@@ -204,5 +220,23 @@ impl Bip32Path {
             i += 1;
         }
         path
+    }
+
+    pub fn show(&self) {
+        let mut buf: [u8; 12] = [0; 12];
+        buf[1] = b'/';
+        buf[2] = char::from_digit(self.len.into(), 10).unwrap() as u8;
+        buf[3] = b':';
+
+        for i in 0..self.len {
+            buf[0] = char::from_digit(i.into(), 10).unwrap() as u8;
+
+            let num = to_hex_str(self.path[i as usize]);
+
+            for j in 4..12 {
+                buf[j] = num[j - 4];
+            }
+            ui::MessageScroller::new(from_utf8(&buf).unwrap()).event_loop();
+        }
     }
 }

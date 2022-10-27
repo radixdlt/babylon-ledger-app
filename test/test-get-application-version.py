@@ -17,7 +17,7 @@ p1 = "00"
 p2 = "00"
 dataLength = "00"
 
-print("Testing", "GetApplicationVersion", instructionCode, end=" ")
+print("Testing", "GetAppVersion", instructionCode, end=" ")
 response = dongle.exchange(bytes.fromhex(instructionClass + instructionCode + p1 + p2 + dataLength))
 
 assert response.hex() == '000001', "Invalid version"

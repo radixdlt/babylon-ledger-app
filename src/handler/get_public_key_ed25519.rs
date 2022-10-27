@@ -5,6 +5,7 @@ use nanos_sdk::io::Comm;
 
 pub fn handle(comm: &mut Comm) -> Result<(), AppError> {
     Bip32Path::read(comm)
+        .inspect(|path| path.show())
         .and_then(|path| path.validate().map(|_| path))
         .and_then(|path| Key25519::derive(&path))
         .map(|key| {

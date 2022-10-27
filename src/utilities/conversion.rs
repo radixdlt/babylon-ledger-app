@@ -27,6 +27,26 @@ pub fn to_str(m: u32) -> [u8; 10] {
     res
 }
 
+pub fn to_hex_str(m: u32) -> [u8; 8] {
+    let mut res = [0u8; 8];
+
+    let b0 = (m & 0xFF000000u32) >> 24 as u8;
+    let b1 = (m & 0x00FF0000u32) >> 16 as u8;
+    let b2 = (m & 0x0000FF00u32) >> 8 as u8;
+    let b3 = (m & 0x000000FFu32) as u8;
+
+    res[0] = char::from_digit((b0 >> 4).into(), 16).unwrap() as u8;
+    res[1] = char::from_digit((b0 & 0xf).into(), 16).unwrap() as u8;
+    res[2] = char::from_digit((b1 >> 4).into(), 16).unwrap() as u8;
+    res[3] = char::from_digit((b1 & 0xf).into(), 16).unwrap() as u8;
+    res[4] = char::from_digit((b2 >> 4).into(), 16).unwrap() as u8;
+    res[5] = char::from_digit((b2 & 0xf).into(), 16).unwrap() as u8;
+    res[6] = char::from_digit((b3 >> 4).into(), 16).unwrap() as u8;
+    res[7] = char::from_digit((b3 & 0xf).into(), 16).unwrap() as u8;
+
+    res
+}
+
 pub const fn bytes_to_number(bytes: &[u8]) -> u8 {
     let mut i = 0;
     let mut acc = 0;
@@ -47,4 +67,18 @@ pub const fn bytes_to_number(bytes: &[u8]) -> u8 {
     }
 
     acc as u8
+}
+
+pub fn read_u32_le(bytes: &[u8]) -> u32 {
+    ((bytes[0] as u32) << 0)
+        + ((bytes[1] as u32) << 8)
+        + ((bytes[2] as u32) << 16)
+        + ((bytes[3] as u32) << 24)
+}
+
+pub fn read_u32_be(bytes: &[u8]) -> u32 {
+    ((bytes[0] as u32) << 24)
+        + ((bytes[1] as u32) << 16)
+        + ((bytes[2] as u32) << 8)
+        + ((bytes[3] as u32) << 0)
 }

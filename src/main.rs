@@ -2,6 +2,7 @@
 #![no_main]
 #![allow(unused_imports)]
 #![allow(dead_code)]
+#![feature(result_option_inspect)]
 
 use core::ptr::copy;
 use handler::dispatcher;

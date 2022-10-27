@@ -20,7 +20,6 @@ dataLength = "00"
 print("Testing", "GetDeviceId", instructionCode, end=" ")
 response = dongle.exchange(bytes.fromhex(instructionClass + instructionCode + p1 + p2 + dataLength))
 
-print("Result:", response)
-assert response.hex() == '000001', "Invalid public key"
+assert response.hex() == '3cfe24be7239bf8926150744888d1337655027e0ec8705a0be132c150ba042ce', "Invalid device ID"
 print("Success")
 
