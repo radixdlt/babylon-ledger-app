@@ -1,9 +1,11 @@
+const MAX_ARR_LEN: usize = 256;
+
 #[inline]
-pub fn to_hex(m: &[u8]) -> Result<[u8; 64], ()> {
-    if 2 * m.len() > 64 {
+pub fn to_hex(m: &[u8]) -> Result<[u8; MAX_ARR_LEN], ()> {
+    if 2 * m.len() > MAX_ARR_LEN {
         return Err(());
     }
-    let mut hex = [0u8; 64];
+    let mut hex = [0u8; MAX_ARR_LEN];
     let mut i = 0;
     for c in m {
         let c0 = char::from_digit((c >> 4).into(), 16).unwrap();

@@ -6,7 +6,7 @@ use nanos_sdk::io::Comm;
 use nanos_ui::ui;
 
 use crate::utilities::conversion::{read_u32_be, read_u32_le, to_hex, to_hex_str, to_str};
-use crate::utilities::{debug, debug_arr};
+use crate::utilities::{debug, debug_arr, debug_prepared_message, debug_u32};
 use crate::AppError;
 
 const BIP32_REQUIRED_LEN: u8 = 6;
@@ -127,7 +127,7 @@ impl Bip32Path {
         path
     }
 
-    pub fn validate(&self) -> Result<(), AppError> {
+    pub fn validate(&self) -> Result<Bip32Path, AppError> {
         if self.len != BIP32_REQUIRED_LEN {
             return Err(AppError::BadBip32PathLen);
         }
@@ -168,7 +168,10 @@ impl Bip32Path {
             return Err(AppError::BadBip32PathKeyType);
         }
 
-        Ok(())
+        Ok(Self {
+            len: self.len,
+            path: self.path,
+        })
     }
 
     // Following data layout is assumed (bytes):

@@ -6,7 +6,7 @@ use nanos_sdk::bindings::{
 };
 use nanos_sdk::io::{Reply, StatusWords};
 
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Copy, Clone)]
 pub enum AppError {
     Ok = 0x9000,
     NothingReceived = 0x6982,
