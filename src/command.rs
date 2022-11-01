@@ -1,4 +1,6 @@
-use crate::command::Command::{Exit, GetAppVersion, GetDeviceId, GetDeviceModel, GetPubKeyEd25519};
+use crate::command::Command::{
+    Exit, GetAppVersion, GetDeviceId, GetDeviceModel, GetPrivKeyEd25519, GetPubKeyEd25519,
+};
 
 #[repr(u8)]
 pub enum Command {
@@ -6,6 +8,7 @@ pub enum Command {
     GetDeviceModel,
     GetDeviceId,
     GetPubKeyEd25519,
+    GetPrivKeyEd25519,
     Exit,
 }
 
@@ -16,6 +19,7 @@ impl From<u8> for Command {
             0x11 => GetDeviceModel,
             0x12 => GetDeviceId,
             0x21 => GetPubKeyEd25519,
+            0x22 => GetPrivKeyEd25519,
             0xff => Exit,
             _ => panic!(),
         }

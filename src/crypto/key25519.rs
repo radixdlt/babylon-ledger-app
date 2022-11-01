@@ -1,3 +1,4 @@
+use core::borrow::Borrow;
 use core::ffi::{c_uchar, c_uint};
 use core::ptr::{copy, null_mut, write_bytes};
 use core::str::from_utf8;
@@ -12,7 +13,7 @@ use nanos_sdk::bindings::{
 use crate::app_error::AppError;
 use crate::crypto::bip32::Bip32Path;
 use crate::utilities::clone::clone_into_array;
-use crate::utilities::{debug, debug_arr};
+use crate::utilities::{debug, debug_arr, debug_u32};
 
 pub struct Key25519 {
     public: [u8; 32],
@@ -51,16 +52,30 @@ impl Key25519 {
             }
         }
 
-        // BOLOS returns public key in internal format:
-        // shifted to the end and in reverse byte order
-        for i in 0..32 {
-            pub_key.W[i] = pub_key.W[64 - i];
-        }
+        Self::transform_public_key(&mut pub_key);
 
         Ok(Self {
             public: clone_into_array(&pub_key.W[0..32]),
             private: priv_key.d,
         })
+    }
+
+    // Public key is encoded according to the following document: https://www.secg.org/sec1-v2.pdf
+    // See also https://crypto.stackexchange.com/questions/72134/raw-curve25519-public-key-points
+    // 1. Reverse the order of the bytes (we need only Y coordinate and in opposite byte order)
+    // 2. Flip bit in the last byte, depending on the flag which is attached to X coordinate.
+    // Due to resource constraints both operations are done in place, using original public
+    // key as a buffer. Result is returned in first 32 bytes of the public key buffer.
+    fn transform_public_key(pub_key: &mut cx_ecfp_public_key_t) {
+        let flip_bit = pub_key.W[32] & 1u8 == 1;
+
+        for i in 0..32 {
+            pub_key.W[i] = pub_key.W[64 - i];
+        }
+
+        if flip_bit {
+            pub_key.W[31] |= 0x80;
+        }
     }
 
     pub fn public(&self) -> &[u8] {
