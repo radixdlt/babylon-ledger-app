@@ -1,65 +1,51 @@
 #![no_std]
 #![no_main]
+#![allow(unused_imports)]
+#![allow(dead_code)]
+#![feature(result_option_inspect)]
 
+use core::ptr::copy;
+use handler::dispatcher;
 use nanos_sdk::buttons::ButtonEvent;
 use nanos_sdk::io;
+use nanos_sdk::io::{Comm, Event};
 use nanos_ui::ui;
+use nanos_ui::ui::SingleMessage;
+
+use crate::app_error::AppError;
+use crate::command::Command;
+use crate::crypto::bip32::Bip32Path;
+use crate::crypto::key25519::Key25519;
+use crate::crypto::sha256::Sha256;
+use crate::utilities::version::{MODEL_DATA, VERSION_DATA};
+
+mod app_error;
+mod command;
+mod crypto;
+mod handler;
+mod utilities;
 
 nanos_sdk::set_panic!(nanos_sdk::exiting_panic);
 
-// Application Version Data
-const VERSION: &[u8] = env!("CARGO_PKG_VERSION").as_bytes();
+// Application Name
 const APPLICATION: &str = env!("CARGO_PKG_DESCRIPTION");
 
 #[no_mangle]
 extern "C" fn sample_main() {
-    let mut comm = io::Comm::new();
+    let mut comm = Comm::new();
 
     loop {
-        // Draw some 'welcome' screen
-        ui::SingleMessage::new(APPLICATION).show();
+        SingleMessage::new(APPLICATION).show();
 
-        // Wait for either a specific button push to exit the app
-        // or an APDU command
         match comm.next_event() {
-            io::Event::Button(ButtonEvent::RightButtonRelease) => nanos_sdk::exit_app(0),
-            io::Event::Command(ins) => match handle_apdu(&mut comm, ins) {
+            // Press both buttons to exit app
+            Event::Button(ButtonEvent::BothButtonsPress) => nanos_sdk::exit_app(0),
+
+            Event::Command(ins) => match dispatcher::dispatcher(&mut comm, ins) {
                 Ok(()) => comm.reply_ok(),
-                Err(sw) => comm.reply(sw),
+                Err(app_error) => comm.reply(app_error),
             },
             _ => (),
         }
     }
-}
-
-#[repr(u8)]
-enum Ins {
-    GetAppVersion,
-    Exit,
-}
-
-impl From<u8> for Ins {
-    fn from(ins: u8) -> Ins {
-        match ins {
-            0x10 => Ins::GetAppVersion,
-            0xff => Ins::Exit,
-            _ => panic!(),
-        }
-    }
-}
-
-use nanos_sdk::io::Reply;
-
-fn handle_apdu(comm: &mut io::Comm, ins: Ins) -> Result<(), Reply> {
-    if comm.rx == 0 {
-        return Err(io::StatusWords::NothingReceived.into());
-    }
-
-    match ins {
-        Ins::GetAppVersion => {
-            comm.append(VERSION);
-        }
-        Ins::Exit => nanos_sdk::exit_app(0),
-    }
-    Ok(())
 }

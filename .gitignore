@@ -9,4 +9,5 @@ app_nanosplus.json
 app_nanox.json
 app.json
 
-
+# Python
+test/__pycache__
