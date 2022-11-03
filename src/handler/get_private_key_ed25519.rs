@@ -2,7 +2,7 @@ use nanos_sdk::io::Comm;
 
 use crate::app_error::AppError;
 use crate::crypto::bip32::Bip32Path;
-use crate::crypto::key25519::KeyPair25519;
+use crate::crypto::ed25519::KeyPair25519;
 
 #[cfg(debug_assertions)]
 pub fn handle(comm: &mut Comm) -> Result<(), AppError> {

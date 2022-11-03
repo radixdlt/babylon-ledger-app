@@ -13,7 +13,7 @@ use handler::dispatcher;
 use crate::app_error::AppError;
 use crate::command::Command;
 use crate::crypto::bip32::Bip32Path;
-use crate::crypto::key25519::KeyPair25519;
+use crate::crypto::ed25519::KeyPair25519;
 use crate::crypto::sha256::Sha256;
 use crate::utilities::version::{MODEL_DATA, VERSION_DATA};
 

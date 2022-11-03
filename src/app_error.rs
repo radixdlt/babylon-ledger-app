@@ -1,8 +1,8 @@
 use nanos_sdk::bindings::{
-    CX_CARRY, CX_EC_INFINITE_POINT, CX_EC_INVALID_CURVE, CX_EC_INVALID_POINT, CX_INTERNAL_ERROR,
-    CX_INVALID_PARAMETER, CX_INVALID_PARAMETER_SIZE, CX_INVALID_PARAMETER_VALUE, CX_LOCKED,
-    CX_MEMORY_FULL, CX_NOT_INVERTIBLE, CX_NOT_LOCKED, CX_NOT_UNLOCKED, CX_NO_RESIDUE, CX_OK,
-    CX_OVERFLOW, CX_UNLOCKED,
+    cx_err_t, CX_CARRY, CX_EC_INFINITE_POINT, CX_EC_INVALID_CURVE, CX_EC_INVALID_POINT,
+    CX_INTERNAL_ERROR, CX_INVALID_PARAMETER, CX_INVALID_PARAMETER_SIZE, CX_INVALID_PARAMETER_VALUE,
+    CX_LOCKED, CX_MEMORY_FULL, CX_NOT_INVERTIBLE, CX_NOT_LOCKED, CX_NOT_UNLOCKED, CX_NO_RESIDUE,
+    CX_OK, CX_OVERFLOW, CX_UNLOCKED,
 };
 use nanos_sdk::io::{Reply, StatusWords};
 
@@ -61,31 +61,6 @@ impl From<StatusWords> for AppError {
             StatusWords::UserCancelled => AppError::UserCancelled,
             StatusWords::Unknown => AppError::Unknown,
             StatusWords::Panic => AppError::Panic,
-        }
-    }
-}
-
-impl From<u32> for AppError {
-    fn from(code: u32) -> Self {
-        match code {
-            CX_OK => AppError::Ok,
-            CX_CARRY => AppError::CxErrorCarry,
-            CX_LOCKED => AppError::CxErrorLocked,
-            CX_UNLOCKED => AppError::CxErrorUnlocked,
-            CX_NOT_LOCKED => AppError::CxErrorNotLocked,
-            CX_NOT_UNLOCKED => AppError::CxErrorNotUnlocked,
-            CX_INTERNAL_ERROR => AppError::CxErrorInternalError,
-            CX_INVALID_PARAMETER_SIZE => AppError::CxErrorInvalidParameterSize,
-            CX_INVALID_PARAMETER_VALUE => AppError::CxErrorInvalidParameterValue,
-            CX_INVALID_PARAMETER => AppError::CxErrorInvalidParameter,
-            CX_NOT_INVERTIBLE => AppError::CxErrorNotInvertible,
-            CX_OVERFLOW => AppError::CxErrorOverflow,
-            CX_MEMORY_FULL => AppError::CxErrorMemoryFull,
-            CX_NO_RESIDUE => AppError::CxErrorNoResidue,
-            CX_EC_INFINITE_POINT => AppError::CxErrorEcInfinitePoint,
-            CX_EC_INVALID_POINT => AppError::CxErrorEcInvalidPoint,
-            CX_EC_INVALID_CURVE => AppError::CxErrorEcInvalidCurve,
-            _ => AppError::Unknown,
         }
     }
 }
