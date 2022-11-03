@@ -1,4 +1,5 @@
 use core::intrinsics::write_bytes;
+
 use nanos_sdk::bindings::{cx_hash_sha256, size_t};
 
 #[derive(Default)]

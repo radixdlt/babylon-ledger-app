@@ -9,8 +9,12 @@ description = "Radix Babylon"
 nanos_sdk = { git = "https://github.com/LedgerHQ/ledger-nanos-sdk.git" }
 nanos_ui = { git = "https://github.com/LedgerHQ/ledger-nanos-ui.git" }
 
+[profile.dev]
+opt-level = 0
+lto = false
+
 [profile.release]
-opt-level = 'z'
+opt-level = 's'
 lto = true
 
 [package.metadata.nanos]

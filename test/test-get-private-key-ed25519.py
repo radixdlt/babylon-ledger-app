@@ -45,9 +45,6 @@ instructionCode = "22"
 p1 = "00"
 p2 = "00"
 
-path = "m/44H/1022H/10H/525H/0H/1238H"
-expected_pk = ""
-
 test_vectors = [
     ("m/44H/1022H/10H/525H/0H/1238H", "1545d0732f68aa3060de84e58f8835d95e60959ffcb3c4f3ade141ea34344030"),
     ("m/44H/1022H/10H/525H/1H/1238H", "e5d1e1379c72519e9313b6243ce5713318b2fd7692f21212d219ccc00fc7c5e5"),

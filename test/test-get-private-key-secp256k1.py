@@ -41,19 +41,19 @@ else:
     dongle = getDongle(False)
 
 instructionClass = "AA"
-instructionCode = "21"
+instructionCode = "32"
 p1 = "00"
 p2 = "00"
 
 test_vectors = [
-    ("m/44H/1022H/10H/525H/0H/1238H", "191a2f9a10b2370ae612efbce92725164a9e3c16907c8eb93b6ded49f69aaf14"),
-    ("m/44H/1022H/10H/525H/1H/1238H", "dbee518731b590c92f8fa1c405d3642eb54e7b62364f879348d46e9a31ad372f"),
-    ("m/44H/1022H/10H/525H/2H/1238H", "a702d2578e7a1da476bd518445603c706158a34ff1f5ac3763ee069525bc99d5"),
-    ("m/44H/1022H/10H/618H/0H/1238H", "298d9d389e8f8e7fea12578cfc9a0a6f21d132a138966d65d12dd5897b90332e"),
-    ("m/44H/1022H/10H/618H/1H/1238H", "28e5bcf719b62b40d5a601facb309507057f03bf9ad275a13615570af1e1ecc9")
+    ("m/44H/1022H/10H/525H/0H/1238H", "299927f75ffcaa22e74c0fdb51bb445899778db14b99f8bd7cae993fd8af467d"),
+    ("m/44H/1022H/10H/525H/1H/1238H", "d182ad8a1b1c51bc1d090730909aea8b5a7f0a752eb2b27dcf6a5ab1c5f8de89"),
+    ("m/44H/1022H/10H/525H/2H/1238H", "4582f8f14a96c1431779b7ab12550544884f0fb2fabaea36b82215cab212bd3e"),
+    ("m/44H/1022H/10H/618H/0H/1238H", "4d18d4a6b845452f3b9d9ec6abbcaf5ff1df256537ea6e0b3f3db8ded7ff9270"),
+    ("m/44H/1022H/10H/618H/1H/1238H", "7cb24e0b4d3db03e34b92290dae82e51b4fbc4762e89a5d8eeb630ad6659dfa4")
 ]
 
-print("Testing", "GetPubKeyEd25519", instructionCode, end=" ")
+print("Testing", "GetPrivKeySecp256k1", instructionCode, end=" ")
 
 for vector in test_vectors:
     call_and_check(vector[0], vector[1])

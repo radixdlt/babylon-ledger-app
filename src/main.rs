@@ -4,18 +4,16 @@
 #![allow(dead_code)]
 #![feature(result_option_inspect)]
 
-use core::ptr::copy;
-use handler::dispatcher;
 use nanos_sdk::buttons::ButtonEvent;
-use nanos_sdk::io;
 use nanos_sdk::io::{Comm, Event};
-use nanos_ui::ui;
 use nanos_ui::ui::SingleMessage;
+
+use handler::dispatcher;
 
 use crate::app_error::AppError;
 use crate::command::Command;
 use crate::crypto::bip32::Bip32Path;
-use crate::crypto::key25519::Key25519;
+use crate::crypto::ed25519::KeyPair25519;
 use crate::crypto::sha256::Sha256;
 use crate::utilities::version::{MODEL_DATA, VERSION_DATA};
 
