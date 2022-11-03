@@ -1,5 +1,3 @@
-mod as_mut;
-pub mod clone;
 pub mod conversion;
 pub mod version;
 

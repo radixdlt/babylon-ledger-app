@@ -6,7 +6,6 @@ use crate::app_error::AppError;
 use crate::crypto::bip32::Bip32Path;
 use crate::crypto::curves::{cx_ecfp_public_key_t, generate_key_pair, size_t, Curve};
 use crate::crypto::key_pair::InternalKeyPair;
-use crate::utilities::clone::clone_into_array;
 use crate::utilities::{debug, debug_arr, debug_u32};
 
 const PUB_KEY_TYPE_UNCOMPRESSED: u8 = 0x04;
