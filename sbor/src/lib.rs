@@ -53,6 +53,7 @@
 // their parameters.
 
 #![feature(prelude_2024)]
+#![feature(core_intrinsics)]
 #![no_std]
 pub mod decoder_error;
 pub mod instruction;

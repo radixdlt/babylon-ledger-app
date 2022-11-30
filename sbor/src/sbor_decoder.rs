@@ -351,8 +351,9 @@ mod tests {
     use core::fmt::Display;
     use core::fmt::Formatter;
     use core::fmt::Result;
+    use core::intrinsics::size_of;
 
-    use crate::sbor_decoder::{DecodingOutcome, SborDecoder};
+    use crate::sbor_decoder::{DecodingOutcome, SborDecoder, State};
     use crate::sbor_notifications::SborEvent;
 
     #[cfg(test)]
