@@ -1,3 +1,5 @@
+// SBOR decoder
+
 use crate::decoder_error::DecoderError;
 use crate::sbor_notifications::SborEvent;
 use crate::type_info::{
@@ -223,7 +225,7 @@ where
                 self.check_end_of_data_read()
             }
 
-            // variable len components with fields payload
+            // variable length components with fields payload
             TYPE_STRUCT | TYPE_TUPLE | TYPE_ENUM => {
                 self.head().increment_items_read(byte_count)?; // Increment field count
                 self.push()?; // Start new field
@@ -232,6 +234,7 @@ where
                 self.check_end_of_data_read()
             }
 
+            // variable length components with fixed payload type
             TYPE_ARRAY => {
                 self.head().increment_items_read(byte_count)?; // Increment element count
                 let type_id = self.head().element_type_id; // Prepare element type
@@ -240,6 +243,7 @@ where
 
                 match type_id {
                     // do not report start/end of each element for byte arrays
+                    // instead they are reported like strings or enum name
                     TYPE_U8 | TYPE_I8 => {
                         self.head().skip_start_end = true;
                     }

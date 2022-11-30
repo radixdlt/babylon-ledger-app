@@ -1,3 +1,5 @@
+// SBOR type information
+
 use core::option::Option;
 use core::option::Option::{None, Some};
 use core::prelude::rust_2024::derive;
@@ -92,7 +94,7 @@ const UNIT_DECODING: [DecoderPhase; 1] = [DecoderPhase::ReadingTypeId];
 // id -> data -> o (fixed size types)
 const FIXED_LEN_DECODING: [DecoderPhase; 2] =
     [DecoderPhase::ReadingTypeId, DecoderPhase::ReadingData];
-// id -> len -> data -> o (String, Custom, Struct, Tuple)
+// id -> len -> data -> o (String, Struct, Tuple)
 const VARIABLE_LEN_DECODING: [DecoderPhase; 3] = [
     DecoderPhase::ReadingTypeId,
     DecoderPhase::ReadingLen,

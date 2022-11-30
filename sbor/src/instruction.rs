@@ -1,3 +1,5 @@
+// Instructions recognized by instruction extractor
+
 use phf::phf_map;
 
 // Keep in sync with
@@ -143,5 +145,15 @@ mod tests {
             to_instruction(b"TakeFromWorktop"),
             Some(Instruction::TakeFromWorktop)
         );
+    }
+
+    #[test]
+    pub fn unknown_names_are_rejected() {
+        assert_eq!(to_instruction(b"SomethingUnknown"), None);
+        assert_eq!(to_instruction(b"PushToAuthZon"), None);
+        assert_eq!(to_instruction(b"PushToAuthZone1"), None);
+        assert_eq!(to_instruction(b"CallNativeMethoda"), None);
+        assert_eq!(to_instruction(b"CallNativeMethodb"), None);
+        assert_eq!(to_instruction(b"CallNativeMetho"), None);
     }
 }

@@ -1,3 +1,5 @@
+// Process events received from decoder and extract data related to instructions
+
 use crate::instruction::{to_instruction, Instruction};
 use crate::sbor_notifications::SborEvent;
 use crate::type_info::{TYPE_ARRAY, TYPE_DATA_BUFFER_SIZE, TYPE_ENUM, TYPE_STRUCT};
