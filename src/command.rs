@@ -7,6 +7,8 @@ pub enum Command {
     GetPrivKeyEd25519,
     GetPubKeySecp256k1,
     GetPrivKeySecp256k1,
+    SignTxEd25519,
+    SignTxSecp256k1,
     BadCommand,
     Exit,
 }

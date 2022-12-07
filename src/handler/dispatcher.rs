@@ -3,7 +3,7 @@ use nanos_sdk::io::Comm;
 
 use crate::app_error::AppError;
 use crate::command::Command;
-use crate::handler::{get_device_id, get_private_key_ed25519};
+use crate::handler::{get_device_id, get_private_key_ed25519, sign_tx_ed25519, sign_tx_secp256k1};
 use crate::handler::{get_private_key_secp256k1, get_public_key_ed25519, get_public_key_secp256k1};
 use crate::utilities::version::{MODEL_DATA, VERSION_DATA};
 
@@ -51,6 +51,8 @@ pub fn dispatcher(comm: &mut Comm, ins: Command) -> Result<(), AppError> {
         Command::GetPrivKeyEd25519 => get_private_key_ed25519::handle(comm)?,
         Command::GetPubKeySecp256k1 => get_public_key_secp256k1::handle(comm)?,
         Command::GetPrivKeySecp256k1 => get_private_key_secp256k1::handle(comm)?,
+        Command::SignTxEd25519 => sign_tx_ed25519::handle(comm)?,
+        Command::SignTxSecp256k1 => sign_tx_secp256k1::handle(comm)?,
         Command::BadCommand => Err(AppError::NotImplemented)?,
         Command::Exit => nanos_sdk::exit_app(0),
     }
