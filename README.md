@@ -35,8 +35,9 @@ rustup component add rust-src
 rustup target add thumbv6m-none-eabi
 ```
 
-#### Install Cargo Ledger
+#### Install Cargo Ledger and LedgerBlue (format conversion and upload to device tools)
 `cargo install --git https://github.com/LedgerHQ/cargo-ledger`
+`python3 -m pip install ledgerblue`
 
 ## Build Commands
 ### Production
