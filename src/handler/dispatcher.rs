@@ -4,9 +4,9 @@ use nanos_sdk::io::Comm;
 use crate::app_error::AppError;
 use crate::command::Command;
 use crate::command_class::CommandClass;
-use crate::tx_sign_state::TxSignState;
 use crate::handler::{get_device_id, get_private_key_ed25519, sign_tx_ed25519, sign_tx_secp256k1};
 use crate::handler::{get_private_key_secp256k1, get_public_key_ed25519, get_public_key_secp256k1};
+use crate::tx_sign_state::TxSignState;
 use crate::utilities::version::{MODEL_DATA, VERSION_DATA};
 
 fn ensure_zero_params(comm: &Comm) -> Result<(), AppError> {
@@ -28,7 +28,7 @@ fn validate_request(comm: &Comm, class: CommandClass) -> Result<(), AppError> {
 
     match class {
         CommandClass::Regular | CommandClass::Continuation => Ok(()),
-        _ => Err(AppError::BadCla)
+        _ => Err(AppError::BadCla),
     }
 }
 

@@ -20,11 +20,11 @@ use crate::utilities::version::{MODEL_DATA, VERSION_DATA};
 
 mod app_error;
 mod command;
+mod command_class;
 mod crypto;
 mod handler;
-mod utilities;
 mod tx_sign_state;
-mod command_class;
+mod utilities;
 
 nanos_sdk::set_panic!(nanos_sdk::exiting_panic);
 

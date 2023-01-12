@@ -12,15 +12,16 @@
   "llvm-target": "thumbv6m-none-eabi",
   "panic-strategy": "abort",
   "pre-link-args": {
-      "ld.lld": [
-          "-Tnanox_layout.ld",
-          "-Tlink.ld"
-      ]
+    "ld.lld": [
+      "-Tnanox_layout.ld",
+      "-Tlink.ld"
+    ]
   },
   "relocation-model": "ropi-rwpi",
   "singlethread": true,
   "target-pointer-width": "32",
   "os": "nanox",
-  "target-family": [ "bolos" ]
-
+  "target-family": [
+    "bolos"
+  ]
 }

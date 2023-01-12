@@ -5,6 +5,7 @@
 pub enum CommandClass {
     Regular,
     Continuation,
+    LastData,
     Unknown,
 }
 
@@ -13,6 +14,7 @@ impl From<u8> for CommandClass {
         match ins {
             0xAA => CommandClass::Regular,
             0xAB => CommandClass::Continuation,
+            0xAC => CommandClass::LastData,
             _ => CommandClass::Unknown,
         }
     }
