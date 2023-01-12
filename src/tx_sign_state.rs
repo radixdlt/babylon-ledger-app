@@ -1,4 +1,3 @@
-use core::intrinsics::size_of;
 use nanos_sdk::io::Comm;
 use sbor::instruction_extractor::{ExtractorEvent, InstructionExtractor};
 use sbor::sbor_decoder::SborDecoder;
@@ -19,8 +18,8 @@ pub struct TxSignState {
     tx_packet_count: u32,
     tx_size: u32,
     intermediate_hash: [u8;64],
-    decoder: SborDecoder<FnMut(SborEvent)>,
-    extractor: InstructionExtractor<FnMut(ExtractorEvent)>,
+    decoder: SborDecoder,
+    extractor: InstructionExtractor,
 }
 
 impl TxSignState {
