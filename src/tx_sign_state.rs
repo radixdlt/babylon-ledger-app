@@ -18,8 +18,8 @@ pub struct TxSignState {
     tx_packet_count: u32,
     tx_size: u32,
     intermediate_hash: [u8;64],
-    decoder: SborDecoder,
-    extractor: InstructionExtractor,
+    decoder: SborDecoder<TxSignState>,
+    extractor: InstructionExtractor<TxSignState>,
 }
 
 impl TxSignState {
@@ -29,9 +29,9 @@ impl TxSignState {
             tx_packet_count: 0,
             tx_size: 0,
             intermediate_hash: [0; 64],
-            decoder: SborDecoder::new(|evt: SborEvent| {
+            decoder: SborDecoder::new(|state: &mut TxSignState, evt: SborEvent| {
             }),
-            extractor: InstructionExtractor::new(|evt: ExtractorEvent| {
+            extractor: InstructionExtractor::new(|state: &mut TxSignState, evt: ExtractorEvent| {
             })
         }
     }
