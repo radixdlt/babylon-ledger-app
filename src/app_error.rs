@@ -24,6 +24,10 @@ pub enum AppError {
     BadParam = 0x6e0b,
     BadSecp256k1PublicKeyLen = 0x6e21,
     BadSecp256k1PublicKeyType = 0x6e22,
+
+    BadTxSignState = 0x6e31,
+    BadTxSignSequence = 0x6e32,
+
     NotImplemented = 0x6eff,
     Unknown = 0x6d00,
     CxErrorCarry = 0x6f01,

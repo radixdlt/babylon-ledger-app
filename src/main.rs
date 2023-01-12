@@ -15,6 +15,7 @@ use crate::command::Command;
 use crate::crypto::bip32::Bip32Path;
 use crate::crypto::ed25519::KeyPair25519;
 use crate::crypto::sha256::Sha256;
+use crate::tx_sign_state::TxSignState;
 use crate::utilities::version::{MODEL_DATA, VERSION_DATA};
 
 mod app_error;
@@ -22,6 +23,8 @@ mod command;
 mod crypto;
 mod handler;
 mod utilities;
+mod tx_sign_state;
+mod command_class;
 
 nanos_sdk::set_panic!(nanos_sdk::exiting_panic);
 
@@ -31,6 +34,7 @@ const APPLICATION: &str = env!("CARGO_PKG_DESCRIPTION");
 #[no_mangle]
 extern "C" fn sample_main() {
     let mut comm = Comm::new();
+    let mut state = TxSignState::new();
 
     loop {
         SingleMessage::new(APPLICATION).show();
@@ -39,7 +43,7 @@ extern "C" fn sample_main() {
             // Press both buttons to exit app
             Event::Button(ButtonEvent::BothButtonsPress) => nanos_sdk::exit_app(0),
 
-            Event::Command(ins) => match dispatcher::dispatcher(&mut comm, ins) {
+            Event::Command(ins) => match dispatcher::dispatcher(&mut comm, ins, &mut state) {
                 Ok(()) => comm.reply_ok(),
                 Err(app_error) => comm.reply(app_error),
             },
