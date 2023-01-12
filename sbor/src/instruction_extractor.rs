@@ -4,8 +4,6 @@ use crate::instruction::{to_instruction, Instruction};
 use crate::sbor_notifications::SborEvent;
 use crate::type_info::{TYPE_ARRAY, TYPE_DATA_BUFFER_SIZE, TYPE_ENUM, TYPE_STRUCT};
 
-use core::ops::FnMut;
-
 #[repr(u8)]
 enum ExtractorPhases {
     WaitingForInstructionsStruct,
@@ -39,11 +37,8 @@ pub enum ExtractorEvent<'a> {
     Error(ExtractionError),
 }
 
-pub struct InstructionExtractor<F>
-where
-    F: FnMut(ExtractorEvent),
-{
-    handler: F,
+pub struct InstructionExtractor {
+    handler: fn(ExtractorEvent) -> (),
     data_len: usize,
     data_ptr: usize,
     data: [u8; TYPE_DATA_BUFFER_SIZE],
@@ -53,11 +48,8 @@ where
     instruction_ready: bool,
 }
 
-impl<F> InstructionExtractor<F>
-where
-    F: FnMut(ExtractorEvent),
-{
-    pub fn new(fun: F) -> Self {
+impl InstructionExtractor {
+    pub fn new(fun: fn(ExtractorEvent) -> ()) -> Self {
         Self {
             handler: fun,
             data_len: 0,

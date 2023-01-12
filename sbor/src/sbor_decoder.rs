@@ -7,7 +7,6 @@ use crate::type_info::{
     TYPE_STRUCT, TYPE_TUPLE, TYPE_U8, TYPE_UNIT,
 };
 use core::default::Default;
-use core::ops::FnMut;
 use core::option::Option::{None, Some};
 use core::result::Result;
 use core::result::Result::{Err, Ok};
@@ -50,21 +49,15 @@ impl Default for State {
     }
 }
 
-pub struct SborDecoder<F>
-where
-    F: FnMut(SborEvent) -> (),
-{
+pub struct SborDecoder {
     stack: [State; STACK_DEPTH as usize],
-    handler: F,
+    handler: fn(SborEvent) -> (),
     byte_count: usize,
     head: u8,
 }
 
-impl<F> SborDecoder<F>
-where
-    F: FnMut(SborEvent) -> (),
-{
-    pub fn new(fun: F) -> Self {
+impl SborDecoder {
+    pub fn new(fun: fn(SborEvent) -> ()) -> Self {
         Self {
             stack: [State::default(); STACK_DEPTH as usize],
             handler: fun,
