@@ -13,28 +13,15 @@ pub enum SignTxType {
     Secp256k1,
 }
 
-pub struct TxSignState {
+struct DecodingState {
     sign_type: SignTxType,
     tx_packet_count: u32,
     tx_size: u32,
     intermediate_hash: [u8; 64],
-    decoder: SborDecoder<TxSignState>,
-    extractor: InstructionExtractor<TxSignState>,
 }
 
-impl TxSignState {
-    pub fn new() -> Self {
-        Self {
-            sign_type: SignTxType::None,
-            tx_packet_count: 0,
-            tx_size: 0,
-            intermediate_hash: [0; 64],
-            decoder: SborDecoder::new(TxSignState::handle_decoder_event),
-            extractor: InstructionExtractor::new(TxSignState::handle_extractor_event),
-        }
-    }
-
-    pub fn process_request(
+impl DecodingState {
+    fn do_process(
         &mut self,
         comm: &Comm,
         class: CommandClass,
@@ -57,16 +44,16 @@ impl TxSignState {
         }
     }
 
-    fn start(&mut self, sign_type: SignTxType) {
-        self.reset();
-        self.sign_type = sign_type;
-    }
-
     fn reset(&mut self) {
         self.intermediate_hash.fill(0);
         self.tx_packet_count = 0;
         self.tx_size = 0;
         self.sign_type = SignTxType::None;
+    }
+
+    fn start(&mut self, sign_type: SignTxType) {
+        self.reset();
+        self.sign_type = sign_type;
     }
 
     fn sign_started(&self) -> bool {
@@ -108,21 +95,62 @@ impl TxSignState {
         Ok(())
     }
 
+    fn handle_extractor_event(&mut self, event: ExtractorEvent) {
+        // todo!()
+    }
+
     fn finalize(&self) -> Result<(), AppError> {
         // Finalize hash, display it to user and ask confirmation
-        todo!()
+        // todo!()
+        Ok(())
     }
 
     fn process_data(&self, data: &[u8]) -> Result<(), AppError> {
         // Add packet to hash, parse and display instructions to user, update counters
-        todo!()
+        // todo!()
+        Ok(())
+    }
+}
+
+pub struct TxSignState {
+    state: DecodingState,
+    decoder: SborDecoder<TxSignState>,
+    extractor: InstructionExtractor<DecodingState>,
+}
+
+impl TxSignState {
+    pub fn new() -> Self {
+        Self {
+            state: DecodingState {
+                sign_type: SignTxType::None,
+                tx_packet_count: 0,
+                tx_size: 0,
+                intermediate_hash: [0; 64],
+            },
+            decoder: SborDecoder::new(TxSignState::handle_decoder_event),
+            extractor: InstructionExtractor::new(DecodingState::handle_extractor_event),
+        }
+    }
+
+    pub fn process_request(
+        &mut self,
+        comm: &Comm,
+        class: CommandClass,
+        tx_type: SignTxType,
+    ) -> Result<(), AppError> {
+        let result = self.state.do_process(comm, class, tx_type);
+
+        match result {
+            Ok(()) => result,
+            Err(err) => {
+                self.state.reset();
+                result
+            }
+        }
     }
 
     fn handle_decoder_event(&mut self, event: SborEvent) {
-        todo!()
-    }
-
-    fn handle_extractor_event(&mut self, event: ExtractorEvent) {
-        todo!()
+        let opaque = &mut self.state;
+        self.extractor.handle_event(opaque, event);
     }
 }
