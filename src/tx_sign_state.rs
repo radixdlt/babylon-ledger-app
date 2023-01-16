@@ -1,8 +1,9 @@
 use crate::app_error::AppError;
 use crate::command_class::CommandClass;
 use nanos_sdk::io::Comm;
+use sbor::decoder_error::DecoderError;
 use sbor::instruction_extractor::{ExtractorEvent, InstructionExtractor};
-use sbor::sbor_decoder::SborDecoder;
+use sbor::sbor_decoder::{DecodingOutcome, SborDecoder};
 use sbor::sbor_notifications::SborEvent;
 
 #[repr(u8)]
@@ -16,7 +17,7 @@ pub enum SignTxType {
 struct DecodingState {
     sign_type: SignTxType,
     tx_packet_count: u32,
-    tx_size: u32,
+    tx_size: usize,
     intermediate_hash: [u8; 64],
 }
 
@@ -100,15 +101,26 @@ impl DecodingState {
     }
 
     fn finalize(&self) -> Result<(), AppError> {
-        // Finalize hash, display it to user and ask confirmation
+        // Finalize hash, check parser state, display it to user and ask confirmation
         // todo!()
         Ok(())
     }
 
-    fn process_data(&self, data: &[u8]) -> Result<(), AppError> {
+    fn process_data(&mut self, data: &[u8]) -> Result<(), AppError> {
+        self.update_counters(data.len());
+        self.update_hash(data);
         // Add packet to hash, parse and display instructions to user, update counters
         // todo!()
         Ok(())
+    }
+
+    fn update_counters(&mut self, size: usize) {
+        self.tx_size += size;
+        self.tx_packet_count += 1;
+    }
+
+    fn update_hash(&mut self, data: &[u8]) {
+        todo!()
     }
 }
 
@@ -138,19 +150,60 @@ impl TxSignState {
         class: CommandClass,
         tx_type: SignTxType,
     ) -> Result<(), AppError> {
-        let result = self.state.do_process(comm, class, tx_type);
+        let result = self.do_process(comm, class, tx_type);
 
         match result {
             Ok(()) => result,
-            Err(err) => {
+            Err(_) => {
                 self.state.reset();
                 result
             }
         }
     }
 
+    fn do_process(
+        &mut self,
+        comm: &Comm,
+        class: CommandClass,
+        tx_type: SignTxType,
+    ) -> Result<(), AppError> {
+        self.state.validate(class, tx_type)?;
+
+        if class == CommandClass::Regular {
+            self.state.start(tx_type);
+        }
+
+        self.process_data(comm.get_data()?, class)?;
+
+        if class == CommandClass::LastData {
+            self.state.finalize()
+        } else {
+            Ok(())
+        }
+    }
+
+    fn process_data(&mut self, data: &[u8], class: CommandClass) -> Result<(), AppError> {
+        let result = self.decoder.decode(self, data);
+
+        match result {
+            Ok(outcome) => match outcome {
+                DecodingOutcome::Done(size)
+                    if size == self.state.tx_size && class == CommandClass::LastData =>
+                {
+                    Ok(())
+                }
+                DecodingOutcome::NeedMoreData(size)
+                    if size == self.state.tx_size && class == CommandClass::Continuation =>
+                {
+                    Ok(())
+                }
+                _ => Err(AppError::BadTxSignLen),
+            },
+            Err(err) => Err(err.into()),
+        }
+    }
+
     fn handle_decoder_event(&mut self, event: SborEvent) {
-        let opaque = &mut self.state;
-        self.extractor.handle_event(opaque, event);
+        self.extractor.handle_event(&mut self.state, event);
     }
 }

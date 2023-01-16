@@ -5,6 +5,7 @@ use nanos_sdk::bindings::{
     CX_OK, CX_OVERFLOW, CX_UNLOCKED,
 };
 use nanos_sdk::io::{Reply, StatusWords};
+use sbor::decoder_error::DecoderError;
 
 #[derive(Eq, PartialEq, Copy, Clone)]
 pub enum AppError {
@@ -27,6 +28,13 @@ pub enum AppError {
 
     BadTxSignState = 0x6e31,
     BadTxSignSequence = 0x6e32,
+    BadTxSignLen = 0x6e33,
+
+    BadTxSignDecoderErrorInvalidInput = 0x6e34,
+    BadTxSignDecoderErrorInvalidLen = 0x6e35,
+    BadTxSignDecoderErrorInvalidState = 0x6e36,
+    BadTxSignDecoderErrorStackOverflow = 0x6e37,
+    BadTxSignDecoderErrorStackUnderflow = 0x6e38,
 
     NotImplemented = 0x6eff,
     Unknown = 0x6d00,
@@ -65,6 +73,18 @@ impl From<StatusWords> for AppError {
             StatusWords::UserCancelled => AppError::UserCancelled,
             StatusWords::Unknown => AppError::Unknown,
             StatusWords::Panic => AppError::Panic,
+        }
+    }
+}
+
+impl From<DecoderError> for AppError {
+    fn from(value: DecoderError) -> AppError {
+        match value {
+            DecoderError::InvalidInput(_, _) => AppError::BadTxSignDecoderErrorInvalidInput,
+            DecoderError::InvalidLen(_, _) => AppError::BadTxSignDecoderErrorInvalidLen,
+            DecoderError::InvalidState(_) => AppError::BadTxSignDecoderErrorInvalidState,
+            DecoderError::StackOverflow(_) => AppError::BadTxSignDecoderErrorStackOverflow,
+            DecoderError::StackUnderflow(_) => AppError::BadTxSignDecoderErrorStackUnderflow,
         }
     }
 }
