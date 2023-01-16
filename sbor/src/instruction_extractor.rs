@@ -37,8 +37,7 @@ pub enum ExtractorEvent<'a> {
     Error(ExtractionError),
 }
 
-pub struct InstructionExtractor<T> {
-    handler: fn(&mut T, ExtractorEvent) -> (),
+pub struct InstructionExtractor {
     data_len: usize,
     data_ptr: usize,
     data: [u8; TYPE_DATA_BUFFER_SIZE],
@@ -48,10 +47,9 @@ pub struct InstructionExtractor<T> {
     instruction_ready: bool,
 }
 
-impl<T> InstructionExtractor<T> {
-    pub fn new(fun: fn(&mut T, ExtractorEvent) -> ()) -> Self {
+impl InstructionExtractor {
+    pub fn new() -> Self {
         Self {
-            handler: fun,
             data_len: 0,
             data_ptr: 0,
             data: [0; TYPE_DATA_BUFFER_SIZE],
@@ -62,13 +60,20 @@ impl<T> InstructionExtractor<T> {
         }
     }
 
-    pub fn handle_event(&mut self, opaque: &mut T, event: SborEvent) {
+    pub fn handle_event<T>(
+        &mut self,
+        handler: fn(&mut T, ExtractorEvent) -> (),
+        opaque: &mut T,
+        event: SborEvent,
+    ) {
         match self.phase {
             ExtractorPhases::WaitingForInstructionsStruct => {
                 self.wait_for_instruction_struct(event)
             }
             ExtractorPhases::WaitingForInstructionsArray => self.wait_for_instruction_array(event),
-            ExtractorPhases::CollectingInstructions => self.process_instruction(event, opaque),
+            ExtractorPhases::CollectingInstructions => {
+                self.process_instruction(event, handler, opaque)
+            }
             ExtractorPhases::Done => {}
         }
     }
@@ -110,7 +115,12 @@ impl<T> InstructionExtractor<T> {
         }
     }
 
-    fn process_instruction(&mut self, event: SborEvent, opaque: &mut T) {
+    fn process_instruction<T>(
+        &mut self,
+        event: SborEvent,
+        handler: fn(&mut T, ExtractorEvent) -> (),
+        opaque: &mut T,
+    ) {
         match event {
             SborEvent::Start {
                 type_id,
@@ -121,10 +131,13 @@ impl<T> InstructionExtractor<T> {
                 self.data_len = fixed_size as usize;
 
                 if nesting_level >= 4 {
-                    (self.handler)(opaque, ExtractorEvent::ParameterStart {
-                        type_id,
-                        nesting_level: nesting_level - 4,
-                    });
+                    (handler)(
+                        opaque,
+                        ExtractorEvent::ParameterStart {
+                            type_id,
+                            nesting_level: nesting_level - 4,
+                        },
+                    );
                 }
             }
 
@@ -133,13 +146,17 @@ impl<T> InstructionExtractor<T> {
                     self.instruction_ready = false;
 
                     match to_instruction(&self.data[0..self.data_ptr]) {
-                        None => (self.handler)(opaque, ExtractorEvent::Error(
-                            ExtractionError::UnknownInstruction,
-                        )),
-                        Some(instruction) => (self.handler)(opaque, ExtractorEvent::InstructionStart {
-                            instruction,
-                            parameter_count: len as u8,
-                        }),
+                        None => (handler)(
+                            opaque,
+                            ExtractorEvent::Error(ExtractionError::UnknownInstruction),
+                        ),
+                        Some(instruction) => (handler)(
+                            opaque,
+                            ExtractorEvent::InstructionStart {
+                                instruction,
+                                parameter_count: len as u8,
+                            },
+                        ),
                     };
                 }
 
@@ -157,10 +174,13 @@ impl<T> InstructionExtractor<T> {
                     }
 
                     if self.current_nesting >= 4 {
-                        (self.handler)(opaque, ExtractorEvent::ParameterData {
-                            data: &self.data[0..self.data_ptr],
-                            is_enum_name: event == SborEvent::Name(byte),
-                        });
+                        (handler)(
+                            opaque,
+                            ExtractorEvent::ParameterData {
+                                data: &self.data[0..self.data_ptr],
+                                is_enum_name: event == SborEvent::Name(byte),
+                            },
+                        );
                     }
                 }
             }
@@ -175,11 +195,11 @@ impl<T> InstructionExtractor<T> {
                     2 => self.phase = ExtractorPhases::Done,
                     3 => {
                         if type_id == TYPE_ENUM {
-                            (self.handler)(opaque, ExtractorEvent::InstructionEnd);
+                            (handler)(opaque, ExtractorEvent::InstructionEnd);
                         }
                     }
                     4..=255 => {
-                        (self.handler)(opaque, ExtractorEvent::ParameterEnd);
+                        (handler)(opaque, ExtractorEvent::ParameterEnd);
                     }
 
                     _ => {}

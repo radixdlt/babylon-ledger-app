@@ -49,18 +49,16 @@ impl Default for State {
     }
 }
 
-pub struct SborDecoder<T> {
+pub struct SborDecoder {
     stack: [State; STACK_DEPTH as usize],
-    handler: fn(&mut T, SborEvent) -> (),
     byte_count: usize,
     head: u8,
 }
 
-impl<T> SborDecoder<T> {
-    pub fn new(fun: fn(&mut T, SborEvent) -> ()) -> Self {
+impl SborDecoder {
+    pub fn new() -> Self {
         Self {
             stack: [State::default(); STACK_DEPTH as usize],
-            handler: fun,
             byte_count: 0,
             head: 0,
         }
@@ -96,16 +94,22 @@ impl<T> SborDecoder<T> {
         Ok(())
     }
 
-    pub fn decode(&mut self, opaque: &mut T, input: &[u8]) -> Result<DecodingOutcome, DecoderError> {
+    pub fn decode<T>(
+        &mut self,
+        handler: fn(&mut T, SborEvent) -> (),
+        opaque: &mut T,
+        input: &[u8],
+    ) -> Result<DecodingOutcome, DecoderError> {
         for byte in input {
-            self.decode_byte(opaque, *byte, true)?;
+            self.decode_byte(handler, opaque, *byte, true)?;
         }
 
         Ok(self.decoding_outcome())
     }
 
-    pub fn decode_byte(
+    pub fn decode_byte<T>(
         &mut self,
+        handler: fn(&mut T, SborEvent) -> (),
         opaque: &mut T,
         byte: u8,
         count_input: bool,
@@ -115,17 +119,19 @@ impl<T> SborDecoder<T> {
         }
 
         match self.head().phase {
-            DecoderPhase::ReadingTypeId => self.read_type_id(opaque, byte),
-            DecoderPhase::ReadingLen | DecoderPhase::ReadingNameLen => self.read_len(opaque, byte),
-            DecoderPhase::ReadingElementTypeId => self.read_element_type_id(opaque, byte),
-            DecoderPhase::ReadingData => self.read_data(opaque, byte),
+            DecoderPhase::ReadingTypeId => self.read_type_id(handler, opaque, byte),
+            DecoderPhase::ReadingLen | DecoderPhase::ReadingNameLen => {
+                self.read_len(handler, opaque, byte)
+            }
+            DecoderPhase::ReadingElementTypeId => self.read_element_type_id(handler, opaque, byte),
+            DecoderPhase::ReadingData => self.read_data(handler, opaque, byte),
             DecoderPhase::ReadingNameData => {
-                (self.handler)(opaque, SborEvent::Name(byte));
+                (handler)(opaque, SborEvent::Name(byte));
                 self.read_single_data_byte(byte)?;
-                self.check_end_of_data_read(opaque)
+                self.check_end_of_data_read(handler, opaque)
             }
         }
-            .map(|_| self.decoding_outcome())
+        .map(|_| self.decoding_outcome())
     }
 
     fn decoding_outcome(&mut self) -> DecodingOutcome {
@@ -136,17 +142,24 @@ impl<T> SborDecoder<T> {
         }
     }
 
-    fn advance_phase(&mut self, opaque: &mut T) -> Result<(), DecoderError> {
+    fn advance_phase<T>(
+        &mut self,
+        handler: fn(&mut T, SborEvent) -> (),
+        opaque: &mut T,
+    ) -> Result<(), DecoderError> {
         if self.head().is_last_phase() {
             {
                 let level = self.head;
                 let id = self.head().active_type.type_id;
 
                 if !self.head().skip_start_end {
-                    (self.handler)(opaque, SborEvent::End {
-                        type_id: id,
-                        nesting_level: level,
-                    });
+                    (handler)(
+                        opaque,
+                        SborEvent::End {
+                            type_id: id,
+                            nesting_level: level,
+                        },
+                    );
                 }
             }
 
@@ -165,24 +178,37 @@ impl<T> SborDecoder<T> {
         Ok(())
     }
 
-    fn read_type_id(&mut self, opaque: &mut T, byte: u8) -> Result<(), DecoderError> {
+    fn read_type_id<T>(
+        &mut self,
+        handler: fn(&mut T, SborEvent) -> (),
+        opaque: &mut T,
+        byte: u8,
+    ) -> Result<(), DecoderError> {
         let byte_count = self.byte_count;
         self.head().read_type_id(byte, byte_count)?;
 
         let size = self.size();
 
         if !self.head().skip_start_end {
-            (self.handler)(opaque, SborEvent::Start {
-                type_id: byte,
-                nesting_level: self.head,
-                fixed_size: size,
-            });
+            (handler)(
+                opaque,
+                SborEvent::Start {
+                    type_id: byte,
+                    nesting_level: self.head,
+                    fixed_size: size,
+                },
+            );
         }
 
-        self.advance_phase(opaque)
+        self.advance_phase(handler, opaque)
     }
 
-    fn read_len(&mut self, opaque: &mut T, byte: u8) -> Result<(), DecoderError> {
+    fn read_len<T>(
+        &mut self,
+        handler: fn(&mut T, SborEvent) -> (),
+        opaque: &mut T,
+        byte: u8,
+    ) -> Result<(), DecoderError> {
         let byte_count = self.byte_count;
         if self.head().read_len(byte, byte_count)? {
             let event = if self.phase() == DecoderPhase::ReadingLen {
@@ -190,42 +216,52 @@ impl<T> SborDecoder<T> {
             } else {
                 SborEvent::NameLen(self.head().items_to_read)
             };
-            (self.handler)(opaque, event);
-            self.advance_phase(opaque)?;
+            (handler)(opaque, event);
+            self.advance_phase(handler, opaque)?;
 
             // Automatically skip reading data if len is zero
-            self.check_end_of_data_read(opaque)
+            self.check_end_of_data_read(handler, opaque)
         } else {
             Ok(())
         }
     }
 
-    fn read_element_type_id(&mut self, opaque: &mut T, byte: u8) -> Result<(), DecoderError> {
+    fn read_element_type_id<T>(
+        &mut self,
+        handler: fn(&mut T, SborEvent) -> (),
+        opaque: &mut T,
+        byte: u8,
+    ) -> Result<(), DecoderError> {
         let byte_count = self.byte_count;
         self.head().read_element_type_id(byte, byte_count)?;
-        self.advance_phase(opaque)
+        self.advance_phase(handler, opaque)
     }
 
-    fn read_data(&mut self, opaque: &mut T, byte: u8) -> Result<(), DecoderError> {
+    fn read_data<T>(
+        &mut self,
+        handler: fn(&mut T, SborEvent) -> (),
+        opaque: &mut T,
+        byte: u8,
+    ) -> Result<(), DecoderError> {
         let byte_count = self.byte_count;
 
         match self.head().active_type.type_id {
             // fixed/variable len components with raw bytes payload
             // Unit..String | Custom types
             0x00..=0x0c | 0x80..=0xff => {
-                (self.handler)(opaque, SborEvent::Data(byte));
+                (handler)(opaque, SborEvent::Data(byte));
                 self.read_single_data_byte(byte)?;
 
-                self.check_end_of_data_read(opaque)
+                self.check_end_of_data_read(handler, opaque)
             }
 
             // variable length components with fields payload
             TYPE_STRUCT | TYPE_TUPLE | TYPE_ENUM => {
                 self.head().increment_items_read(byte_count)?; // Increment field count
                 self.push()?; // Start new field
-                self.decode_byte(opaque, byte, false)?; // Read first byte (field type id)
+                self.decode_byte(handler, opaque, byte, false)?; // Read first byte (field type id)
 
-                self.check_end_of_data_read(opaque)
+                self.check_end_of_data_read(handler, opaque)
             }
 
             // variable length components with fixed payload type
@@ -244,19 +280,23 @@ impl<T> SborDecoder<T> {
                     _ => {}
                 }
 
-                self.decode_byte(opaque, type_id, false)?; // Set element type
-                self.decode_byte(opaque, byte, false)?; // Decode first byte of data
+                self.decode_byte(handler, opaque, type_id, false)?; // Set element type
+                self.decode_byte(handler, opaque, byte, false)?; // Decode first byte of data
 
-                self.check_end_of_data_read(opaque)
+                self.check_end_of_data_read(handler, opaque)
             }
 
             _ => Err(DecoderError::InvalidState(byte_count)),
         }
     }
 
-    fn check_end_of_data_read(&mut self, opaque: &mut T) -> Result<(), DecoderError> {
+    fn check_end_of_data_read<T>(
+        &mut self,
+        handler: fn(&mut T, SborEvent) -> (),
+        opaque: &mut T,
+    ) -> Result<(), DecoderError> {
         while self.head().all_read() && self.head().is_read_data_phase() {
-            self.advance_phase(opaque)?
+            self.advance_phase(handler, opaque)?
         }
 
         Ok(())
@@ -409,12 +449,16 @@ mod tests {
         let mut collected: [SborEvent; 1024] = [SborEvent::Len(0); 1024];
         let mut count = 0;
 
-        let mut decoder = SborDecoder::new(|opaque: (), evt: SborEvent| {
-            collected[count] = evt;
-            count += 1;
-        });
+        let mut decoder = SborDecoder::new();
 
-        match decoder.decode((), &input) {
+        match decoder.decode(
+            |opaque: (), evt: SborEvent| {
+                collected[count] = evt;
+                count += 1;
+            },
+            (),
+            &input,
+        ) {
             Ok(outcome) => {
                 assert_eq!(outcome, DecodingOutcome::Done(input.len()))
             }
