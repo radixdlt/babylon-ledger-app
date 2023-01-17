@@ -2,7 +2,7 @@ use crate::app_error::AppError;
 use crate::command_class::CommandClass;
 use nanos_sdk::io::Comm;
 use sbor::decoder_error::DecoderError;
-use sbor::instruction_extractor::{ExtractorEvent, InstructionExtractor};
+use sbor::instruction_extractor::{ExtractorEvent, InstructionExtractor, InstructionHandler};
 use sbor::sbor_decoder::{DecodingOutcome, SborDecoder};
 use sbor::sbor_notifications::SborEvent;
 
@@ -183,17 +183,7 @@ impl TxSignState {
     }
 
     fn process_data(&mut self, data: &[u8], class: CommandClass) -> Result<(), AppError> {
-        let mut extractor = &self.extractor;
-
-        let mut extractor_handler = |event: ExtractorEvent| {
-            self.state.handle_extractor_event(event);
-        };
-
-        let mut sbor_handler = |event| {
-            extractor.handle_event(extractor_handler, event);
-        };
-
-        let result = self.decoder.decode(sbor_handler, data);
+        let result = self.call_decoder(data);
 
         match result {
             Ok(outcome) => match outcome {
@@ -211,5 +201,12 @@ impl TxSignState {
             },
             Err(err) => Err(err.into()),
         }
+    }
+
+    fn call_decoder(&mut self, data: &[u8]) -> Result<DecodingOutcome, DecoderError> {
+        let mut handler =
+            InstructionHandler::new(DecodingState::handle_extractor_event, &mut self.state);
+
+        self.decoder.decode(&mut handler, data)
     }
 }
