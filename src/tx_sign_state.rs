@@ -183,11 +183,17 @@ impl TxSignState {
     }
 
     fn process_data(&mut self, data: &[u8], class: CommandClass) -> Result<(), AppError> {
-        let mut unused : u32 = 0;
-        let result = self.decoder.decode(
-            |_: &mut u32, event: SborEvent| {
-                self.extractor.handle_event(DecodingState::handle_extractor_event, &mut self.state, event);
-            }, &mut unused, data);
+        let mut extractor = &self.extractor;
+
+        let mut extractor_handler = |event: ExtractorEvent| {
+            self.state.handle_extractor_event(event);
+        };
+
+        let mut sbor_handler = |event| {
+            extractor.handle_event(extractor_handler, event);
+        };
+
+        let result = self.decoder.decode(sbor_handler, data);
 
         match result {
             Ok(outcome) => match outcome {
