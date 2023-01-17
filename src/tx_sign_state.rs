@@ -126,8 +126,8 @@ impl DecodingState {
 
 pub struct TxSignState {
     state: DecodingState,
-    decoder: SborDecoder<TxSignState>,
-    extractor: InstructionExtractor<DecodingState>,
+    decoder: SborDecoder,
+    extractor: InstructionExtractor,
 }
 
 impl TxSignState {
@@ -139,8 +139,8 @@ impl TxSignState {
                 tx_size: 0,
                 intermediate_hash: [0; 64],
             },
-            decoder: SborDecoder::new(TxSignState::handle_decoder_event),
-            extractor: InstructionExtractor::new(DecodingState::handle_extractor_event),
+            decoder: SborDecoder::new(),
+            extractor: InstructionExtractor::new(),
         }
     }
 
@@ -183,7 +183,11 @@ impl TxSignState {
     }
 
     fn process_data(&mut self, data: &[u8], class: CommandClass) -> Result<(), AppError> {
-        let result = self.decoder.decode(self, data);
+        let mut unused : u32 = 0;
+        let result = self.decoder.decode(
+            |_: &mut u32, event: SborEvent| {
+                self.extractor.handle_event(DecodingState::handle_extractor_event, &mut self.state, event);
+            }, &mut unused, data);
 
         match result {
             Ok(outcome) => match outcome {
@@ -201,9 +205,5 @@ impl TxSignState {
             },
             Err(err) => Err(err.into()),
         }
-    }
-
-    fn handle_decoder_event(&mut self, event: SborEvent) {
-        self.extractor.handle_event(&mut self.state, event);
     }
 }
