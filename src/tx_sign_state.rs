@@ -1,5 +1,6 @@
 use crate::app_error::AppError;
 use crate::command_class::CommandClass;
+use nanos_sdk::bindings::{cx_hash_sha256, size_t};
 use nanos_sdk::io::Comm;
 use sbor::decoder_error::DecoderError;
 use sbor::instruction_extractor::{ExtractorEvent, InstructionExtractor, InstructionHandler};
@@ -14,15 +15,16 @@ pub enum SignTxType {
     Secp256k1,
 }
 
-struct DecodingState {
+struct SignFlowState {
     sign_type: SignTxType,
     tx_packet_count: u32,
     tx_size: usize,
-    intermediate_hash: [u8; 64],
+    intermediate_hash: [u8; 32],
+    final_hash: [u8; 32],
 }
 
-impl DecodingState {
-    fn do_process(
+impl SignFlowState {
+    fn process_data(
         &mut self,
         comm: &Comm,
         class: CommandClass,
@@ -36,13 +38,13 @@ impl DecodingState {
             self.start(tx_type);
         }
 
-        self.process_data(data)?;
+        self.update_counters(data.len());
+        self.update_hash(data);
 
         if class == CommandClass::LastData {
-            self.finalize()
-        } else {
-            Ok(())
+            self.finalize_hash();
         }
+        Ok(())
     }
 
     fn reset(&mut self) {
@@ -97,35 +99,39 @@ impl DecodingState {
     }
 
     fn handle_extractor_event(&mut self, event: ExtractorEvent) {
-        // todo!()
+        // TODO collect data and display on instruction boundary
     }
 
-    fn finalize(&self) -> Result<(), AppError> {
-        // Finalize hash, check parser state, display it to user and ask confirmation
-        // todo!()
-        Ok(())
+    fn update_hash(&mut self, data: &[u8]) {
+        unsafe {
+            cx_hash_sha256(
+                data.as_ptr(),
+                data.len() as size_t,
+                self.intermediate_hash.as_mut_ptr(),
+                self.intermediate_hash.len() as size_t,
+            );
+        }
     }
 
-    fn process_data(&mut self, data: &[u8]) -> Result<(), AppError> {
-        self.update_counters(data.len());
-        self.update_hash(data);
-        // Add packet to hash, parse and display instructions to user, update counters
-        // todo!()
-        Ok(())
+    fn finalize_hash(&mut self) {
+        unsafe {
+            cx_hash_sha256(
+                self.intermediate_hash.as_ptr(),
+                self.intermediate_hash.len() as size_t,
+                self.final_hash.as_mut_ptr(),
+                self.final_hash.len() as size_t,
+            );
+        }
     }
 
     fn update_counters(&mut self, size: usize) {
         self.tx_size += size;
         self.tx_packet_count += 1;
     }
-
-    fn update_hash(&mut self, data: &[u8]) {
-        todo!()
-    }
 }
 
 pub struct TxSignState {
-    state: DecodingState,
+    state: SignFlowState,
     decoder: SborDecoder,
     extractor: InstructionExtractor,
 }
@@ -133,11 +139,12 @@ pub struct TxSignState {
 impl TxSignState {
     pub fn new() -> Self {
         Self {
-            state: DecodingState {
+            state: SignFlowState {
                 sign_type: SignTxType::None,
                 tx_packet_count: 0,
                 tx_size: 0,
-                intermediate_hash: [0; 64],
+                intermediate_hash: [0; 32],
+                final_hash: [0; 32],
             },
             decoder: SborDecoder::new(),
             extractor: InstructionExtractor::new(),
@@ -155,7 +162,7 @@ impl TxSignState {
         match result {
             Ok(()) => result,
             Err(_) => {
-                self.state.reset();
+                self.state.reset(); // Ensure state is reset on error
                 result
             }
         }
@@ -173,16 +180,18 @@ impl TxSignState {
             self.state.start(tx_type);
         }
 
-        self.process_data(comm.get_data()?, class)?;
+        self.state.process_data(comm, class, tx_type)?;
+        self.decode_tx_intent(comm.get_data()?, class)?;
 
         if class == CommandClass::LastData {
-            self.state.finalize()
+            //TODO: show hash to the user, process confirmation/rejection
+            Ok(())
         } else {
             Ok(())
         }
     }
 
-    fn process_data(&mut self, data: &[u8], class: CommandClass) -> Result<(), AppError> {
+    fn decode_tx_intent(&mut self, data: &[u8], class: CommandClass) -> Result<(), AppError> {
         let result = self.call_decoder(data);
 
         match result {
@@ -205,7 +214,7 @@ impl TxSignState {
 
     fn call_decoder(&mut self, data: &[u8]) -> Result<DecodingOutcome, DecoderError> {
         let mut handler =
-            InstructionHandler::new(DecodingState::handle_extractor_event, &mut self.state);
+            InstructionHandler::new(SignFlowState::handle_extractor_event, &mut self.state);
 
         self.decoder.decode(&mut handler, data)
     }
