@@ -60,20 +60,16 @@ impl InstructionExtractor {
         }
     }
 
-    pub fn handle_event<T>(
-        &mut self,
-        handler: fn(&mut T, ExtractorEvent) -> (),
-        opaque: &mut T,
-        event: SborEvent,
-    ) {
+    pub fn handle_event<T>(&mut self, handler: T, event: SborEvent)
+    where
+        T: FnMut(ExtractorEvent),
+    {
         match self.phase {
             ExtractorPhases::WaitingForInstructionsStruct => {
                 self.wait_for_instruction_struct(event)
             }
             ExtractorPhases::WaitingForInstructionsArray => self.wait_for_instruction_array(event),
-            ExtractorPhases::CollectingInstructions => {
-                self.process_instruction(event, handler, opaque)
-            }
+            ExtractorPhases::CollectingInstructions => self.process_instruction(event, handler),
             ExtractorPhases::Done => {}
         }
     }
@@ -115,12 +111,10 @@ impl InstructionExtractor {
         }
     }
 
-    fn process_instruction<T>(
-        &mut self,
-        event: SborEvent,
-        handler: fn(&mut T, ExtractorEvent) -> (),
-        opaque: &mut T,
-    ) {
+    fn process_instruction<T>(&mut self, event: SborEvent, mut handler: T)
+    where
+        T: FnMut(ExtractorEvent),
+    {
         match event {
             SborEvent::Start {
                 type_id,
@@ -131,13 +125,10 @@ impl InstructionExtractor {
                 self.data_len = fixed_size as usize;
 
                 if nesting_level >= 4 {
-                    (handler)(
-                        opaque,
-                        ExtractorEvent::ParameterStart {
-                            type_id,
-                            nesting_level: nesting_level - 4,
-                        },
-                    );
+                    (handler)(ExtractorEvent::ParameterStart {
+                        type_id,
+                        nesting_level: nesting_level - 4,
+                    });
                 }
             }
 
@@ -146,17 +137,13 @@ impl InstructionExtractor {
                     self.instruction_ready = false;
 
                     match to_instruction(&self.data[0..self.data_ptr]) {
-                        None => (handler)(
-                            opaque,
-                            ExtractorEvent::Error(ExtractionError::UnknownInstruction),
-                        ),
-                        Some(instruction) => (handler)(
-                            opaque,
-                            ExtractorEvent::InstructionStart {
-                                instruction,
-                                parameter_count: len as u8,
-                            },
-                        ),
+                        None => {
+                            (handler)(ExtractorEvent::Error(ExtractionError::UnknownInstruction))
+                        }
+                        Some(instruction) => (handler)(ExtractorEvent::InstructionStart {
+                            instruction,
+                            parameter_count: len as u8,
+                        }),
                     };
                 }
 
@@ -174,13 +161,10 @@ impl InstructionExtractor {
                     }
 
                     if self.current_nesting >= 4 {
-                        (handler)(
-                            opaque,
-                            ExtractorEvent::ParameterData {
-                                data: &self.data[0..self.data_ptr],
-                                is_enum_name: event == SborEvent::Name(byte),
-                            },
-                        );
+                        (handler)(ExtractorEvent::ParameterData {
+                            data: &self.data[0..self.data_ptr],
+                            is_enum_name: event == SborEvent::Name(byte),
+                        });
                     }
                 }
             }
@@ -195,11 +179,11 @@ impl InstructionExtractor {
                     2 => self.phase = ExtractorPhases::Done,
                     3 => {
                         if type_id == TYPE_ENUM {
-                            (handler)(opaque, ExtractorEvent::InstructionEnd);
+                            (handler)(ExtractorEvent::InstructionEnd);
                         }
                     }
                     4..=255 => {
-                        (handler)(opaque, ExtractorEvent::ParameterEnd);
+                        (handler)(ExtractorEvent::ParameterEnd);
                     }
 
                     _ => {}
