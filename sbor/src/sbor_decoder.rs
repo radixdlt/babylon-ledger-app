@@ -1,6 +1,7 @@
 // SBOR decoder
 
 use crate::decoder_error::DecoderError;
+use crate::instruction_extractor::{InstructionExtractor, InstructionHandler};
 use crate::sbor_notifications::SborEvent;
 use crate::type_info::{
     to_type_info, DecoderPhase, TypeInfo, NONE_TYPE_INFO, TYPE_ARRAY, TYPE_ENUM, TYPE_I8,
@@ -52,6 +53,7 @@ impl Default for State {
 pub struct SborDecoder {
     stack: [State; STACK_DEPTH as usize],
     byte_count: usize,
+    extractor: InstructionExtractor,
     head: u8,
 }
 
@@ -60,6 +62,7 @@ impl SborDecoder {
         Self {
             stack: [State::default(); STACK_DEPTH as usize],
             byte_count: 0,
+            extractor: InstructionExtractor::new(),
             head: 0,
         }
     }
@@ -94,26 +97,24 @@ impl SborDecoder {
         Ok(())
     }
 
-    pub fn decode<T>(&mut self, mut handler: T, input: &[u8]) -> Result<DecodingOutcome, DecoderError>
-    where
-        T: FnMut(SborEvent),
-    {
+    pub fn decode<'a, T>(
+        &mut self,
+        handler: &'a InstructionHandler<'a, T>,
+        input: &[u8],
+    ) -> Result<DecodingOutcome, DecoderError> {
         for byte in input {
-            self.decode_byte(&mut handler, *byte, true)?;
+            self.decode_byte(handler, *byte, true)?;
         }
 
         Ok(self.decoding_outcome())
     }
 
-    pub fn decode_byte<T>(
+    pub fn decode_byte<'a, T>(
         &mut self,
-        mut handler: T,
+        handler: &'a InstructionHandler<'a, T>,
         byte: u8,
         count_input: bool,
-    ) -> Result<DecodingOutcome, DecoderError>
-    where
-        T: FnMut(SborEvent),
-    {
+    ) -> Result<DecodingOutcome, DecoderError> {
         if count_input {
             self.byte_count += 1;
         }
@@ -124,7 +125,7 @@ impl SborDecoder {
             DecoderPhase::ReadingElementTypeId => self.read_element_type_id(handler, byte),
             DecoderPhase::ReadingData => self.read_data(handler, byte),
             DecoderPhase::ReadingNameData => {
-                (handler)(SborEvent::Name(byte));
+                self.call(handler, SborEvent::Name(byte));
                 self.read_single_data_byte(byte)?;
                 self.check_end_of_data_read(handler)
             }
@@ -140,20 +141,27 @@ impl SborDecoder {
         }
     }
 
-    fn advance_phase<T>(&mut self, mut handler: T) -> Result<(), DecoderError>
-    where
-        T: FnMut(SborEvent),
-    {
+    fn call<'a, T>(&mut self, handler: &'a InstructionHandler<'a, T>, event: SborEvent) {
+        self.extractor.handle(handler, event);
+    }
+
+    fn advance_phase<'a, T>(
+        &mut self,
+        handler: &'a InstructionHandler<'a, T>,
+    ) -> Result<(), DecoderError> {
         if self.head().is_last_phase() {
             {
                 let level = self.head;
                 let id = self.head().active_type.type_id;
 
                 if !self.head().skip_start_end {
-                    (handler)(SborEvent::End {
-                        type_id: id,
-                        nesting_level: level,
-                    });
+                    self.call(
+                        handler,
+                        SborEvent::End {
+                            type_id: id,
+                            nesting_level: level,
+                        },
+                    );
                 }
             }
 
@@ -172,30 +180,35 @@ impl SborDecoder {
         Ok(())
     }
 
-    fn read_type_id<T>(&mut self, mut handler: T, byte: u8) -> Result<(), DecoderError>
-    where
-        T: FnMut(SborEvent),
-    {
+    fn read_type_id<'a, T>(
+        &mut self,
+        handler: &'a InstructionHandler<'a, T>,
+        byte: u8,
+    ) -> Result<(), DecoderError> {
         let byte_count = self.byte_count;
         self.head().read_type_id(byte, byte_count)?;
 
         let size = self.size();
 
         if !self.head().skip_start_end {
-            (handler)(SborEvent::Start {
-                type_id: byte,
-                nesting_level: self.head,
-                fixed_size: size,
-            });
+            self.call(
+                handler,
+                SborEvent::Start {
+                    type_id: byte,
+                    nesting_level: self.head,
+                    fixed_size: size,
+                },
+            );
         }
 
         self.advance_phase(handler)
     }
 
-    fn read_len<T>(&mut self, mut handler: T, byte: u8) -> Result<(), DecoderError>
-    where
-        T: FnMut(SborEvent),
-    {
+    fn read_len<'a, T>(
+        &mut self,
+        handler: &'a InstructionHandler<'a, T>,
+        byte: u8,
+    ) -> Result<(), DecoderError> {
         let byte_count = self.byte_count;
         if self.head().read_len(byte, byte_count)? {
             let event = if self.phase() == DecoderPhase::ReadingLen {
@@ -203,36 +216,38 @@ impl SborDecoder {
             } else {
                 SborEvent::NameLen(self.head().items_to_read)
             };
-            (handler)(event);
-            self.advance_phase(&mut handler)?;
+            self.call(handler, event);
+            self.advance_phase(handler)?;
 
             // Automatically skip reading data if len is zero
-            self.check_end_of_data_read(&mut handler)
+            self.check_end_of_data_read(handler)
         } else {
             Ok(())
         }
     }
 
-    fn read_element_type_id<T>(&mut self, handler: T, byte: u8) -> Result<(), DecoderError>
-    where
-        T: FnMut(SborEvent),
-    {
+    fn read_element_type_id<'a, T>(
+        &mut self,
+        handler: &'a InstructionHandler<'a, T>,
+        byte: u8,
+    ) -> Result<(), DecoderError> {
         let byte_count = self.byte_count;
         self.head().read_element_type_id(byte, byte_count)?;
         self.advance_phase(handler)
     }
 
-    fn read_data<T>(&mut self, mut handler: T, byte: u8) -> Result<(), DecoderError>
-    where
-        T: FnMut(SborEvent),
-    {
+    fn read_data<'a, T>(
+        &mut self,
+        handler: &'a InstructionHandler<'a, T>,
+        byte: u8,
+    ) -> Result<(), DecoderError> {
         let byte_count = self.byte_count;
 
         match self.head().active_type.type_id {
             // fixed/variable len components with raw bytes payload
             // Unit..String | Custom types
             0x00..=0x0c | 0x80..=0xff => {
-                (handler)(SborEvent::Data(byte));
+                self.call(handler, SborEvent::Data(byte));
                 self.read_single_data_byte(byte)?;
 
                 self.check_end_of_data_read(handler)
@@ -242,9 +257,9 @@ impl SborDecoder {
             TYPE_STRUCT | TYPE_TUPLE | TYPE_ENUM => {
                 self.head().increment_items_read(byte_count)?; // Increment field count
                 self.push()?; // Start new field
-                self.decode_byte(&mut handler, byte, false)?; // Read first byte (field type id)
+                self.decode_byte(handler, byte, false)?; // Read first byte (field type id)
 
-                self.check_end_of_data_read(&mut handler)
+                self.check_end_of_data_read(handler)
             }
 
             // variable length components with fixed payload type
@@ -263,8 +278,8 @@ impl SborDecoder {
                     _ => {}
                 }
 
-                self.decode_byte(&mut handler, type_id, false)?; // Set element type
-                self.decode_byte(&mut handler, byte, false)?; // Decode first byte of data
+                self.decode_byte(handler, type_id, false)?; // Set element type
+                self.decode_byte(handler, byte, false)?; // Decode first byte of data
 
                 self.check_end_of_data_read(handler)
             }
@@ -273,12 +288,12 @@ impl SborDecoder {
         }
     }
 
-    fn check_end_of_data_read<T>(&mut self, mut handler: T) -> Result<(), DecoderError>
-    where
-        T: FnMut(SborEvent),
-    {
+    fn check_end_of_data_read<'a, T>(
+        &mut self,
+        handler: &'a InstructionHandler<'a, T>,
+    ) -> Result<(), DecoderError> {
         while self.head().all_read() && self.head().is_read_data_phase() {
-            self.advance_phase(&mut handler)?
+            self.advance_phase(handler)?
         }
 
         Ok(())
@@ -367,9 +382,8 @@ mod tests {
     use core::fmt::Display;
     use core::fmt::Formatter;
     use core::fmt::Result;
-    use core::intrinsics::size_of;
 
-    use crate::sbor_decoder::{DecodingOutcome, SborDecoder, State};
+    use crate::sbor_decoder::{DecodingOutcome, SborDecoder};
     use crate::sbor_notifications::SborEvent;
 
     #[cfg(test)]

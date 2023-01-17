@@ -1,11 +1,9 @@
 // Instructions recognized by instruction extractor
 
-use phf::phf_map;
-
 // Keep in sync with
 // https://raw.githubusercontent.com/radixdlt/radixdlt-scrypto/develop/transaction/src/model/instruction.rs
 #[repr(u8)]
-#[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum Instruction {
     AssertWorktopContainsByAmount, // { amount: Decimal, resource_address: ResourceAddress, },
     AssertWorktopContainsByIds, // { ids: BTreeSet<NonFungibleId>, resource_address: ResourceAddress, },
@@ -31,33 +29,32 @@ pub enum Instruction {
     TakeFromWorktop,      // { resource_address: ResourceAddress },
 }
 
-static INSTRUCTIONS: phf::Map<&[u8], Instruction> = phf_map! {
-    b"AssertWorktopContainsByAmount" => Instruction::AssertWorktopContainsByAmount,
-    b"AssertWorktopContainsByIds" => Instruction::AssertWorktopContainsByIds,
-    b"AssertWorktopContains" => Instruction::AssertWorktopContains,
-    b"CallFunction" => Instruction::CallFunction,
-    b"CallMethod" => Instruction::CallMethod,
-    b"CallNativeFunction" => Instruction::CallNativeFunction,
-    b"CallNativeMethod" => Instruction::CallNativeMethod,
-    b"ClearAuthZone" => Instruction::ClearAuthZone,
-    b"CloneProof" => Instruction::CloneProof,
-    b"CreateProofFromAuthZoneByAmount" => Instruction::CreateProofFromAuthZoneByAmount,
-    b"CreateProofFromAuthZoneByIds" => Instruction::CreateProofFromAuthZoneByIds,
-    b"CreateProofFromAuthZone" => Instruction::CreateProofFromAuthZone,
-    b"CreateProofFromBucket" => Instruction::CreateProofFromBucket,
-    b"DropAllProofs" => Instruction::DropAllProofs,
-    b"DropProof" => Instruction::DropProof,
-    b"PopFromAuthZone" => Instruction::PopFromAuthZone,
-    b"PublishPackage" => Instruction::PublishPackage,
-    b"PushToAuthZone" => Instruction::PushToAuthZone,
-    b"ReturnToWorktop" => Instruction::ReturnToWorktop,
-    b"TakeFromWorktopByAmount" => Instruction::TakeFromWorktopByAmount,
-    b"TakeFromWorktopByIds" => Instruction::TakeFromWorktopByIds,
-    b"TakeFromWorktop" => Instruction::TakeFromWorktop,
-};
-
 pub fn to_instruction(input: &[u8]) -> Option<Instruction> {
-    INSTRUCTIONS.get(input).cloned()
+    match input {
+        b"AssertWorktopContainsByAmount" => Some(Instruction::AssertWorktopContainsByAmount),
+        b"AssertWorktopContainsByIds" => Some(Instruction::AssertWorktopContainsByIds),
+        b"AssertWorktopContains" => Some(Instruction::AssertWorktopContains),
+        b"CallFunction" => Some(Instruction::CallFunction),
+        b"CallMethod" => Some(Instruction::CallMethod),
+        b"CallNativeFunction" => Some(Instruction::CallNativeFunction),
+        b"CallNativeMethod" => Some(Instruction::CallNativeMethod),
+        b"ClearAuthZone" => Some(Instruction::ClearAuthZone),
+        b"CloneProof" => Some(Instruction::CloneProof),
+        b"CreateProofFromAuthZoneByAmount" => Some(Instruction::CreateProofFromAuthZoneByAmount),
+        b"CreateProofFromAuthZoneByIds" => Some(Instruction::CreateProofFromAuthZoneByIds),
+        b"CreateProofFromAuthZone" => Some(Instruction::CreateProofFromAuthZone),
+        b"CreateProofFromBucket" => Some(Instruction::CreateProofFromBucket),
+        b"DropAllProofs" => Some(Instruction::DropAllProofs),
+        b"DropProof" => Some(Instruction::DropProof),
+        b"PopFromAuthZone" => Some(Instruction::PopFromAuthZone),
+        b"PublishPackage" => Some(Instruction::PublishPackage),
+        b"PushToAuthZone" => Some(Instruction::PushToAuthZone),
+        b"ReturnToWorktop" => Some(Instruction::ReturnToWorktop),
+        b"TakeFromWorktopByAmount" => Some(Instruction::TakeFromWorktopByAmount),
+        b"TakeFromWorktopByIds" => Some(Instruction::TakeFromWorktopByIds),
+        b"TakeFromWorktop" => Some(Instruction::TakeFromWorktop),
+        _ => None
+    }
 }
 
 #[cfg(test)]
