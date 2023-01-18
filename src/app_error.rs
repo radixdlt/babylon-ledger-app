@@ -36,6 +36,8 @@ pub enum AppError {
     BadTxSignDecoderErrorStackOverflow = 0x6e37,
     BadTxSignDecoderErrorStackUnderflow = 0x6e38,
 
+    BadTxSignUserRejected = 0x6e40,
+
     NotImplemented = 0x6eff,
     Unknown = 0x6d00,
     CxErrorCarry = 0x6f01,

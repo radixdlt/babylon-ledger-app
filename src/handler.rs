@@ -6,3 +6,4 @@ mod get_public_key_ed25519;
 mod get_public_key_secp256k1;
 mod sign_tx_ed25519;
 mod sign_tx_secp256k1;
+mod process_sign_outcome;

@@ -1,11 +1,17 @@
 use crate::app_error::AppError;
 use crate::command_class::CommandClass;
+use crate::crypto::bip32::Bip32Path;
+use crate::tx_sign_state::SignOutcome::Signature;
 use nanos_sdk::bindings::{cx_hash_sha256, size_t};
+use nanos_sdk::ecc::CurvesId::Ed25519;
 use nanos_sdk::io::Comm;
+use nanos_ui::ui;
 use sbor::decoder_error::DecoderError;
 use sbor::instruction_extractor::{ExtractorEvent, InstructionExtractor, InstructionHandler};
 use sbor::sbor_decoder::{DecodingOutcome, SborDecoder};
 use sbor::sbor_notifications::SborEvent;
+
+const SIGNATURE_SIZE: usize = 64;
 
 #[repr(u8)]
 #[derive(Eq, PartialEq, Copy, Clone)]
@@ -19,6 +25,7 @@ struct SignFlowState {
     sign_type: SignTxType,
     tx_packet_count: u32,
     tx_size: usize,
+    path: Bip32Path,
     intermediate_hash: [u8; 32],
     final_hash: [u8; 32],
 }
@@ -26,18 +33,18 @@ struct SignFlowState {
 impl SignFlowState {
     fn process_data(
         &mut self,
-        comm: &Comm,
+        comm: &mut Comm,
         class: CommandClass,
         tx_type: SignTxType,
     ) -> Result<(), AppError> {
         self.validate(class, tx_type)?;
-
-        let data = comm.get_data()?;
-
+        
         if class == CommandClass::Regular {
-            self.start(tx_type);
+            let path = Bip32Path::read(comm).and_then(|path| path.validate())?;
+            self.start(tx_type, path);
         }
 
+        let data = comm.get_data()?;
         self.update_counters(data.len());
         self.update_hash(data);
 
@@ -52,11 +59,13 @@ impl SignFlowState {
         self.tx_packet_count = 0;
         self.tx_size = 0;
         self.sign_type = SignTxType::None;
+        self.path = Bip32Path::new(0);
     }
 
-    fn start(&mut self, sign_type: SignTxType) {
+    fn start(&mut self, sign_type: SignTxType, path: Bip32Path) {
         self.reset();
         self.sign_type = sign_type;
+        self.path = path;
     }
 
     fn sign_started(&self) -> bool {
@@ -130,6 +139,12 @@ impl SignFlowState {
     }
 }
 
+pub enum SignOutcome {
+    SendNextPacket,
+    SigningRejected,
+    Signature([u8; SIGNATURE_SIZE]),
+}
+
 pub struct TxSignState {
     state: SignFlowState,
     decoder: SborDecoder,
@@ -145,6 +160,7 @@ impl TxSignState {
                 tx_size: 0,
                 intermediate_hash: [0; 32],
                 final_hash: [0; 32],
+                path: Bip32Path::new(0),
             },
             decoder: SborDecoder::new(),
             extractor: InstructionExtractor::new(),
@@ -153,14 +169,14 @@ impl TxSignState {
 
     pub fn process_request(
         &mut self,
-        comm: &Comm,
+        comm: &mut Comm,
         class: CommandClass,
         tx_type: SignTxType,
-    ) -> Result<(), AppError> {
+    ) -> Result<SignOutcome, AppError> {
         let result = self.do_process(comm, class, tx_type);
 
         match result {
-            Ok(()) => result,
+            Ok(_) => result,
             Err(_) => {
                 self.state.reset(); // Ensure state is reset on error
                 result
@@ -170,25 +186,31 @@ impl TxSignState {
 
     fn do_process(
         &mut self,
-        comm: &Comm,
+        comm: &mut Comm,
         class: CommandClass,
         tx_type: SignTxType,
-    ) -> Result<(), AppError> {
-        self.state.validate(class, tx_type)?;
-
-        if class == CommandClass::Regular {
-            self.state.start(tx_type);
-        }
-
+    ) -> Result<SignOutcome, AppError> {
         self.state.process_data(comm, class, tx_type)?;
         self.decode_tx_intent(comm.get_data()?, class)?;
 
         if class == CommandClass::LastData {
-            //TODO: show hash to the user, process confirmation/rejection
-            Ok(())
+            self.finalize_sign_tx(tx_type)
         } else {
-            Ok(())
+            Ok(SignOutcome::SendNextPacket)
         }
+    }
+
+    fn finalize_sign_tx(&mut self, tx_type: SignTxType) -> Result<SignOutcome, AppError> {
+        //TODO: show hash to the user?
+
+        // ask for confirmation, handle rejection
+        if !ui::Validator::new("Sign Intent?").ask() {
+            return Ok(SignOutcome::SigningRejected);
+        }
+
+        //TODO: sign the hash, return signature to client
+
+        Ok(self.sign_tx(tx_type))
     }
 
     fn decode_tx_intent(&mut self, data: &[u8], class: CommandClass) -> Result<(), AppError> {
@@ -217,5 +239,11 @@ impl TxSignState {
             InstructionHandler::new(SignFlowState::handle_extractor_event, &mut self.state);
 
         self.decoder.decode(&mut handler, data)
+    }
+
+    //TODO: finish it
+    fn sign_tx(&self, tx_type: SignTxType) -> SignOutcome {
+        let signature: [u8; SIGNATURE_SIZE] = [0; SIGNATURE_SIZE];
+        Signature(signature)
     }
 }
