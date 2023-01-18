@@ -1,9 +1,12 @@
 use crate::app_error::AppError;
 use crate::command_class::CommandClass;
 use crate::crypto::bip32::Bip32Path;
+use crate::crypto::ed25519::KeyPair25519;
+use crate::crypto::secp256k1::KeyPairSecp256k1;
 use crate::tx_sign_state::SignOutcome::Signature;
-use nanos_sdk::bindings::{cx_hash_sha256, size_t};
-use nanos_sdk::ecc::CurvesId::Ed25519;
+use nanos_sdk::bindings::{
+    cx_err_t, cx_hash_sha256, cx_md_t, size_t, CX_LAST, CX_RND_RFC6979, CX_SHA256,
+};
 use nanos_sdk::io::Comm;
 use nanos_ui::ui;
 use sbor::decoder_error::DecoderError;
@@ -30,6 +33,28 @@ struct SignFlowState {
     final_hash: [u8; 32],
 }
 
+extern "C" {
+    pub fn cx_ecdsa_sign_no_throw(
+        pvkey: *const u8,
+        mode: u32,
+        hashID: cx_md_t,
+        hash: *const u8,
+        hash_len: size_t,
+        sig: *mut u8,
+        sig_len: *mut size_t,
+        info: *mut u32,
+    ) -> cx_err_t;
+
+    pub fn cx_eddsa_sign_no_throw(
+        pvkey: *const u8,
+        hashID: cx_md_t,
+        hash: *const u8,
+        hash_len: size_t,
+        sig: *mut u8,
+        sig_len: size_t,
+    ) -> cx_err_t;
+}
+
 impl SignFlowState {
     fn process_data(
         &mut self,
@@ -38,7 +63,7 @@ impl SignFlowState {
         tx_type: SignTxType,
     ) -> Result<(), AppError> {
         self.validate(class, tx_type)?;
-        
+
         if class == CommandClass::Regular {
             let path = Bip32Path::read(comm).and_then(|path| path.validate())?;
             self.start(tx_type, path);
@@ -105,6 +130,48 @@ impl SignFlowState {
         }
 
         Ok(())
+    }
+
+    //TODO: sign the hash, return signature to client
+    fn sign_tx(&self, tx_type: SignTxType) -> Result<SignOutcome, AppError> {
+        let mut signature: [u8; SIGNATURE_SIZE] = [0; SIGNATURE_SIZE];
+
+        match tx_type {
+            SignTxType::None => return Err(AppError::BadTxSignState),
+            SignTxType::Ed25519 => {
+                let keypair = KeyPair25519::derive(&self.path)?;
+                unsafe {
+                    cx_eddsa_sign_no_throw(
+                        keypair.private().as_ptr() as *const u8,
+                        CX_SHA256,
+                        self.intermediate_hash.as_ptr(),
+                        self.intermediate_hash.len() as size_t,
+                        signature.as_mut_ptr(),
+                        signature.len() as size_t
+                    );
+                }
+            }
+            SignTxType::Secp256k1 => {
+                let keypair = KeyPairSecp256k1::derive(&self.path)?;
+                unsafe {
+                    let mut info: u32 = 0;
+                    let mut len: size_t = signature.len() as size_t;
+
+                    cx_ecdsa_sign_no_throw(
+                        keypair.private().as_ptr() as *const u8,
+                        CX_RND_RFC6979 | CX_LAST,
+                        CX_SHA256,
+                        self.final_hash.as_ptr(),
+                        self.final_hash.len() as size_t,
+                        signature.as_mut_ptr(),
+                        &mut len as *mut size_t,
+                        &mut info as *mut size_t,
+                    );
+                }
+            }
+        };
+
+        Ok(Signature(signature))
     }
 
     fn handle_extractor_event(&mut self, event: ExtractorEvent) {
@@ -208,9 +275,7 @@ impl TxSignState {
             return Ok(SignOutcome::SigningRejected);
         }
 
-        //TODO: sign the hash, return signature to client
-
-        Ok(self.sign_tx(tx_type))
+        self.state.sign_tx(tx_type)
     }
 
     fn decode_tx_intent(&mut self, data: &[u8], class: CommandClass) -> Result<(), AppError> {
@@ -239,11 +304,5 @@ impl TxSignState {
             InstructionHandler::new(SignFlowState::handle_extractor_event, &mut self.state);
 
         self.decoder.decode(&mut handler, data)
-    }
-
-    //TODO: finish it
-    fn sign_tx(&self, tx_type: SignTxType) -> SignOutcome {
-        let signature: [u8; SIGNATURE_SIZE] = [0; SIGNATURE_SIZE];
-        Signature(signature)
     }
 }
