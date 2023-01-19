@@ -1,6 +1,7 @@
 use core::ffi::{c_uchar, c_uint};
 use core::ptr::{copy, null_mut, write_bytes};
 use core::str::from_utf8;
+use nanos_sdk::bindings::{cx_err_t, cx_md_t, CX_SHA256, size_t};
 
 use crate::app_error::AppError;
 use crate::crypto::bip32::Bip32Path;
@@ -10,6 +11,7 @@ use crate::utilities::{debug, debug_arr, debug_u32};
 
 const ED_25519_PUBLIC_KEY_LEN: usize = 32;
 const ED_25519_PRIVATE_KEY_LEN: usize = 32;
+const ED_25519_SIGNATURE_LEN: usize = 32;
 
 struct PublicKey25519(pub [u8; ED_25519_PUBLIC_KEY_LEN]);
 struct PrivateKey25519(pub [u8; ED_25519_PRIVATE_KEY_LEN]);
@@ -60,10 +62,38 @@ impl From<cx_ecfp_public_key_t> for PublicKey25519 {
     }
 }
 
+extern "C" {
+    pub fn cx_eddsa_sign_no_throw(
+        pvkey: *const u8,
+        hashID: cx_md_t,
+        hash: *const u8,
+        hash_len: size_t,
+        sig: *mut u8,
+        sig_len: size_t,
+    ) -> cx_err_t;
+}
+
 impl KeyPair25519 {
     pub fn derive(path: &Bip32Path) -> Result<Self, AppError> {
         let pair = generate_key_pair(Curve::Ed25519, path)?;
         Ok(pair.into())
+    }
+
+    pub fn sign(&self, message: &[u8]) -> Result<[u8; ED_25519_SIGNATURE_LEN], AppError> {
+        let mut signature: [u8; ED_25519_SIGNATURE_LEN] = [0; ED_25519_SIGNATURE_LEN];
+
+        unsafe {
+            cx_eddsa_sign_no_throw(
+                self.private.0.as_ptr() as *const u8,
+                CX_SHA256,
+                message.as_ptr(),
+                message.len() as size_t,
+                signature.as_mut_ptr(),
+                signature.len() as size_t
+            );
+        }
+
+        Ok(signature)
     }
 
     pub fn public(&self) -> &[u8] {

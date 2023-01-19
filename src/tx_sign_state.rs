@@ -14,7 +14,7 @@ use sbor::instruction_extractor::{ExtractorEvent, InstructionExtractor, Instruct
 use sbor::sbor_decoder::{DecodingOutcome, SborDecoder};
 use sbor::sbor_notifications::SborEvent;
 
-const SIGNATURE_SIZE: usize = 64;
+const SIGNATURE_SIZE: usize = 32;
 
 #[repr(u8)]
 #[derive(Eq, PartialEq, Copy, Clone)]
@@ -134,44 +134,16 @@ impl SignFlowState {
 
     //TODO: sign the hash, return signature to client
     fn sign_tx(&self, tx_type: SignTxType) -> Result<SignOutcome, AppError> {
-        let mut signature: [u8; SIGNATURE_SIZE] = [0; SIGNATURE_SIZE];
-
         match tx_type {
             SignTxType::None => return Err(AppError::BadTxSignState),
-            SignTxType::Ed25519 => {
-                let keypair = KeyPair25519::derive(&self.path)?;
-                unsafe {
-                    cx_eddsa_sign_no_throw(
-                        keypair.private().as_ptr() as *const u8,
-                        CX_SHA256,
-                        self.intermediate_hash.as_ptr(),
-                        self.intermediate_hash.len() as size_t,
-                        signature.as_mut_ptr(),
-                        signature.len() as size_t
-                    );
-                }
-            }
-            SignTxType::Secp256k1 => {
-                let keypair = KeyPairSecp256k1::derive(&self.path)?;
-                unsafe {
-                    let mut info: u32 = 0;
-                    let mut len: size_t = signature.len() as size_t;
+            SignTxType::Ed25519 => KeyPair25519::derive(&self.path)
+                .and_then(|keypair| keypair.sign(&self.intermediate_hash))
+                .map(|signature| Signature(signature)),
 
-                    cx_ecdsa_sign_no_throw(
-                        keypair.private().as_ptr() as *const u8,
-                        CX_RND_RFC6979 | CX_LAST,
-                        CX_SHA256,
-                        self.final_hash.as_ptr(),
-                        self.final_hash.len() as size_t,
-                        signature.as_mut_ptr(),
-                        &mut len as *mut size_t,
-                        &mut info as *mut size_t,
-                    );
-                }
-            }
-        };
-
-        Ok(Signature(signature))
+            SignTxType::Secp256k1 => KeyPairSecp256k1::derive(&self.path)
+                .and_then(|keypair| keypair.sign(&self.intermediate_hash))
+                .map(|signature| Signature(signature)),
+        }
     }
 
     fn handle_extractor_event(&mut self, event: ExtractorEvent) {
