@@ -11,7 +11,7 @@ use nanos_sdk::io::Comm;
 use nanos_ui::ui;
 use sbor::decoder_error::DecoderError;
 use sbor::instruction_extractor::{ExtractorEvent, InstructionExtractor, InstructionHandler};
-use sbor::sbor_decoder::{DecodingOutcome, SborDecoder};
+use sbor::sbor_decoder::{DecodingOutcome, SborDecoder, SborEventHandler};
 use sbor::sbor_notifications::SborEvent;
 
 const SIGNATURE_SIZE: usize = 32;
@@ -33,26 +33,10 @@ struct SignFlowState {
     final_hash: [u8; 32],
 }
 
-extern "C" {
-    pub fn cx_ecdsa_sign_no_throw(
-        pvkey: *const u8,
-        mode: u32,
-        hashID: cx_md_t,
-        hash: *const u8,
-        hash_len: size_t,
-        sig: *mut u8,
-        sig_len: *mut size_t,
-        info: *mut u32,
-    ) -> cx_err_t;
-
-    pub fn cx_eddsa_sign_no_throw(
-        pvkey: *const u8,
-        hashID: cx_md_t,
-        hash: *const u8,
-        hash_len: size_t,
-        sig: *mut u8,
-        sig_len: size_t,
-    ) -> cx_err_t;
+impl InstructionHandler for SignFlowState {
+    fn handle(&mut self, event: ExtractorEvent) {
+        // TODO: display instruction
+    }
 }
 
 impl SignFlowState {
@@ -132,7 +116,6 @@ impl SignFlowState {
         Ok(())
     }
 
-    //TODO: sign the hash, return signature to client
     fn sign_tx(&self, tx_type: SignTxType) -> Result<SignOutcome, AppError> {
         match tx_type {
             SignTxType::None => return Err(AppError::BadTxSignState),
@@ -144,10 +127,6 @@ impl SignFlowState {
                 .and_then(|keypair| keypair.sign(&self.intermediate_hash))
                 .map(|signature| Signature(signature)),
         }
-    }
-
-    fn handle_extractor_event(&mut self, event: ExtractorEvent) {
-        // TODO collect data and display on instruction boundary
     }
 
     fn update_hash(&mut self, data: &[u8]) {
@@ -184,25 +163,62 @@ pub enum SignOutcome {
     Signature([u8; SIGNATURE_SIZE]),
 }
 
-pub struct TxSignState {
+struct InstructionProcessor {
     state: SignFlowState,
-    decoder: SborDecoder,
     extractor: InstructionExtractor,
+}
+
+impl InstructionProcessor {
+    pub fn sign_tx(&self, tx_type: SignTxType) -> Result<SignOutcome, AppError> {
+        self.state.sign_tx(tx_type)
+    }
+
+    pub fn tx_size(&self) -> usize {
+        self.state.tx_size
+    }
+
+    pub fn process_data(
+        &mut self,
+        comm: &mut Comm,
+        class: CommandClass,
+        tx_type: SignTxType,
+    ) -> Result<(), AppError> {
+        self.state.process_data(comm, class, tx_type)
+    }
+}
+
+impl InstructionProcessor {
+    pub fn reset(&mut self) {
+        self.state.reset();
+    }
+}
+
+pub struct TxSignState {
+    decoder: SborDecoder,
+    processor: InstructionProcessor,
+}
+
+impl SborEventHandler for InstructionProcessor {
+    fn handle(&mut self, evt: SborEvent) {
+        self.extractor.handle_event(&mut self.state, evt);
+    }
 }
 
 impl TxSignState {
     pub fn new() -> Self {
         Self {
-            state: SignFlowState {
-                sign_type: SignTxType::None,
-                tx_packet_count: 0,
-                tx_size: 0,
-                intermediate_hash: [0; 32],
-                final_hash: [0; 32],
-                path: Bip32Path::new(0),
-            },
             decoder: SborDecoder::new(),
-            extractor: InstructionExtractor::new(),
+            processor: InstructionProcessor {
+                state: SignFlowState {
+                    sign_type: SignTxType::None,
+                    tx_packet_count: 0,
+                    tx_size: 0,
+                    intermediate_hash: [0; 32],
+                    final_hash: [0; 32],
+                    path: Bip32Path::new(0),
+                },
+                extractor: InstructionExtractor::new(),
+            },
         }
     }
 
@@ -217,7 +233,7 @@ impl TxSignState {
         match result {
             Ok(_) => result,
             Err(_) => {
-                self.state.reset(); // Ensure state is reset on error
+                self.processor.reset(); // Ensure state is reset on error
                 result
             }
         }
@@ -229,7 +245,7 @@ impl TxSignState {
         class: CommandClass,
         tx_type: SignTxType,
     ) -> Result<SignOutcome, AppError> {
-        self.state.process_data(comm, class, tx_type)?;
+        self.processor.process_data(comm, class, tx_type)?;
         self.decode_tx_intent(comm.get_data()?, class)?;
 
         if class == CommandClass::LastData {
@@ -247,7 +263,7 @@ impl TxSignState {
             return Ok(SignOutcome::SigningRejected);
         }
 
-        self.state.sign_tx(tx_type)
+        self.processor.sign_tx(tx_type)
     }
 
     fn decode_tx_intent(&mut self, data: &[u8], class: CommandClass) -> Result<(), AppError> {
@@ -256,12 +272,12 @@ impl TxSignState {
         match result {
             Ok(outcome) => match outcome {
                 DecodingOutcome::Done(size)
-                    if size == self.state.tx_size && class == CommandClass::LastData =>
+                    if size == self.processor.tx_size() && class == CommandClass::LastData =>
                 {
                     Ok(())
                 }
                 DecodingOutcome::NeedMoreData(size)
-                    if size == self.state.tx_size && class == CommandClass::Continuation =>
+                    if size == self.processor.tx_size() && class == CommandClass::Continuation =>
                 {
                     Ok(())
                 }
@@ -272,9 +288,6 @@ impl TxSignState {
     }
 
     fn call_decoder(&mut self, data: &[u8]) -> Result<DecodingOutcome, DecoderError> {
-        let mut handler =
-            InstructionHandler::new(SignFlowState::handle_extractor_event, &mut self.state);
-
-        self.decoder.decode(&mut handler, data)
+        self.decoder.decode(&mut self.processor, data)
     }
 }
