@@ -126,8 +126,7 @@ impl SborDecoder {
             DecoderPhase::ReadingElementTypeId => self.read_element_type_id(handler, byte),
             DecoderPhase::ReadingData => self.read_data(handler, byte),
             DecoderPhase::ReadingNameData => {
-                let event = SborEvent::Name(byte);
-                handler.handle(event);
+                handler.handle(SborEvent::Name(byte));
                 self.read_single_data_byte(byte)?;
                 self.check_end_of_data_read(handler)
             }
@@ -150,11 +149,10 @@ impl SborDecoder {
                 let id = self.head().active_type.type_id;
 
                 if !self.head().skip_start_end {
-                    let event = SborEvent::End {
+                    handler.handle(SborEvent::End {
                         type_id: id,
                         nesting_level: level,
-                    };
-                    handler.handle(event);
+                    });
                 }
             }
 
@@ -184,12 +182,11 @@ impl SborDecoder {
         let size = self.size();
 
         if !self.head().skip_start_end {
-            let event = SborEvent::Start {
+            handler.handle(SborEvent::Start {
                 type_id: byte,
                 nesting_level: self.head,
                 fixed_size: size,
-            };
-            handler.handle(event);
+            });
         }
 
         self.advance_phase(handler)
@@ -431,7 +428,13 @@ mod tests {
 
     impl SborEventHandler for EventCollector {
         fn handle(&mut self, evt: SborEvent) {
-            assert_ne!(self.count, self.collected.len(), "evt = {}, count = {}", evt, self.count);
+            assert_ne!(
+                self.count,
+                self.collected.len(),
+                "evt = {}, count = {}",
+                evt,
+                self.count
+            );
             self.collected[self.count] = evt;
             self.count += 1;
         }
