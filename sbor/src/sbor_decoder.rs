@@ -1,7 +1,6 @@
 // SBOR decoder
 
 use crate::decoder_error::DecoderError;
-use crate::instruction_extractor::{InstructionExtractor, InstructionHandler};
 use crate::sbor_notifications::SborEvent;
 use crate::type_info::{
     to_type_info, DecoderPhase, TypeInfo, NONE_TYPE_INFO, TYPE_ARRAY, TYPE_ENUM, TYPE_I8,
@@ -50,10 +49,13 @@ impl Default for State {
     }
 }
 
+pub trait SborEventHandler {
+    fn handle(&mut self, evt: SborEvent);
+}
+
 pub struct SborDecoder {
     stack: [State; STACK_DEPTH as usize],
     byte_count: usize,
-    extractor: InstructionExtractor,
     head: u8,
 }
 
@@ -62,7 +64,6 @@ impl SborDecoder {
         Self {
             stack: [State::default(); STACK_DEPTH as usize],
             byte_count: 0,
-            extractor: InstructionExtractor::new(),
             head: 0,
         }
     }
@@ -97,9 +98,9 @@ impl SborDecoder {
         Ok(())
     }
 
-    pub fn decode<'a, T>(
+    pub fn decode(
         &mut self,
-        handler: &'a InstructionHandler<'a, T>,
+        handler: &mut impl SborEventHandler,
         input: &[u8],
     ) -> Result<DecodingOutcome, DecoderError> {
         for byte in input {
@@ -109,9 +110,9 @@ impl SborDecoder {
         Ok(self.decoding_outcome())
     }
 
-    pub fn decode_byte<'a, T>(
+    pub fn decode_byte(
         &mut self,
-        handler: &'a InstructionHandler<'a, T>,
+        handler: &mut impl SborEventHandler,
         byte: u8,
         count_input: bool,
     ) -> Result<DecodingOutcome, DecoderError> {
@@ -125,7 +126,8 @@ impl SborDecoder {
             DecoderPhase::ReadingElementTypeId => self.read_element_type_id(handler, byte),
             DecoderPhase::ReadingData => self.read_data(handler, byte),
             DecoderPhase::ReadingNameData => {
-                self.call(handler, SborEvent::Name(byte));
+                let event = SborEvent::Name(byte);
+                handler.handle(event);
                 self.read_single_data_byte(byte)?;
                 self.check_end_of_data_read(handler)
             }
@@ -141,27 +143,18 @@ impl SborDecoder {
         }
     }
 
-    fn call<'a, T>(&mut self, handler: &'a InstructionHandler<'a, T>, event: SborEvent) {
-        self.extractor.handle(handler, event);
-    }
-
-    fn advance_phase<'a, T>(
-        &mut self,
-        handler: &'a InstructionHandler<'a, T>,
-    ) -> Result<(), DecoderError> {
+    fn advance_phase(&mut self, handler: &mut impl SborEventHandler) -> Result<(), DecoderError> {
         if self.head().is_last_phase() {
             {
                 let level = self.head;
                 let id = self.head().active_type.type_id;
 
                 if !self.head().skip_start_end {
-                    self.call(
-                        handler,
-                        SborEvent::End {
-                            type_id: id,
-                            nesting_level: level,
-                        },
-                    );
+                    let event = SborEvent::End {
+                        type_id: id,
+                        nesting_level: level,
+                    };
+                    handler.handle(event);
                 }
             }
 
@@ -180,9 +173,9 @@ impl SborDecoder {
         Ok(())
     }
 
-    fn read_type_id<'a, T>(
+    fn read_type_id(
         &mut self,
-        handler: &'a InstructionHandler<'a, T>,
+        handler: &mut impl SborEventHandler,
         byte: u8,
     ) -> Result<(), DecoderError> {
         let byte_count = self.byte_count;
@@ -191,22 +184,20 @@ impl SborDecoder {
         let size = self.size();
 
         if !self.head().skip_start_end {
-            self.call(
-                handler,
-                SborEvent::Start {
-                    type_id: byte,
-                    nesting_level: self.head,
-                    fixed_size: size,
-                },
-            );
+            let event = SborEvent::Start {
+                type_id: byte,
+                nesting_level: self.head,
+                fixed_size: size,
+            };
+            handler.handle(event);
         }
 
         self.advance_phase(handler)
     }
 
-    fn read_len<'a, T>(
+    fn read_len(
         &mut self,
-        handler: &'a InstructionHandler<'a, T>,
+        handler: &mut impl SborEventHandler,
         byte: u8,
     ) -> Result<(), DecoderError> {
         let byte_count = self.byte_count;
@@ -216,7 +207,7 @@ impl SborDecoder {
             } else {
                 SborEvent::NameLen(self.head().items_to_read)
             };
-            self.call(handler, event);
+            handler.handle(event);
             self.advance_phase(handler)?;
 
             // Automatically skip reading data if len is zero
@@ -226,9 +217,9 @@ impl SborDecoder {
         }
     }
 
-    fn read_element_type_id<'a, T>(
+    fn read_element_type_id(
         &mut self,
-        handler: &'a InstructionHandler<'a, T>,
+        handler: &mut impl SborEventHandler,
         byte: u8,
     ) -> Result<(), DecoderError> {
         let byte_count = self.byte_count;
@@ -236,9 +227,9 @@ impl SborDecoder {
         self.advance_phase(handler)
     }
 
-    fn read_data<'a, T>(
+    fn read_data(
         &mut self,
-        handler: &'a InstructionHandler<'a, T>,
+        handler: &mut impl SborEventHandler,
         byte: u8,
     ) -> Result<(), DecoderError> {
         let byte_count = self.byte_count;
@@ -247,7 +238,7 @@ impl SborDecoder {
             // fixed/variable len components with raw bytes payload
             // Unit..String | Custom types
             0x00..=0x0c | 0x80..=0xff => {
-                self.call(handler, SborEvent::Data(byte));
+                handler.handle(SborEvent::Data(byte));
                 self.read_single_data_byte(byte)?;
 
                 self.check_end_of_data_read(handler)
@@ -288,9 +279,9 @@ impl SborDecoder {
         }
     }
 
-    fn check_end_of_data_read<'a, T>(
+    fn check_end_of_data_read(
         &mut self,
-        handler: &'a InstructionHandler<'a, T>,
+        handler: &mut impl SborEventHandler,
     ) -> Result<(), DecoderError> {
         while self.head().all_read() && self.head().is_read_data_phase() {
             self.advance_phase(handler)?
@@ -383,7 +374,7 @@ mod tests {
     use core::fmt::Formatter;
     use core::fmt::Result;
 
-    use crate::sbor_decoder::{DecodingOutcome, SborDecoder};
+    use crate::sbor_decoder::{DecodingOutcome, SborDecoder, SborEventHandler};
     use crate::sbor_notifications::SborEvent;
 
     #[cfg(test)]
@@ -432,28 +423,44 @@ mod tests {
         }
     }
 
-    fn vec_compare(va: &[SborEvent], vb: &[SborEvent]) {
-        assert_eq!(va.len(), vb.len());
+    #[derive(Debug)]
+    struct EventCollector {
+        collected: [SborEvent; 1600],
+        count: usize,
+    }
 
-        va.iter().zip(vb).all(|(a, b)| {
-            assert_eq!(*a, *b, "Elements are not equal");
-            true
-        });
+    impl SborEventHandler for EventCollector {
+        fn handle(&mut self, evt: SborEvent) {
+            assert_ne!(self.count, self.collected.len(), "evt = {}, count = {}", evt, self.count);
+            self.collected[self.count] = evt;
+            self.count += 1;
+        }
+    }
+
+    impl EventCollector {
+        pub fn new() -> Self {
+            Self {
+                collected: [SborEvent::Len(0); 1600],
+                count: 0,
+            }
+        }
+
+        pub fn compare(&self, vb: &[SborEvent]) -> bool {
+            assert_eq!(self.count, vb.len());
+
+            self.collected[0..self.count].iter().zip(vb).all(|(a, b)| {
+                assert_eq!(*a, *b, "Elements are not equal");
+                true
+            })
+        }
     }
 
     fn check_decoding(input: &[u8], event_list: &[SborEvent]) {
-        let mut collected: [SborEvent; 1024] = [SborEvent::Len(0); 1024];
-        let mut count = 0;
-
         let mut decoder = SborDecoder::new();
 
-        match decoder.decode(
-            |evt: SborEvent| {
-                collected[count] = evt;
-                count += 1;
-            },
-            &input,
-        ) {
+        let mut handler = EventCollector::new();
+
+        match decoder.decode(&mut handler, &input) {
             Ok(outcome) => {
                 assert_eq!(outcome, DecodingOutcome::Done(input.len()))
             }
@@ -462,7 +469,7 @@ mod tests {
             }
         }
 
-        vec_compare(&collected[0..count], &event_list);
+        handler.compare(&event_list);
     }
 
     #[test]
@@ -1174,13 +1181,14 @@ mod tests {
             0x20, 0x07, 0x02, 0x10, 0x00, 0x20, 0x20, 0x00,
         ];
 
-        let mut decoder = SborDecoder::new(|(), _| {});
+        let mut decoder = SborDecoder::new();
+        let mut handler = EventCollector::new();
 
         let mut start = 0;
         let mut end = 13;
 
         while start < input.len() {
-            match decoder.decode((), &input[start..end]) {
+            match decoder.decode(&mut handler, &input[start..end]) {
                 Ok(outcome) => {
                     if end - start == 13 {
                         assert_eq!(outcome, DecodingOutcome::NeedMoreData(end));
