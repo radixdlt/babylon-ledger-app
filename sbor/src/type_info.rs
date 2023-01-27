@@ -4,8 +4,8 @@ use core::option::Option;
 use core::option::Option::{None, Some};
 use core::prelude::rust_2024::derive;
 
+pub const TYPE_NONE: u8 = 0x00;
 // primitive types
-pub const TYPE_UNIT: u8 = 0x00;
 pub const TYPE_BOOL: u8 = 0x01;
 pub const TYPE_I8: u8 = 0x02;
 pub const TYPE_I16: u8 = 0x03;
@@ -19,13 +19,11 @@ pub const TYPE_U64: u8 = 0x0a;
 pub const TYPE_U128: u8 = 0x0b;
 pub const TYPE_STRING: u8 = 0x0c;
 
-// struct and enum
-pub const TYPE_STRUCT: u8 = 0x10;
-pub const TYPE_ENUM: u8 = 0x11;
-
 // composite types
 pub const TYPE_ARRAY: u8 = 0x20;
 pub const TYPE_TUPLE: u8 = 0x21;
+pub const TYPE_ENUM: u8 = 0x22;
+pub const TYPE_MAP: u8 = 0x23;
 
 // custom types (see https://raw.githubusercontent.com/radixdlt/radixdlt-scrypto/develop/radix-engine-interface/src/data/custom_type_id.rs
 // for actual list of custom types)
@@ -33,14 +31,14 @@ pub const TYPE_PACKAGE_ADDRESS: u8 = 0x80;
 pub const TYPE_COMPONENT_ADDRESS: u8 = 0x81;
 pub const TYPE_RESOURCE_ADDRESS: u8 = 0x82;
 pub const TYPE_SYSTEM_ADDRESS: u8 = 0x83;
-pub const TYPE_COMPONENT: u8 = 0x90;
-pub const TYPE_KEY_VALUE_STORE: u8 = 0x91;
-pub const TYPE_BUCKET: u8 = 0x92;
-pub const TYPE_PROOF: u8 = 0x93;
-pub const TYPE_VAULT: u8 = 0x94;
-pub const TYPE_EXPRESSION: u8 = 0xa0;
-pub const TYPE_BLOB: u8 = 0xa1;
-pub const TYPE_NON_FUNGIBLE_ADDRESS: u8 = 0xa2;
+
+pub const TYPE_OWN: u8 = 0x90;
+pub const TYPE_BLOB: u8 = 0x91;
+
+pub const TYPE_BUCKET: u8 = 0xa0;
+pub const TYPE_PROOF: u8 = 0xa1;
+pub const TYPE_EXPRESSION: u8 = 0xa2;
+
 pub const TYPE_HASH: u8 = 0xb0;
 pub const TYPE_ECDSA_SECP256K1_PUBIC_KEY: u8 = 0xb1;
 pub const TYPE_ECDSA_SECP256K1_SIGNATURE: u8 = 0xb2;
@@ -48,12 +46,11 @@ pub const TYPE_EDDSA_ED25519_PUBIC_KEY: u8 = 0xb3;
 pub const TYPE_EDDSA_ED25519_SIGNATURE: u8 = 0xb4;
 pub const TYPE_DECIMAL: u8 = 0xb5;
 pub const TYPE_PRECISE_DECIMAL: u8 = 0xb6;
-pub const TYPE_NON_FUNGIBLE_ID: u8 = 0xb7;
+pub const TYPE_NON_FUNGIBLE_LOCAL_ID: u8 = 0xb7;
+
 // end of custom types
 const ADDRESS_LEN: u8 = 27;
 const COMPONENT_LEN: u8 = 36;
-const KV_STORE_LEN: u8 = COMPONENT_LEN;
-const VAULT_LEN: u8 = COMPONENT_LEN;
 
 const ID_LEN: u8 = 4;
 const BUCKET_LEN: u8 = ID_LEN;
@@ -76,10 +73,11 @@ pub const TYPE_DATA_BUFFER_SIZE: usize = 256;
 pub enum DecoderPhase {
     ReadingTypeId,
     ReadingElementTypeId,
+    ReadingKeyTypeId,
+    ReadingValueTypeId,
     ReadingLen,
     ReadingData,
-    ReadingNameLen,
-    ReadingNameData,
+    ReadingDiscriminator,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -89,8 +87,8 @@ pub struct TypeInfo {
     pub type_id: u8,
 }
 
-// id -> o (UNIT)
-const UNIT_DECODING: [DecoderPhase; 1] = [DecoderPhase::ReadingTypeId];
+// Placeholder
+const NONE_DECODING: [DecoderPhase; 1] = [DecoderPhase::ReadingTypeId];
 // id -> data -> o (fixed size types)
 const FIXED_LEN_DECODING: [DecoderPhase; 2] =
     [DecoderPhase::ReadingTypeId, DecoderPhase::ReadingData];
@@ -101,10 +99,9 @@ const VARIABLE_LEN_DECODING: [DecoderPhase; 3] = [
     DecoderPhase::ReadingData,
 ];
 // id -> name (len -> data) -> len -> data -> o (Enum)
-const ENUM_DECODING: [DecoderPhase; 5] = [
+const ENUM_DECODING: [DecoderPhase; 4] = [
     DecoderPhase::ReadingTypeId,
-    DecoderPhase::ReadingNameLen,
-    DecoderPhase::ReadingNameData,
+    DecoderPhase::ReadingDiscriminator,
     DecoderPhase::ReadingLen,
     DecoderPhase::ReadingData,
 ];
@@ -116,19 +113,22 @@ const LIST_DECODING: [DecoderPhase; 4] = [
     DecoderPhase::ReadingData,
 ];
 
+const MAP_DECODING: [DecoderPhase; 5] = [
+    DecoderPhase::ReadingTypeId,
+    DecoderPhase::ReadingKeyTypeId,
+    DecoderPhase::ReadingValueTypeId,
+    DecoderPhase::ReadingLen,
+    DecoderPhase::ReadingData,
+];
+
 pub const NONE_TYPE_INFO: TypeInfo = TypeInfo {
-    type_id: TYPE_UNIT,
-    next_phases: &UNIT_DECODING,
+    type_id: TYPE_NONE,
+    next_phases: &NONE_DECODING,
     fixed_len: 0,
 };
 
 pub fn to_type_info(byte: u8) -> Option<TypeInfo> {
     match byte {
-        TYPE_UNIT => Some(TypeInfo {
-            type_id: TYPE_UNIT,
-            next_phases: &FIXED_LEN_DECODING,
-            fixed_len: 1,
-        }),
         TYPE_BOOL => Some(TypeInfo {
             type_id: TYPE_BOOL,
             next_phases: &FIXED_LEN_DECODING,
@@ -189,9 +189,9 @@ pub fn to_type_info(byte: u8) -> Option<TypeInfo> {
             next_phases: &VARIABLE_LEN_DECODING,
             fixed_len: 0,
         }),
-        TYPE_STRUCT => Some(TypeInfo {
-            type_id: TYPE_STRUCT,
-            next_phases: &VARIABLE_LEN_DECODING,
+        TYPE_MAP => Some(TypeInfo {
+            type_id: TYPE_MAP,
+            next_phases: &MAP_DECODING,
             fixed_len: 0,
         }),
 
@@ -223,25 +223,10 @@ pub fn to_type_info(byte: u8) -> Option<TypeInfo> {
             next_phases: &FIXED_LEN_DECODING,
             fixed_len: ADDRESS_LEN,
         }),
-        TYPE_RESOURCE_ADDRESS => Some(TypeInfo {
-            type_id: TYPE_RESOURCE_ADDRESS,
-            next_phases: &FIXED_LEN_DECODING,
-            fixed_len: ADDRESS_LEN,
-        }),
-        TYPE_SYSTEM_ADDRESS => Some(TypeInfo {
-            type_id: TYPE_SYSTEM_ADDRESS,
-            next_phases: &FIXED_LEN_DECODING,
-            fixed_len: ADDRESS_LEN,
-        }),
-        TYPE_COMPONENT => Some(TypeInfo {
-            type_id: TYPE_COMPONENT,
+        TYPE_OWN => Some(TypeInfo {
+            type_id: TYPE_OWN,
             next_phases: &FIXED_LEN_DECODING,
             fixed_len: COMPONENT_LEN,
-        }),
-        TYPE_KEY_VALUE_STORE => Some(TypeInfo {
-            type_id: TYPE_KEY_VALUE_STORE,
-            next_phases: &FIXED_LEN_DECODING,
-            fixed_len: KV_STORE_LEN,
         }),
         TYPE_BUCKET => Some(TypeInfo {
             type_id: TYPE_BUCKET,
@@ -253,10 +238,10 @@ pub fn to_type_info(byte: u8) -> Option<TypeInfo> {
             next_phases: &FIXED_LEN_DECODING,
             fixed_len: PROOF_LEN,
         }),
-        TYPE_VAULT => Some(TypeInfo {
-            type_id: TYPE_VAULT,
-            next_phases: &FIXED_LEN_DECODING,
-            fixed_len: VAULT_LEN,
+        TYPE_EXPRESSION => Some(TypeInfo {
+            type_id: TYPE_EXPRESSION,
+            next_phases: &VARIABLE_LEN_DECODING,
+            fixed_len: 0,
         }),
         TYPE_BLOB => Some(TypeInfo {
             type_id: TYPE_BLOB,
@@ -298,23 +283,11 @@ pub fn to_type_info(byte: u8) -> Option<TypeInfo> {
             next_phases: &FIXED_LEN_DECODING,
             fixed_len: PRECISE_DECIMAL_LEN,
         }),
-
-        TYPE_EXPRESSION => Some(TypeInfo {
-            type_id: TYPE_EXPRESSION,
+        TYPE_NON_FUNGIBLE_LOCAL_ID => Some(TypeInfo {
+            type_id: TYPE_NON_FUNGIBLE_LOCAL_ID,
             next_phases: &VARIABLE_LEN_DECODING,
             fixed_len: 0,
         }),
-        TYPE_NON_FUNGIBLE_ADDRESS => Some(TypeInfo {
-            type_id: TYPE_NON_FUNGIBLE_ADDRESS,
-            next_phases: &VARIABLE_LEN_DECODING,
-            fixed_len: 0,
-        }),
-        TYPE_NON_FUNGIBLE_ID => Some(TypeInfo {
-            type_id: TYPE_NON_FUNGIBLE_ID,
-            next_phases: &VARIABLE_LEN_DECODING,
-            fixed_len: 0,
-        }),
-
         _ => None,
     }
 }

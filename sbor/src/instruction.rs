@@ -5,152 +5,86 @@
 #[repr(u8)]
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum Instruction {
+    TakeFromWorktop,               //{ resource_address: ResourceAddress, },
+    TakeFromWorktopByAmount,       // { amount: Decimal, resource_address: ResourceAddress, },
+    TakeFromWorktopByIds, // { ids: BTreeSet<NonFungibleLocalId>, resource_address: ResourceAddress, },
+    ReturnToWorktop,      // { bucket_id: ManifestBucket, },
+    AssertWorktopContains, // { resource_address: ResourceAddress, },
     AssertWorktopContainsByAmount, // { amount: Decimal, resource_address: ResourceAddress, },
-    AssertWorktopContainsByIds, // { ids: BTreeSet<NonFungibleId>, resource_address: ResourceAddress, },
-    AssertWorktopContains,      // { resource_address: ResourceAddress },
-    CallFunction,               // { function_ident: ScryptoFunctionIdent, args: Vec<u8>, },
-    CallMethod,                 // { method_ident: ScryptoMethodIdent, args: Vec<u8>,  },
-    CallNativeFunction,         // { function_ident: NativeFunctionIdent, args: Vec<u8>, },
-    CallNativeMethod,           // { method_ident: NativeMethodIdent, args: Vec<u8>, },
-    ClearAuthZone,              //
-    CloneProof,                 // { proof_id: ProofId },
+    AssertWorktopContainsByIds, // { ids: BTreeSet<NonFungibleLocalId>, resource_address: ResourceAddress, },
+    PopFromAuthZone,
+    PushToAuthZone, // { proof_id: ManifestProof, },
+    ClearAuthZone,
+    CreateProofFromAuthZone, // { resource_address: ResourceAddress, },
     CreateProofFromAuthZoneByAmount, // { amount: Decimal, resource_address: ResourceAddress, },
-    CreateProofFromAuthZoneByIds, // { ids: BTreeSet<NonFungibleId>, resource_address: ResourceAddress,  },
-    CreateProofFromAuthZone,      // { resource_address: ResourceAddress },
-    CreateProofFromBucket,        // { bucket_id: BucketId },
+    CreateProofFromAuthZoneByIds, // { ids: BTreeSet<NonFungibleLocalId>, resource_address: ResourceAddress, },
+    CreateProofFromBucket,        // { bucket_id: ManifestBucket, },
+    CloneProof,                   // { proof_id: ManifestProof, },
+    DropProof,                    // { proof_id: ManifestProof, },
     DropAllProofs,
-    DropProof,               // { proof_id: ProofId },
-    PopFromAuthZone,         //
-    PublishPackage,          // { code: Blob, abi: Blob },
-    PushToAuthZone,          // { proof_id: ProofId },
-    ReturnToWorktop,         // { bucket_id: BucketId },
-    TakeFromWorktopByAmount, // { amount: Decimal, resource_address: ResourceAddress, },
-    TakeFromWorktopByIds, // { ids: BTreeSet<NonFungibleId>, resource_address: ResourceAddress, },
-    TakeFromWorktop,      // { resource_address: ResourceAddress },
+    PublishPackage, // { code: ManifestBlobRef, abi: ManifestBlobRef, royalty_config: BTreeMap<String, RoyaltyConfig>, metadata: BTreeMap<String, String>, access_rules: AccessRules, },
+    PublishPackageWithOwner, // { code: ManifestBlobRef, abi: ManifestBlobRef, owner_badge: NonFungibleGlobalId, },
+    BurnResource,            // { bucket_id: ManifestBucket, },
+    RecallResource,          // { vault_id: VaultId, amount: Decimal, },
+    SetMetadata,             // { entity_address: GlobalAddress, key: String, value: String, },
+    SetPackageRoyaltyConfig, // { package_address: PackageAddress, royalty_config: BTreeMap<String, RoyaltyConfig>, },
+    SetComponentRoyaltyConfig, // { component_address: ComponentAddress, royalty_config: RoyaltyConfig, },
+    ClaimPackageRoyalty,       // { package_address: PackageAddress, },
+    ClaimComponentRoyalty,     // { component_address: ComponentAddress, },
+    SetMethodAccessRule, // { entity_address: GlobalAddress, index: u32, key: AccessRuleKey, rule: AccessRule, },
+    MintFungible,        // { resource_address: ResourceAddress, amount: Decimal, },
+    MintNonFungible, // { resource_address: ResourceAddress, entries: BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>, },
+    MintUuidNonFungible, // { resource_address: ResourceAddress, entries: Vec<(Vec<u8>, Vec<u8>)>, },
+    CreateFungibleResource, // { divisibility: u8, metadata: BTreeMap<String, String>, access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>, initial_supply: Option<Decimal>, },
+    CreateFungibleResourceWithOwner, // { divisibility: u8, metadata: BTreeMap<String, String>, owner_badge: NonFungibleGlobalId, initial_supply: Option<Decimal>, },
+    CreateNonFungibleResource, // { id_type: NonFungibleIdType, metadata: BTreeMap<String, String>, access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>, initial_supply: Option<BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>>, },
+    CreateNonFungibleResourceWithOwner, // { id_type: NonFungibleIdType, metadata: BTreeMap<String, String>, owner_badge: NonFungibleGlobalId, initial_supply: Option<BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>>, },
+    CreateAccessController, // { controlled_asset: ManifestBucket, primary_role: AccessRule, recovery_role: AccessRule, confirmation_role: AccessRule, timed_recovery_delay_in_minutes: Option<u32>, },
+    CreateIdentity,         // { access_rule: AccessRule, },
+    CallFunction, // { package_address: PackageAddress, blueprint_name: String, function_name: String, args: Vec<u8>, },
+    CallMethod,   // { component_address: ComponentAddress, method_name: String, args: Vec<u8>, },
 }
 
-pub fn to_instruction(input: &[u8]) -> Option<Instruction> {
+pub fn to_instruction(input: u8) -> Option<Instruction> {
     match input {
-        b"AssertWorktopContainsByAmount" => Some(Instruction::AssertWorktopContainsByAmount),
-        b"AssertWorktopContainsByIds" => Some(Instruction::AssertWorktopContainsByIds),
-        b"AssertWorktopContains" => Some(Instruction::AssertWorktopContains),
-        b"CallFunction" => Some(Instruction::CallFunction),
-        b"CallMethod" => Some(Instruction::CallMethod),
-        b"CallNativeFunction" => Some(Instruction::CallNativeFunction),
-        b"CallNativeMethod" => Some(Instruction::CallNativeMethod),
-        b"ClearAuthZone" => Some(Instruction::ClearAuthZone),
-        b"CloneProof" => Some(Instruction::CloneProof),
-        b"CreateProofFromAuthZoneByAmount" => Some(Instruction::CreateProofFromAuthZoneByAmount),
-        b"CreateProofFromAuthZoneByIds" => Some(Instruction::CreateProofFromAuthZoneByIds),
-        b"CreateProofFromAuthZone" => Some(Instruction::CreateProofFromAuthZone),
-        b"CreateProofFromBucket" => Some(Instruction::CreateProofFromBucket),
-        b"DropAllProofs" => Some(Instruction::DropAllProofs),
-        b"DropProof" => Some(Instruction::DropProof),
-        b"PopFromAuthZone" => Some(Instruction::PopFromAuthZone),
-        b"PublishPackage" => Some(Instruction::PublishPackage),
-        b"PushToAuthZone" => Some(Instruction::PushToAuthZone),
-        b"ReturnToWorktop" => Some(Instruction::ReturnToWorktop),
-        b"TakeFromWorktopByAmount" => Some(Instruction::TakeFromWorktopByAmount),
-        b"TakeFromWorktopByIds" => Some(Instruction::TakeFromWorktopByIds),
-        b"TakeFromWorktop" => Some(Instruction::TakeFromWorktop),
-        _ => None
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::instruction::{to_instruction, Instruction};
-
-    #[test]
-    pub fn known_names_are_decoded_correctly() {
-        assert_eq!(
-            to_instruction(b"AssertWorktopContainsByAmount"),
-            Some(Instruction::AssertWorktopContainsByAmount)
-        );
-        assert_eq!(
-            to_instruction(b"AssertWorktopContainsByIds"),
-            Some(Instruction::AssertWorktopContainsByIds)
-        );
-        assert_eq!(
-            to_instruction(b"AssertWorktopContains"),
-            Some(Instruction::AssertWorktopContains)
-        );
-        assert_eq!(
-            to_instruction(b"CallFunction"),
-            Some(Instruction::CallFunction)
-        );
-        assert_eq!(to_instruction(b"CallMethod"), Some(Instruction::CallMethod));
-        assert_eq!(
-            to_instruction(b"CallNativeFunction"),
-            Some(Instruction::CallNativeFunction)
-        );
-        assert_eq!(
-            to_instruction(b"CallNativeMethod"),
-            Some(Instruction::CallNativeMethod)
-        );
-        assert_eq!(
-            to_instruction(b"ClearAuthZone"),
-            Some(Instruction::ClearAuthZone)
-        );
-        assert_eq!(to_instruction(b"CloneProof"), Some(Instruction::CloneProof));
-        assert_eq!(
-            to_instruction(b"CreateProofFromAuthZoneByAmount"),
-            Some(Instruction::CreateProofFromAuthZoneByAmount)
-        );
-        assert_eq!(
-            to_instruction(b"CreateProofFromAuthZoneByIds"),
-            Some(Instruction::CreateProofFromAuthZoneByIds)
-        );
-        assert_eq!(
-            to_instruction(b"CreateProofFromAuthZone"),
-            Some(Instruction::CreateProofFromAuthZone)
-        );
-        assert_eq!(
-            to_instruction(b"CreateProofFromBucket"),
-            Some(Instruction::CreateProofFromBucket)
-        );
-        assert_eq!(
-            to_instruction(b"DropAllProofs"),
-            Some(Instruction::DropAllProofs)
-        );
-        assert_eq!(to_instruction(b"DropProof"), Some(Instruction::DropProof));
-        assert_eq!(
-            to_instruction(b"PopFromAuthZone"),
-            Some(Instruction::PopFromAuthZone)
-        );
-        assert_eq!(
-            to_instruction(b"PublishPackage"),
-            Some(Instruction::PublishPackage)
-        );
-        assert_eq!(
-            to_instruction(b"PushToAuthZone"),
-            Some(Instruction::PushToAuthZone)
-        );
-        assert_eq!(
-            to_instruction(b"ReturnToWorktop"),
-            Some(Instruction::ReturnToWorktop)
-        );
-        assert_eq!(
-            to_instruction(b"TakeFromWorktopByAmount"),
-            Some(Instruction::TakeFromWorktopByAmount)
-        );
-        assert_eq!(
-            to_instruction(b"TakeFromWorktopByIds"),
-            Some(Instruction::TakeFromWorktopByIds)
-        );
-        assert_eq!(
-            to_instruction(b"TakeFromWorktop"),
-            Some(Instruction::TakeFromWorktop)
-        );
-    }
-
-    #[test]
-    pub fn unknown_names_are_rejected() {
-        assert_eq!(to_instruction(b"SomethingUnknown"), None);
-        assert_eq!(to_instruction(b"PushToAuthZon"), None);
-        assert_eq!(to_instruction(b"PushToAuthZone1"), None);
-        assert_eq!(to_instruction(b"CallNativeMethoda"), None);
-        assert_eq!(to_instruction(b"CallNativeMethodb"), None);
-        assert_eq!(to_instruction(b"CallNativeMetho"), None);
+        0 => Some(Instruction::TakeFromWorktop),
+        1 => Some(Instruction::TakeFromWorktopByAmount),
+        2 => Some(Instruction::TakeFromWorktopByIds),
+        3 => Some(Instruction::ReturnToWorktop),
+        4 => Some(Instruction::AssertWorktopContains),
+        5 => Some(Instruction::AssertWorktopContainsByAmount),
+        6 => Some(Instruction::AssertWorktopContainsByIds),
+        7 => Some(Instruction::PopFromAuthZone),
+        8 => Some(Instruction::PushToAuthZone),
+        9 => Some(Instruction::ClearAuthZone),
+        10 => Some(Instruction::CreateProofFromAuthZone),
+        11 => Some(Instruction::CreateProofFromAuthZoneByAmount),
+        12 => Some(Instruction::CreateProofFromAuthZoneByIds),
+        13 => Some(Instruction::CreateProofFromBucket),
+        14 => Some(Instruction::CloneProof),
+        15 => Some(Instruction::DropProof),
+        16 => Some(Instruction::DropAllProofs),
+        17 => Some(Instruction::PublishPackage),
+        18 => Some(Instruction::PublishPackageWithOwner),
+        19 => Some(Instruction::BurnResource),
+        20 => Some(Instruction::RecallResource),
+        21 => Some(Instruction::SetMetadata),
+        22 => Some(Instruction::SetPackageRoyaltyConfig),
+        23 => Some(Instruction::SetComponentRoyaltyConfig),
+        24 => Some(Instruction::ClaimPackageRoyalty),
+        25 => Some(Instruction::ClaimComponentRoyalty),
+        26 => Some(Instruction::SetMethodAccessRule),
+        27 => Some(Instruction::MintFungible),
+        28 => Some(Instruction::MintNonFungible),
+        29 => Some(Instruction::MintUuidNonFungible),
+        30 => Some(Instruction::CreateFungibleResource),
+        31 => Some(Instruction::CreateFungibleResourceWithOwner),
+        32 => Some(Instruction::CreateNonFungibleResource),
+        33 => Some(Instruction::CreateNonFungibleResourceWithOwner),
+        34 => Some(Instruction::CreateAccessController),
+        35 => Some(Instruction::CreateIdentity),
+        36 => Some(Instruction::CallFunction),
+        37 => Some(Instruction::CallMethod),
+        _ => None,
     }
 }

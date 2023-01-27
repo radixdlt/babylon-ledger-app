@@ -2,7 +2,7 @@
 
 use crate::instruction::{to_instruction, Instruction};
 use crate::sbor_notifications::SborEvent;
-use crate::type_info::{TYPE_ARRAY, TYPE_DATA_BUFFER_SIZE, TYPE_ENUM, TYPE_STRUCT};
+use crate::type_info::{TYPE_ARRAY, TYPE_DATA_BUFFER_SIZE, TYPE_ENUM, TYPE_MAP};
 
 #[repr(u8)]
 enum ExtractorPhases {
@@ -16,7 +16,7 @@ enum ExtractorPhases {
 #[repr(u8)]
 #[derive(Copy, Clone)]
 pub enum ExtractionError {
-    UnknownInstruction,
+    UnknownInstruction(u8),
 }
 
 #[repr(u8)]
@@ -53,6 +53,7 @@ pub struct InstructionExtractor {
     phase: ExtractorPhases,
     current_nesting: u8,
     instruction_ready: bool,
+    instruction: Option<Instruction>,
     chunked_data: bool,
 }
 
@@ -67,6 +68,7 @@ impl InstructionExtractor {
             phase: ExtractorPhases::WaitingForInstructionsStruct,
             current_nesting: 0,
             instruction_ready: false,
+            instruction: None,
             chunked_data: false,
         }
     }
@@ -90,7 +92,7 @@ impl InstructionExtractor {
                 nesting_level,
                 fixed_size: _,
             } => {
-                if nesting_level == 1 && type_id == TYPE_STRUCT {
+                if nesting_level == 1 && type_id == TYPE_MAP {
                     self.counter += 1;
                 }
 
@@ -137,17 +139,29 @@ impl InstructionExtractor {
                 }
             }
 
-            SborEvent::NameLen(len) | SborEvent::Len(len) => {
+            SborEvent::Discriminator(id) => {
+                self.instruction = to_instruction(id);
+                self.instruction_ready = true;
+
+                match self.instruction {
+                    None => handler.handle(ExtractorEvent::Error(
+                        ExtractionError::UnknownInstruction(id),
+                    )),
+                    _ => self.instruction_ready = true,
+                }
+            }
+
+            SborEvent::Len(len) => {
                 if self.instruction_ready {
+                    // len contains number of instruction parameters
                     self.instruction_ready = false;
 
-                    match to_instruction(&self.data[0..self.data_ptr]) {
-                        None => handler
-                            .handle(ExtractorEvent::Error(ExtractionError::UnknownInstruction)),
+                    match self.instruction {
                         Some(instruction) => handler.handle(ExtractorEvent::InstructionStart {
                             instruction,
                             parameter_count: len as u8,
                         }),
+                        _ => {}
                     };
                 }
 
@@ -157,7 +171,7 @@ impl InstructionExtractor {
                 self.chunked_data = self.data_len > TYPE_DATA_BUFFER_SIZE;
             }
 
-            SborEvent::Data(byte) | SborEvent::Name(byte) => {
+            SborEvent::Data(byte) => {
                 self.data[self.data_ptr - self.data_start] = byte;
                 self.data_ptr += 1;
 
@@ -176,7 +190,7 @@ impl InstructionExtractor {
                         handler.handle(ExtractorEvent::ParameterData {
                             start: self.data_start,
                             data: &self.data[0..(self.data_ptr - self.data_start)],
-                            is_enum_name: event == SborEvent::Name(byte),
+                            is_enum_name: event == SborEvent::Discriminator(byte),
                         });
 
                         if self.chunked_data {
