@@ -30,14 +30,13 @@ pub const TYPE_MAP: u8 = 0x23;
 pub const TYPE_PACKAGE_ADDRESS: u8 = 0x80;
 pub const TYPE_COMPONENT_ADDRESS: u8 = 0x81;
 pub const TYPE_RESOURCE_ADDRESS: u8 = 0x82;
-pub const TYPE_SYSTEM_ADDRESS: u8 = 0x83;
 
 pub const TYPE_OWN: u8 = 0x90;
-pub const TYPE_BLOB: u8 = 0x91;
 
 pub const TYPE_BUCKET: u8 = 0xa0;
 pub const TYPE_PROOF: u8 = 0xa1;
 pub const TYPE_EXPRESSION: u8 = 0xa2;
+pub const TYPE_BLOB: u8 = 0xa3;
 
 pub const TYPE_HASH: u8 = 0xb0;
 pub const TYPE_ECDSA_SECP256K1_PUBIC_KEY: u8 = 0xb1;
@@ -49,15 +48,18 @@ pub const TYPE_PRECISE_DECIMAL: u8 = 0xb6;
 pub const TYPE_NON_FUNGIBLE_LOCAL_ID: u8 = 0xb7;
 
 // end of custom types
-const ADDRESS_LEN: u8 = 27;
-const COMPONENT_LEN: u8 = 36;
+const ADDRESS_LEN: u8 = 27; // 1 byte discriminator + 26 bytes address
+pub const COMPONENT_LEN: u8 = 36;
 
-const ID_LEN: u8 = 4;
+pub const INTEGER_LEN: u8 = 8;
+pub const UUID_LEN: u8 = 16;
+
+pub const ID_LEN: u8 = 4;
 const BUCKET_LEN: u8 = ID_LEN;
 const PROOF_LEN: u8 = ID_LEN;
 
-const BLOB_LEN: u8 = 32;
 const HASH_LEN: u8 = 32;
+const BLOB_LEN: u8 = HASH_LEN;
 const SECP256K1_PUB_KEY_LEN: u8 = 33;
 const SECP256K1_SIG_LEN: u8 = 65;
 const ED25519_PUB_KEY_LEN: u8 = 32;
@@ -67,6 +69,19 @@ const DECIMAL_LEN: u8 = 32; // 256 bits
 const PRECISE_DECIMAL_LEN: u8 = 64; // 512 bits
 
 pub const TYPE_DATA_BUFFER_SIZE: usize = 256;
+
+// Own discriminators
+pub const OWN_BUCKET: u8 = 0;
+pub const OWN_PROOF: u8 = 1;
+pub const OWN_VAULT: u8 = 2;
+pub const OWN_COMPONENT: u8 = 3;
+pub const OWN_KEY_VALUE_STORE: u8 = 4;
+
+// Non-fungible local ID discriminators
+pub const NFL_STRING: u8 = 0;
+pub const NFL_INTEGER: u8 = 1;
+pub const NFL_BYTES: u8 = 2;
+pub const NFL_UUID: u8 = 3;
 
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -78,6 +93,8 @@ pub enum DecoderPhase {
     ReadingLen,
     ReadingData,
     ReadingDiscriminator,
+    ReadingOwnDiscriminator,
+    ReadingNFLDiscriminator,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -117,6 +134,19 @@ const MAP_DECODING: [DecoderPhase; 5] = [
     DecoderPhase::ReadingTypeId,
     DecoderPhase::ReadingKeyTypeId,
     DecoderPhase::ReadingValueTypeId,
+    DecoderPhase::ReadingLen,
+    DecoderPhase::ReadingData,
+];
+
+const OWN_DECODING: [DecoderPhase; 3] = [
+    DecoderPhase::ReadingTypeId,
+    DecoderPhase::ReadingOwnDiscriminator,
+    DecoderPhase::ReadingData,
+];
+
+const NON_FUNGIBLE_LOCAL_ID_ENCODING: [DecoderPhase; 4] = [
+    DecoderPhase::ReadingTypeId,
+    DecoderPhase::ReadingNFLDiscriminator,
     DecoderPhase::ReadingLen,
     DecoderPhase::ReadingData,
 ];
@@ -223,10 +253,15 @@ pub fn to_type_info(byte: u8) -> Option<TypeInfo> {
             next_phases: &FIXED_LEN_DECODING,
             fixed_len: ADDRESS_LEN,
         }),
+        TYPE_RESOURCE_ADDRESS => Some(TypeInfo {
+            type_id: TYPE_RESOURCE_ADDRESS,
+            next_phases: &FIXED_LEN_DECODING,
+            fixed_len: ADDRESS_LEN,
+        }),
         TYPE_OWN => Some(TypeInfo {
             type_id: TYPE_OWN,
-            next_phases: &FIXED_LEN_DECODING,
-            fixed_len: COMPONENT_LEN,
+            next_phases: &OWN_DECODING, // Enum without leading len byte for payload
+            fixed_len: 0,
         }),
         TYPE_BUCKET => Some(TypeInfo {
             type_id: TYPE_BUCKET,
@@ -240,8 +275,8 @@ pub fn to_type_info(byte: u8) -> Option<TypeInfo> {
         }),
         TYPE_EXPRESSION => Some(TypeInfo {
             type_id: TYPE_EXPRESSION,
-            next_phases: &VARIABLE_LEN_DECODING,
-            fixed_len: 0,
+            next_phases: &FIXED_LEN_DECODING,
+            fixed_len: 1,
         }),
         TYPE_BLOB => Some(TypeInfo {
             type_id: TYPE_BLOB,
@@ -285,7 +320,7 @@ pub fn to_type_info(byte: u8) -> Option<TypeInfo> {
         }),
         TYPE_NON_FUNGIBLE_LOCAL_ID => Some(TypeInfo {
             type_id: TYPE_NON_FUNGIBLE_LOCAL_ID,
-            next_phases: &VARIABLE_LEN_DECODING,
+            next_phases: &NON_FUNGIBLE_LOCAL_ID_ENCODING, // Mix of fixed/variable len encoding
             fixed_len: 0,
         }),
         _ => None,

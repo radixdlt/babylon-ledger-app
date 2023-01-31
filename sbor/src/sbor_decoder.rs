@@ -9,6 +9,7 @@ use core::result::Result;
 use core::result::Result::{Err, Ok};
 
 pub const STACK_DEPTH: u8 = 48;
+pub const SBOR_LEADING_BYTE: u8 = 0x5c;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct State {
@@ -75,14 +76,16 @@ pub struct SborDecoder {
     stack: [State; STACK_DEPTH as usize],
     byte_count: usize,
     head: u8,
+    expect_leading_byte: bool,
 }
 
 impl SborDecoder {
-    pub fn new() -> Self {
+    pub fn new(expect_leading_byte: bool) -> Self {
         Self {
             stack: [State::default(); STACK_DEPTH as usize],
             byte_count: 0,
             head: 0,
+            expect_leading_byte: expect_leading_byte,
         }
     }
 
@@ -136,6 +139,12 @@ impl SborDecoder {
     ) -> Result<(), DecoderError> {
         if count_input {
             self.byte_count += 1;
+
+            if self.expect_leading_byte && self.byte_count == 1 {
+                if byte == SBOR_LEADING_BYTE {
+                    return Ok(());
+                }
+            }
         }
 
         match self.phase() {
@@ -151,11 +160,54 @@ impl SborDecoder {
                 self.read_sub_type_id(handler, SubTypeKind::Value, byte)
             }
             DecoderPhase::ReadingData => self.read_data(handler, byte),
-            DecoderPhase::ReadingDiscriminator => {
-                handler.handle(SborEvent::Discriminator(byte));
-                self.advance_phase(handler)
-            }
+            DecoderPhase::ReadingDiscriminator => self.read_discriminator(handler, byte),
+            DecoderPhase::ReadingOwnDiscriminator => self.read_own_discriminator(handler, byte),
+            DecoderPhase::ReadingNFLDiscriminator => self.read_nfl_discriminator(handler, byte),
         }
+    }
+
+    fn read_discriminator(
+        &mut self,
+        handler: &mut impl SborEventHandler,
+        byte: u8,
+    ) -> Result<(), DecoderError> {
+        handler.handle(SborEvent::Discriminator(byte));
+        self.advance_phase(handler)
+    }
+
+    fn read_own_discriminator(
+        &mut self,
+        handler: &mut impl SborEventHandler,
+        byte: u8,
+    ) -> Result<(), DecoderError> {
+        handler.handle(SborEvent::Discriminator(byte));
+
+        match byte {
+            OWN_BUCKET | OWN_PROOF => self.head().items_to_read = ID_LEN as u32,
+            OWN_VAULT | OWN_COMPONENT | OWN_KEY_VALUE_STORE => {
+                self.head().items_to_read = COMPONENT_LEN as u32
+            }
+            _ => return Err(DecoderError::UnknownDiscriminator(self.byte_count, byte)),
+        }
+
+        self.advance_phase(handler)
+    }
+
+    fn read_nfl_discriminator(
+        &mut self,
+        handler: &mut impl SborEventHandler,
+        byte: u8,
+    ) -> Result<(), DecoderError> {
+        handler.handle(SborEvent::Discriminator(byte));
+
+        match byte {
+            NFL_STRING | NFL_BYTES => {}                         // read len
+            NFL_INTEGER => self.read_len(handler, INTEGER_LEN)?, // simulate reading len and skip phase
+            NFL_UUID => self.read_len(handler, UUID_LEN)?,       // simulate and skip phase
+            _ => return Err(DecoderError::UnknownDiscriminator(self.byte_count, byte)),
+        }
+
+        self.advance_phase(handler)
     }
 
     fn decoding_outcome(&mut self) -> DecodingOutcome {
@@ -345,7 +397,7 @@ impl State {
 
     fn read_type_id(&mut self, byte: u8, byte_count: usize) -> Result<(), DecoderError> {
         match to_type_info(byte) {
-            None => Err(DecoderError::InvalidInput(byte_count, byte)),
+            None => Err(DecoderError::UnknownType(byte_count, byte)),
             Some(type_info) => {
                 self.active_type = type_info;
                 self.items_to_read = self.active_type.fixed_len as u32;
@@ -382,7 +434,7 @@ impl State {
         byte_count: usize,
     ) -> Result<(), DecoderError> {
         match to_type_info(byte) {
-            None => Err(DecoderError::InvalidInput(byte_count, byte)),
+            None => Err(DecoderError::UnknownSubType(byte_count, byte)),
             Some(_) => {
                 match sub_type {
                     SubTypeKind::Element => self.element_type_id = byte,
@@ -464,7 +516,7 @@ mod tests {
 
     #[derive(Debug)]
     struct EventCollector {
-        collected: [SborEvent; 1600],
+        collected: [SborEvent; Self::LENGTH],
         count: usize,
     }
 
@@ -483,9 +535,11 @@ mod tests {
     }
 
     impl EventCollector {
+        pub const LENGTH: usize = 1800;
+
         pub fn new() -> Self {
             Self {
-                collected: [SborEvent::Len(0); 1600],
+                collected: [SborEvent::Len(0); Self::LENGTH],
                 count: 0,
             }
         }
@@ -509,7 +563,7 @@ mod tests {
     }
 
     fn check_decoding(input: &[u8], event_list: &[SborEvent]) {
-        let mut decoder = SborDecoder::new();
+        let mut decoder = SborDecoder::new(false);
 
         let mut handler = EventCollector::new();
 
@@ -1099,7 +1153,7 @@ mod tests {
     }
 
     fn check_partial_decoding(input: &[u8]) {
-        let mut decoder = SborDecoder::new();
+        let mut decoder = SborDecoder::new(true);
         let mut handler = EventCollector::new();
 
         let mut start = 0;
@@ -1114,8 +1168,8 @@ mod tests {
                         assert_eq!(outcome, DecodingOutcome::Done(input.len()))
                     }
                 }
-                Err(_err) => {
-                    assert!(false, "Should not return an error")
+                Err(err) => {
+                    assert!(false, "Should not return an error {:?}", err)
                 }
             }
 
@@ -1132,22 +1186,69 @@ mod tests {
     #[test]
     pub fn test_access_rule1() {
         let input: [u8; 217] = [
-            0x5c, 0x21, 0x02, 0x21, 0x02, 0x21, 0x02, 0x21, 0x09, 0x07, 0x01, 0x07, 0x01, 0x0a,
-            0xe1, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a, 0x46, 0x05, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x0a, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x22, 0x00,
-            0x01, 0xb1, 0x02, 0x79, 0xbe, 0x66, 0x7e, 0xf9, 0xdc, 0xbb, 0xac, 0x55, 0xa0, 0x62,
-            0x95, 0xce, 0x87, 0x0b, 0x07, 0x02, 0x9b, 0xfc, 0xdb, 0x2d, 0xce, 0x28, 0xd9, 0x59,
-            0xf2, 0x81, 0x5b, 0x16, 0xf8, 0x17, 0x98, 0x01, 0x01, 0x09, 0x40, 0x42, 0x0f, 0x00,
-            0x08, 0x05, 0x00, 0x21, 0x02, 0x20, 0x22, 0x01, 0x1a, 0x04, 0x22, 0x00, 0x01, 0x81,
-            0x02, 0x92, 0x56, 0x6c, 0x83, 0xde, 0x7f, 0xd6, 0xb0, 0x4f, 0xcc, 0x92, 0xb5, 0xe0,
-            0x4b, 0x03, 0x22, 0x8c, 0xcf, 0xf0, 0x40, 0x78, 0x56, 0x73, 0x27, 0x8e, 0xf1, 0x09,
-            0x00, 0x00, 0x00, 0x00, 0x22, 0x00, 0x01, 0x0c, 0x04, 0x74, 0x65, 0x73, 0x74, 0x22,
-            0x00, 0x00, 0x20, 0x20, 0x00, 0x20, 0x22, 0x00, 0x22, 0x00, 0x01, 0xb2, 0x01, 0x46,
-            0x2d, 0x52, 0xd7, 0x16, 0x75, 0x27, 0x23, 0x2d, 0x37, 0xac, 0xde, 0x9b, 0x86, 0xfa,
-            0x02, 0x32, 0x88, 0x74, 0x18, 0xfe, 0x88, 0xe8, 0xf2, 0xa2, 0xf6, 0xff, 0xdc, 0xcc,
-            0xc3, 0x9a, 0xa0, 0x17, 0xfa, 0x9d, 0xca, 0x6c, 0x60, 0xf3, 0xb5, 0x8d, 0xa4, 0x41,
-            0x31, 0x47, 0x16, 0x71, 0xa6, 0xc3, 0xcd, 0xb4, 0x89, 0xfb, 0xbc, 0xc9, 0x17, 0x20,
-            0x23, 0x1a, 0xb6, 0xd8, 0x9f, 0xe9, 0xbe,
+            0x5c, 0x21, // tuple
+            0x02, // 2 elements
+            0x21, //  tuple 0 // Transaction header
+            0x02, //  2 elements
+            0x21, //    tuple 0
+            0x02, //    2 elements
+            0x21, //      tuple 0
+            0x09, //      9 elements
+            0x07, //        u8          0   // version
+            0x01, //        value
+            0x07, //        u8          1   // network_id
+            0x01, //        value
+            0x0a, //        u64         2   // start epoch
+            0xe1, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // value
+            0x0a, //        u64         3   // end epoch
+            0x46, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // value
+            0x0a, //        u64         4   // nonce
+            0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // value
+            0x22, //        enum        5   // notary public key
+            0x00, //        discriminator
+            0x01, //        1 field
+            0xb1, //          secp256k1 public key
+            0x02, 0x79, 0xbe, 0x66, 0x7e, 0xf9, 0xdc, 0xbb, 0xac, 0x55, 0xa0, 0x62, 0x95, 0xce,
+            0x87, 0x0b, 0x07, 0x02, 0x9b, 0xfc, 0xdb, 0x2d, 0xce, 0x28, 0xd9, 0x59, 0xf2, 0x81,
+            0x5b, 0x16, 0xf8, 0x17, 0x98, //          value (33 bytes)
+            0x01, //        bool        6 // notary as signatory
+            0x01, //        value
+            0x09, //        u32         7 // cost unit limit
+            0x40, 0x42, 0x0f, 0x00, // value
+            0x08, //        u16         8 // tip percentage
+            0x05, 0x00, //  value
+            0x21, //  tuple 1 // Transaction manifest
+            0x02, //    2 elements
+            0x20, //      array 0 // instructions
+            0x22, //      element type id (enum)
+            0x01, //      1 element
+            0x1a, //        element 0 discriminator (SetMethodAccessRule)
+            0x04, //        4 fields
+            0x22, //          enum 0
+            0x00, //          discriminator (GlobalAddress::Component)
+            0x01, //            1 parameter
+            0x81, //              parameter type (component address)
+            0x02, //              discriminator
+            0x92, 0x56, 0x6c, 0x83, 0xde, 0x7f, 0xd6, 0xb0, 0x4f, 0xcc, 0x92, 0xb5, 0xe0, 0x4b,
+            0x03, 0x22, 0x8c, 0xcf, 0xf0, 0x40, 0x78, 0x56, 0x73, 0x27, 0x8e,
+            0xf1, // value (26 bytes)
+            0x09, //          u32 1
+            0x00, 0x00, 0x00, 0x00, // value
+            0x22, //          enum 2
+            0x00, //          discriminator
+            0x01, //            1 parameter
+            0x0c, //              string
+            0x04, //                len 4
+            0x74, 0x65, 0x73, 0x74, // value
+            0x22, //          enum 3
+            0x00, //          discriminator (AccessRule::AllowAll)
+            0x00, //          no fields
+            0x20, 0x20, 0x00, 0x20, 0x22, 0x00, 0x22, 0x00, 0x01, 0xb2, 0x01, 0x46, 0x2d, 0x52,
+            0xd7, 0x16, 0x75, 0x27, 0x23, 0x2d, 0x37, 0xac, 0xde, 0x9b, 0x86, 0xfa, 0x02, 0x32,
+            0x88, 0x74, 0x18, 0xfe, 0x88, 0xe8, 0xf2, 0xa2, 0xf6, 0xff, 0xdc, 0xcc, 0xc3, 0x9a,
+            0xa0, 0x17, 0xfa, 0x9d, 0xca, 0x6c, 0x60, 0xf3, 0xb5, 0x8d, 0xa4, 0x41, 0x31, 0x47,
+            0x16, 0x71, 0xa6, 0xc3, 0xcd, 0xb4, 0x89, 0xfb, 0xbc, 0xc9, 0x17, 0x20, 0x23, 0x1a,
+            0xb6, 0xd8, 0x9f, 0xe9, 0xbe,
         ];
         check_partial_decoding(&input);
     }
