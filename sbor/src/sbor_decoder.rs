@@ -1152,17 +1152,19 @@ mod tests {
         )
     }
 
+    const CHUNK_SIZE: usize = 113;
+
     fn check_partial_decoding(input: &[u8]) {
         let mut decoder = SborDecoder::new(true);
         let mut handler = EventCollector::new();
 
         let mut start = 0;
-        let mut end = 13;
+        let mut end = CHUNK_SIZE;
 
         while start < input.len() {
             match decoder.decode(&mut handler, &input[start..end]) {
                 Ok(outcome) => {
-                    if end - start == 13 {
+                    if end - start == CHUNK_SIZE {
                         assert_eq!(outcome, DecodingOutcome::NeedMoreData(end));
                     } else {
                         assert_eq!(outcome, DecodingOutcome::Done(input.len()))
@@ -1173,8 +1175,8 @@ mod tests {
                 }
             }
 
-            start += 13;
-            end += 13;
+            start += CHUNK_SIZE;
+            end += CHUNK_SIZE;
 
             if end > input.len() {
                 end = input.len();

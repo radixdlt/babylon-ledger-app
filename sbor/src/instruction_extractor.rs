@@ -238,7 +238,9 @@ mod tests {
         handler: InstructionFormatter,
     }
 
-    struct InstructionFormatter {}
+    struct InstructionFormatter {
+        instruction_count: u32,
+    }
 
     impl InstructionProcessor {
         pub fn new() -> Self {
@@ -251,7 +253,9 @@ mod tests {
 
     impl InstructionFormatter {
         pub fn new() -> Self {
-            Self {}
+            Self {
+                instruction_count: 0,
+            }
         }
     }
 
@@ -263,21 +267,30 @@ mod tests {
 
     impl InstructionHandler for InstructionFormatter {
         fn handle(&mut self, event: ExtractorEvent) {
+            if let ExtractorEvent::InstructionStart(..) = event {
+                self.instruction_count += 1;
+            }
+
+            // if let ExtractorEvent::ParameterData(..) = event {
+            //     return;
+            // }
             println!("Event: {:?}", event);
         }
     }
+
+    const CHUNK_SIZE: usize = 113;
 
     fn check_partial_decoding(input: &[u8]) {
         let mut decoder = SborDecoder::new(true);
         let mut handler = InstructionProcessor::new();
 
         let mut start = 0;
-        let mut end = 13;
+        let mut end = CHUNK_SIZE;
 
         while start < input.len() {
             match decoder.decode(&mut handler, &input[start..end]) {
                 Ok(outcome) => {
-                    if end - start == 13 {
+                    if end - start == CHUNK_SIZE {
                         assert_eq!(outcome, DecodingOutcome::NeedMoreData(end));
                     } else {
                         assert_eq!(outcome, DecodingOutcome::Done(input.len()))
@@ -288,13 +301,16 @@ mod tests {
                 }
             }
 
-            start += 13;
-            end += 13;
+            start += CHUNK_SIZE;
+            end += CHUNK_SIZE;
 
             if end > input.len() {
                 end = input.len();
             }
         }
+
+        println!("Total {} instructions", handler.handler.instruction_count);
+        println!();
     }
 
     #[test]
