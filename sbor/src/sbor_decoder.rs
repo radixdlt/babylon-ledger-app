@@ -1186,38 +1186,39 @@ mod tests {
     #[test]
     pub fn test_access_rule1() {
         let input: [u8; 217] = [
-            0x5c, 0x21, // tuple
+            0x5c, // SBOR leading byte
+            0x21, // tuple nl:0 (nl == nesting level)
             0x02, // 2 elements
-            0x21, //  tuple 0 // Transaction header
+            0x21, //  tuple 0  nl:1 // Transaction header
             0x02, //  2 elements
-            0x21, //    tuple 0
+            0x21, //    tuple 0 nl:2
             0x02, //    2 elements
-            0x21, //      tuple 0
+            0x21, //      tuple 0 nl:3
             0x09, //      9 elements
-            0x07, //        u8          0   // version
+            0x07, //        u8          0   // version nl:4
             0x01, //        value
-            0x07, //        u8          1   // network_id
+            0x07, //        u8          1   // network_id nl:4
             0x01, //        value
-            0x0a, //        u64         2   // start epoch
+            0x0a, //        u64         2   // start epoch nl:4
             0xe1, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // value
-            0x0a, //        u64         3   // end epoch
+            0x0a, //        u64         3   // end epoch nl:4
             0x46, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // value
-            0x0a, //        u64         4   // nonce
+            0x0a, //        u64         4   // nonce nl:4
             0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // value
-            0x22, //        enum        5   // notary public key
+            0x22, //        enum        5   // notary public key nl:4
             0x00, //        discriminator
             0x01, //        1 field
-            0xb1, //          secp256k1 public key
+            0xb1, //          secp256k1 public key nl:5
             0x02, 0x79, 0xbe, 0x66, 0x7e, 0xf9, 0xdc, 0xbb, 0xac, 0x55, 0xa0, 0x62, 0x95, 0xce,
             0x87, 0x0b, 0x07, 0x02, 0x9b, 0xfc, 0xdb, 0x2d, 0xce, 0x28, 0xd9, 0x59, 0xf2, 0x81,
             0x5b, 0x16, 0xf8, 0x17, 0x98, //          value (33 bytes)
-            0x01, //        bool        6 // notary as signatory
+            0x01, //        bool        6 // notary as signatory nl:4
             0x01, //        value
-            0x09, //        u32         7 // cost unit limit
+            0x09, //        u32         7 // cost unit limit nl:4
             0x40, 0x42, 0x0f, 0x00, // value
-            0x08, //        u16         8 // tip percentage
+            0x08, //        u16         8 // tip percentage nl:4
             0x05, 0x00, //  value
-            0x21, //  tuple 1 // Transaction manifest
+            0x21, //  tuple 1 // Transaction manifest nl:3
             0x02, //    2 elements
             0x20, //      array 0 // instructions
             0x22, //      element type id (enum)

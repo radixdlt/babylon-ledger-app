@@ -14,6 +14,8 @@
 // String uses variable length encoding:
 //         `[id byte], [len], [data bytes]`
 // Len is also encoded using variable number of bytes.
+
+// TODO: start of outdated information
 // Struct and Tuple use very similar pattern, except instead of raw bytes, each element is encoded
 // as SBOR, basically creating nested SBOR element:
 //         `[id byte], [len], [encoded element 0], ... [encoded element N]`
@@ -27,7 +29,8 @@
 //
 // Custom types are using one of the above encodings - either fixed length encoding (like fixed
 // length types) or variable length encoding (like Struct/Tuple or String).
-//
+// TODO: end of outdated information ^^^^
+
 // This implementation of the SBOR decoder uses dynamically reconfigurable state machine for
 // decoding. Initial state of all variants of the data layout is the same - retrieving type id byte.
 // So, decoder loads type ID and then selects which state machine will be used to decode remaining
@@ -54,7 +57,7 @@
 
 #![feature(prelude_2024)]
 #![feature(core_intrinsics)]
-#![no_std]
+#![cfg_attr(not(test), no_std)]
 pub mod decoder_error;
 pub mod instruction;
 pub mod instruction_extractor;
