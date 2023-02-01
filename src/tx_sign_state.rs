@@ -29,17 +29,35 @@ struct SignFlowState {
     tx_packet_count: u32,
     tx_size: usize,
     path: Bip32Path,
-    intermediate_hash: [u8; 32],
-    final_hash: [u8; 32],
+    intermediate_hash: [u8; Self::HASH_BUFFER_SIZE],
+    final_hash: [u8;  Self::HASH_BUFFER_SIZE],
+    data_buffer: [u8;  Self::DATA_BUFFER_SIZE],
+    data_counter: u16,
 }
 
 impl InstructionHandler for SignFlowState {
     fn handle(&mut self, event: ExtractorEvent) {
         // TODO: display instruction
+        match event {
+            ExtractorEvent::InstructionStart(instruction_info) => {}
+            ExtractorEvent::ParameterStart(_) => {}
+            ExtractorEvent::ParameterData(_) => {}
+            ExtractorEvent::ParameterEnd(_) => {}
+            ExtractorEvent::InstructionEnd(_, _) => {}
+            ExtractorEvent::Notify(_, _) => {}
+            ExtractorEvent::NextPhase(_) => {}
+            ExtractorEvent::WrongParameterCount(_, _) => {}
+            ExtractorEvent::UnknownInstruction(_) => {}
+            ExtractorEvent::InvalidEventSequence => {}
+            ExtractorEvent::UnknownParameterType(_) => {}
+        }
     }
 }
 
 impl SignFlowState {
+    const HASH_BUFFER_SIZE: usize = 32;
+    const DATA_BUFFER_SIZE: usize = 128;
+
     fn process_data(
         &mut self,
         comm: &mut Comm,
@@ -69,6 +87,8 @@ impl SignFlowState {
         self.tx_size = 0;
         self.sign_type = SignTxType::None;
         self.path = Bip32Path::new(0);
+        self.data_buffer.fill(0);
+        self.data_counter = 0;
     }
 
     fn start(&mut self, sign_type: SignTxType, path: Bip32Path) {
@@ -207,15 +227,17 @@ impl SborEventHandler for InstructionProcessor {
 impl TxSignState {
     pub fn new() -> Self {
         Self {
-            decoder: SborDecoder::new(),
+            decoder: SborDecoder::new(true),
             processor: InstructionProcessor {
                 state: SignFlowState {
                     sign_type: SignTxType::None,
                     tx_packet_count: 0,
                     tx_size: 0,
-                    intermediate_hash: [0; 32],
-                    final_hash: [0; 32],
+                    intermediate_hash: [0; SignFlowState::HASH_BUFFER_SIZE],
+                    final_hash: [0;  SignFlowState::HASH_BUFFER_SIZE],
                     path: Bip32Path::new(0),
+                    data_buffer: [0;  SignFlowState::DATA_BUFFER_SIZE],
+                    data_counter: 0,
                 },
                 extractor: InstructionExtractor::new(),
             },

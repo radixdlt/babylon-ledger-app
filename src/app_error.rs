@@ -35,6 +35,9 @@ pub enum AppError {
     BadTxSignDecoderErrorInvalidState = 0x6e36,
     BadTxSignDecoderErrorStackOverflow = 0x6e37,
     BadTxSignDecoderErrorStackUnderflow = 0x6e38,
+    BadTxSignDecoderErrorUnknownType = 0x6e39,
+    BadTxSignDecoderErrorUnknownParameterType = 0x6e3a,
+    BadTxSignDecoderErrorUnknownEnum = 0x6e3b,
 
     BadTxSignUserRejected = 0x6e40,
 
@@ -82,7 +85,9 @@ impl From<StatusWords> for AppError {
 impl From<DecoderError> for AppError {
     fn from(value: DecoderError) -> AppError {
         match value {
-            DecoderError::InvalidInput(_, _) => AppError::BadTxSignDecoderErrorInvalidInput,
+            DecoderError::UnknownType(_, _) => AppError::BadTxSignDecoderErrorUnknownType,
+            DecoderError::UnknownSubType(_, _) => AppError::BadTxSignDecoderErrorUnknownParameterType,
+            DecoderError::UnknownDiscriminator(_, _) => AppError::BadTxSignDecoderErrorUnknownEnum,
             DecoderError::InvalidLen(_, _) => AppError::BadTxSignDecoderErrorInvalidLen,
             DecoderError::InvalidState(_) => AppError::BadTxSignDecoderErrorInvalidState,
             DecoderError::StackOverflow(_) => AppError::BadTxSignDecoderErrorStackOverflow,
