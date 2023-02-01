@@ -46,63 +46,204 @@ pub enum Instruction {
 }
 
 #[derive(Copy, Clone, Debug)]
-pub struct InstructionInfo(pub Instruction, pub u8);
+pub struct InstructionInfo {
+    pub instruction: Instruction,
+    pub parameter_count: u8,
+    pub name: &'static [u8],
+}
 
 pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
     match input {
-        0 => Some(InstructionInfo(Instruction::TakeFromWorktop, 1)),
-        1 => Some(InstructionInfo(Instruction::TakeFromWorktopByAmount, 2)),
-        2 => Some(InstructionInfo(Instruction::TakeFromWorktopByIds, 2)),
-        3 => Some(InstructionInfo(Instruction::ReturnToWorktop, 1)),
-        4 => Some(InstructionInfo(Instruction::AssertWorktopContains, 1)),
-        5 => Some(InstructionInfo(
-            Instruction::AssertWorktopContainsByAmount,
-            2,
-        )),
-        6 => Some(InstructionInfo(Instruction::AssertWorktopContainsByIds, 2)),
-        7 => Some(InstructionInfo(Instruction::PopFromAuthZone, 0)),
-        8 => Some(InstructionInfo(Instruction::PushToAuthZone, 1)),
-        9 => Some(InstructionInfo(Instruction::ClearAuthZone, 0)),
-        10 => Some(InstructionInfo(Instruction::CreateProofFromAuthZone, 1)),
-        11 => Some(InstructionInfo(
-            Instruction::CreateProofFromAuthZoneByAmount,
-            2,
-        )),
-        12 => Some(InstructionInfo(
-            Instruction::CreateProofFromAuthZoneByIds,
-            2,
-        )),
-        13 => Some(InstructionInfo(Instruction::CreateProofFromBucket, 1)),
-        14 => Some(InstructionInfo(Instruction::CloneProof, 1)),
-        15 => Some(InstructionInfo(Instruction::DropProof, 1)),
-        16 => Some(InstructionInfo(Instruction::DropAllProofs, 0)),
-        17 => Some(InstructionInfo(Instruction::PublishPackage, 5)),
-        18 => Some(InstructionInfo(Instruction::PublishPackageWithOwner, 3)),
-        19 => Some(InstructionInfo(Instruction::BurnResource, 1)),
-        20 => Some(InstructionInfo(Instruction::RecallResource, 2)),
-        21 => Some(InstructionInfo(Instruction::SetMetadata, 3)),
-        22 => Some(InstructionInfo(Instruction::SetPackageRoyaltyConfig, 2)),
-        23 => Some(InstructionInfo(Instruction::SetComponentRoyaltyConfig, 2)),
-        24 => Some(InstructionInfo(Instruction::ClaimPackageRoyalty, 1)),
-        25 => Some(InstructionInfo(Instruction::ClaimComponentRoyalty, 1)),
-        26 => Some(InstructionInfo(Instruction::SetMethodAccessRule, 4)),
-        27 => Some(InstructionInfo(Instruction::MintFungible, 2)),
-        28 => Some(InstructionInfo(Instruction::MintNonFungible, 2)),
-        29 => Some(InstructionInfo(Instruction::MintUuidNonFungible, 2)),
-        30 => Some(InstructionInfo(Instruction::CreateFungibleResource, 4)),
-        31 => Some(InstructionInfo(
-            Instruction::CreateFungibleResourceWithOwner,
-            4,
-        )),
-        32 => Some(InstructionInfo(Instruction::CreateNonFungibleResource, 4)),
-        33 => Some(InstructionInfo(
-            Instruction::CreateNonFungibleResourceWithOwner,
-            4,
-        )),
-        34 => Some(InstructionInfo(Instruction::CreateAccessController, 5)),
-        35 => Some(InstructionInfo(Instruction::CreateIdentity, 1)),
-        36 => Some(InstructionInfo(Instruction::CallFunction, 4)),
-        37 => Some(InstructionInfo(Instruction::CallMethod, 3)),
+        0 => Some(InstructionInfo {
+            instruction: Instruction::TakeFromWorktop,
+            parameter_count: 1,
+            name: b"TakeFromWorktop",
+        }),
+        1 => Some(InstructionInfo {
+            instruction: Instruction::TakeFromWorktopByAmount,
+            parameter_count: 2,
+            name: b"TakeFromWorktopByAmount",
+        }),
+        2 => Some(InstructionInfo {
+            instruction: Instruction::TakeFromWorktopByIds,
+            parameter_count: 2,
+            name: b"TakeFromWorktopByIds",
+        }),
+        3 => Some(InstructionInfo {
+            instruction: Instruction::ReturnToWorktop,
+            parameter_count: 1,
+            name: b"ReturnToWorktop",
+        }),
+        4 => Some(InstructionInfo {
+            instruction: Instruction::AssertWorktopContains,
+            parameter_count: 1,
+            name: b"AssertWorktopContains",
+        }),
+        5 => Some(InstructionInfo {
+            instruction: Instruction::AssertWorktopContainsByAmount,
+            parameter_count: 2,
+            name: b"AssertWorktopContainsByAmount",
+        }),
+        6 => Some(InstructionInfo {
+            instruction: Instruction::AssertWorktopContainsByIds,
+            parameter_count: 2,
+            name: b"AssertWorktopContainsByIds",
+        }),
+        7 => Some(InstructionInfo {
+            instruction: Instruction::PopFromAuthZone,
+            parameter_count: 0,
+            name: b"PopFromAuthZone",
+        }),
+        8 => Some(InstructionInfo {
+            instruction: Instruction::PushToAuthZone,
+            parameter_count: 1,
+            name: b"PushToAuthZone",
+        }),
+        9 => Some(InstructionInfo {
+            instruction: Instruction::ClearAuthZone,
+            parameter_count: 0,
+            name: b"ClearAuthZone",
+        }),
+        10 => Some(InstructionInfo {
+            instruction: Instruction::CreateProofFromAuthZone,
+            parameter_count: 1,
+            name: b"CreateProofFromAuthZone",
+        }),
+        11 => Some(InstructionInfo {
+            instruction: Instruction::CreateProofFromAuthZoneByAmount,
+            parameter_count: 2,
+            name: b"CreateProofFromAuthZoneByAmount",
+        }),
+        12 => Some(InstructionInfo {
+            instruction: Instruction::CreateProofFromAuthZoneByIds,
+            parameter_count: 2,
+            name: b"CreateProofFromAuthZoneByIds",
+        }),
+        13 => Some(InstructionInfo {
+            instruction: Instruction::CreateProofFromBucket,
+            parameter_count: 1,
+            name: b"CreateProofFromBucket",
+        }),
+        14 => Some(InstructionInfo {
+            instruction: Instruction::CloneProof,
+            parameter_count: 1,
+            name: b"CloneProof",
+        }),
+        15 => Some(InstructionInfo {
+            instruction: Instruction::DropProof,
+            parameter_count: 1,
+            name: b"DropProof",
+        }),
+        16 => Some(InstructionInfo {
+            instruction: Instruction::DropAllProofs,
+            parameter_count: 0,
+            name: b"DropAllProofs",
+        }),
+        17 => Some(InstructionInfo {
+            instruction: Instruction::PublishPackage,
+            parameter_count: 5,
+            name: b"PublishPackage",
+        }),
+        18 => Some(InstructionInfo {
+            instruction: Instruction::PublishPackageWithOwner,
+            parameter_count: 3,
+            name: b"PublishPackageWithOwner",
+        }),
+        19 => Some(InstructionInfo {
+            instruction: Instruction::BurnResource,
+            parameter_count: 1,
+            name: b"BurnResource",
+        }),
+        20 => Some(InstructionInfo {
+            instruction: Instruction::RecallResource,
+            parameter_count: 2,
+            name: b"RecallResource",
+        }),
+        21 => Some(InstructionInfo {
+            instruction: Instruction::SetMetadata,
+            parameter_count: 3,
+            name: b"SetMetadata",
+        }),
+        22 => Some(InstructionInfo {
+            instruction: Instruction::SetPackageRoyaltyConfig,
+            parameter_count: 2,
+            name: b"SetPackageRoyaltyConfig",
+        }),
+        23 => Some(InstructionInfo {
+            instruction: Instruction::SetComponentRoyaltyConfig,
+            parameter_count: 2,
+            name: b"SetComponentRoyaltyConfig",
+        }),
+        24 => Some(InstructionInfo {
+            instruction: Instruction::ClaimPackageRoyalty,
+            parameter_count: 1,
+            name: b"ClaimPackageRoyalty",
+        }),
+        25 => Some(InstructionInfo {
+            instruction: Instruction::ClaimComponentRoyalty,
+            parameter_count: 1,
+            name: b"ClaimComponentRoyalty",
+        }),
+        26 => Some(InstructionInfo {
+            instruction: Instruction::SetMethodAccessRule,
+            parameter_count: 4,
+            name: b"SetMethodAccessRule",
+        }),
+        27 => Some(InstructionInfo {
+            instruction: Instruction::MintFungible,
+            parameter_count: 2,
+            name: b"MintFungible",
+        }),
+        28 => Some(InstructionInfo {
+            instruction: Instruction::MintNonFungible,
+            parameter_count: 2,
+            name: b"MintNonFungible",
+        }),
+        29 => Some(InstructionInfo {
+            instruction: Instruction::MintUuidNonFungible,
+            parameter_count: 2,
+            name: b"MintUuidNonFungible",
+        }),
+        30 => Some(InstructionInfo {
+            instruction: Instruction::CreateFungibleResource,
+            parameter_count: 4,
+            name: b"CreateFungibleResource",
+        }),
+        31 => Some(InstructionInfo {
+            instruction: Instruction::CreateFungibleResourceWithOwner,
+            parameter_count: 4,
+            name: b"CreateFungibleResourceWithOwner",
+        }),
+        32 => Some(InstructionInfo {
+            instruction: Instruction::CreateNonFungibleResource,
+            parameter_count: 4,
+            name: b"CreateNonFungibleResource",
+        }),
+        33 => Some(InstructionInfo {
+            instruction: Instruction::CreateNonFungibleResourceWithOwner,
+            parameter_count: 4,
+            name: b"CreateNonFungibleResourceWithOwner",
+        }),
+        34 => Some(InstructionInfo {
+            instruction: Instruction::CreateAccessController,
+            parameter_count: 5,
+            name: b"CreateAccessController",
+        }),
+        35 => Some(InstructionInfo {
+            instruction: Instruction::CreateIdentity,
+            parameter_count: 1,
+            name: b"CreateIdentity",
+        }),
+        36 => Some(InstructionInfo {
+            instruction: Instruction::CallFunction,
+            parameter_count: 4,
+            name: b"CallFunction",
+        }),
+        37 => Some(InstructionInfo {
+            instruction: Instruction::CallMethod,
+            parameter_count: 3,
+            name: b"CallMethod",
+        }),
         _ => None,
     }
 }
