@@ -31,7 +31,7 @@ pub enum InstructionPhase {
 #[derive(Copy, Clone, Debug)]
 pub enum ExtractorEvent {
     InstructionStart(InstructionInfo),
-    ParameterStart(TypeKind),
+    ParameterStart(TypeKind, u32),
     ParameterData(SborEvent),
     ParameterEnd(u32),
     InstructionEnd(SborEvent, ExtractorPhase),
@@ -69,82 +69,98 @@ impl InstructionExtractor {
     pub fn handle_event(&mut self, handler: &mut impl InstructionHandler, event: SborEvent) {
         match self.phase {
             ExtractorPhase::Init => {
-                self.expect_start(event, TYPE_TUPLE, 0, ExtractorPhase::IntentShell);
+                if Self::is_start(event, TYPE_TUPLE, 0) {
+                    self.phase = ExtractorPhase::IntentShell;
+                }
             }
             ExtractorPhase::IntentShell => {
-                self.expect_start(event, TYPE_TUPLE, 1, ExtractorPhase::HeaderShell);
+                if Self::is_start(event, TYPE_TUPLE, 1) {
+                    self.phase = ExtractorPhase::HeaderShell;
+                }
             }
             ExtractorPhase::HeaderShell => {
-                self.expect_start(event, TYPE_TUPLE, 2, ExtractorPhase::ManifestShell);
+                if Self::is_start(event, TYPE_TUPLE, 2) {
+                    self.phase = ExtractorPhase::ManifestShell;
+                }
             }
             ExtractorPhase::ManifestShell => {
-                self.expect_start(event, TYPE_TUPLE, 3, ExtractorPhase::ManifestContentShell);
+                if Self::is_start(event, TYPE_TUPLE, 3) {
+                    self.phase = ExtractorPhase::ManifestContentShell;
+                }
             }
             ExtractorPhase::ManifestContentShell => {
-                self.expect_start(event, TYPE_TUPLE, 3, ExtractorPhase::InstructionsShell);
+                if Self::is_start(event, TYPE_TUPLE, 3) {
+                    self.phase = ExtractorPhase::InstructionsShell;
+                }
             }
             ExtractorPhase::InstructionsShell => {
-                self.expect_start(event, TYPE_ARRAY, 4, ExtractorPhase::Instruction);
+                if Self::is_start(event, TYPE_ARRAY, 4) {
+                    self.phase = ExtractorPhase::Instruction;
+                }
             }
             ExtractorPhase::Instruction => {
-                let started =
-                    self.expect_start(event, TYPE_ENUM, 5, ExtractorPhase::InstructionType);
-
-                if started {
-                    self.instruction_phase = InstructionPhase::WaitForDiscriminator;
-                    self.parameter_count = 0;
-                    self.parameters_total = 0;
+                if Self::is_start(event, TYPE_ENUM, 5) {
+                    self.phase = ExtractorPhase::InstructionType;
+                    self.start_instruction();
                 }
 
-                self.expect_end(event, TYPE_NONE, 4, ExtractorPhase::Done);
+                if Self::is_end(event, TYPE_NONE, 4) {
+                    self.phase = ExtractorPhase::Done;
+                }
             }
             ExtractorPhase::InstructionType => {
                 if !self.process_instruction_state(handler, event) {
                     return;
                 }
 
-                let started =
-                    self.expect_start(event, TYPE_NONE, 6, ExtractorPhase::InstructionParameter);
-
-                if started {
-                    if let SborEvent::Start { type_id, .. } = event {
-                        match to_type_info(type_id) {
-                            Some(type_info) => {
-                                handler.handle(ExtractorEvent::ParameterStart(type_info.type_kind))
-                            }
-
-                            None => {
-                                handler.handle(ExtractorEvent::UnknownParameterType(type_id));
-                                self.phase = ExtractorPhase::Done;
-                                return;
-                            }
-                        }
-                    } else {
-                        // Something wrong with instruction encoding
-                        handler.handle(ExtractorEvent::InvalidEventSequence);
-                        self.phase = ExtractorPhase::Done;
-                        return;
-                    }
-
-                    if self.instruction_phase == InstructionPhase::Done {
-                        self.parameter_count += 1;
-                    }
+                if Self::is_start(event, TYPE_NONE, 6) {
+                    self.phase = ExtractorPhase::InstructionParameter;
+                    self.process_parameter_start(handler, event);
                 }
 
-                self.expect_end(event, TYPE_NONE, 5, ExtractorPhase::Instruction);
+                if Self::is_end(event, TYPE_NONE, 5) {
+                    self.phase = ExtractorPhase::Instruction;
+                }
             }
-
             ExtractorPhase::InstructionParameter => {
-                let ended = self.expect_end(event, TYPE_NONE, 6, ExtractorPhase::InstructionType);
-
-                if ended {
+                if Self::is_end(event, TYPE_NONE, 6) {
+                    self.phase = ExtractorPhase::InstructionType;
                     handler.handle(ExtractorEvent::ParameterEnd(self.parameter_count));
+                    self.parameter_count += 1;
                 } else {
                     handler.handle(ExtractorEvent::ParameterData(event));
                 }
             }
             ExtractorPhase::Done => {}
-        }
+        };
+    }
+
+    fn process_parameter_start(&mut self, handler: &mut impl InstructionHandler, event: SborEvent) {
+        if let SborEvent::Start { type_id, .. } = event {
+            match to_type_info(type_id) {
+                Some(type_info) => {
+                    handler.handle(ExtractorEvent::ParameterStart(
+                        type_info.type_kind,
+                        self.parameter_count,
+                    ));
+                }
+
+                None => {
+                    handler.handle(ExtractorEvent::UnknownParameterType(type_id));
+                    self.phase = ExtractorPhase::Done;
+                }
+            }
+        } else {
+            // Something wrong with instruction encoding
+            handler.handle(ExtractorEvent::InvalidEventSequence);
+            self.phase = ExtractorPhase::Done;
+        };
+    }
+
+    fn start_instruction(&mut self) {
+        self.instruction_phase = InstructionPhase::WaitForDiscriminator;
+        self.parameter_count = 0;
+        self.parameters_total = 0;
     }
 
     fn process_instruction_state(
@@ -160,8 +176,11 @@ impl InstructionExtractor {
             (InstructionPhase::WaitForParameterCount, SborEvent::Len(len)) => {
                 match to_instruction(self.discriminator) {
                     Some(info) => {
-                        if len != info.1 as u32 {
-                            handler.handle(ExtractorEvent::WrongParameterCount(info.1 as u32, len));
+                        if len != info.parameter_count as u32 {
+                            handler.handle(ExtractorEvent::WrongParameterCount(
+                                info.parameter_count as u32,
+                                len,
+                            ));
                             self.phase = ExtractorPhase::Done;
                             return false;
                         }
@@ -183,13 +202,7 @@ impl InstructionExtractor {
         true
     }
 
-    fn expect_start(
-        &mut self,
-        event: SborEvent,
-        expected_type: u8,
-        nesting: u8,
-        next_phase: ExtractorPhase,
-    ) -> bool {
+    fn is_start(event: SborEvent, expected_type: u8, nesting: u8) -> bool {
         match event {
             SborEvent::Start {
                 type_id,
@@ -198,20 +211,13 @@ impl InstructionExtractor {
             } if (type_id == expected_type || expected_type == TYPE_NONE)
                 && nesting_level == nesting =>
             {
-                self.phase = next_phase;
                 true
             }
             _ => false,
         }
     }
 
-    fn expect_end(
-        &mut self,
-        event: SborEvent,
-        expected_type: u8,
-        nesting: u8,
-        next_phase: ExtractorPhase,
-    ) -> bool {
+    fn is_end(event: SborEvent, expected_type: u8, nesting: u8) -> bool {
         match event {
             SborEvent::End {
                 type_id,
@@ -219,16 +225,16 @@ impl InstructionExtractor {
             } if (type_id == expected_type || expected_type == TYPE_NONE)
                 && nesting_level == nesting =>
             {
-                self.phase = next_phase;
                 true
             }
             _ => false,
         }
     }
 }
-//todo!("Add tests; Add test for chunked data reporting!");
+
 #[cfg(test)]
 mod tests {
+    use crate::instruction::Instruction;
     use crate::instruction_extractor::{ExtractorEvent, InstructionExtractor, InstructionHandler};
     use crate::sbor_decoder::{DecodingOutcome, SborDecoder, SborEventHandler};
     use crate::sbor_notifications::SborEvent;
@@ -239,7 +245,8 @@ mod tests {
     }
 
     struct InstructionFormatter {
-        instruction_count: u32,
+        instruction_count: usize,
+        instructions: [Instruction; Self::SIZE],
     }
 
     impl InstructionProcessor {
@@ -252,10 +259,25 @@ mod tests {
     }
 
     impl InstructionFormatter {
+        pub const SIZE: usize = 20;
         pub fn new() -> Self {
             Self {
                 instruction_count: 0,
+                instructions: [Instruction::TakeFromWorktop; Self::SIZE],
             }
+        }
+
+        pub fn verify(&self, expected: &[Instruction]) {
+            assert_eq!(self.instruction_count, expected.len());
+            let mut cnt = 0;
+            self.instructions[0..self.instruction_count]
+                .iter()
+                .zip(expected)
+                .all(|(a, b)| {
+                    assert_eq!(*a, *b, "Elements are not equal at index {}", cnt);
+                    cnt += 1;
+                    true
+                });
         }
     }
 
@@ -267,20 +289,19 @@ mod tests {
 
     impl InstructionHandler for InstructionFormatter {
         fn handle(&mut self, event: ExtractorEvent) {
-            if let ExtractorEvent::InstructionStart(..) = event {
+            if let ExtractorEvent::InstructionStart(info) = event {
+                self.instructions[self.instruction_count] = info.instruction;
                 self.instruction_count += 1;
+                println!("Instruction::{:?},", info.instruction);
             }
 
-            // if let ExtractorEvent::ParameterData(..) = event {
-            //     return;
-            // }
-            println!("Event: {:?}", event);
+            // println!("Event: {:?}", event);
         }
     }
 
     const CHUNK_SIZE: usize = 113;
 
-    fn check_partial_decoding(input: &[u8]) {
+    fn check_partial_decoding(input: &[u8], expected_instructions: &[Instruction]) {
         let mut decoder = SborDecoder::new(true);
         let mut handler = InstructionProcessor::new();
 
@@ -309,7 +330,8 @@ mod tests {
             }
         }
 
-        println!("Total {} instructions", handler.handler.instruction_count);
+        //println!("Total {} instructions", handler.handler.instruction_count);
+        handler.handler.verify(expected_instructions);
         println!();
     }
 
@@ -380,7 +402,7 @@ mod tests {
             0x16, 0x71, 0xa6, 0xc3, 0xcd, 0xb4, 0x89, 0xfb, 0xbc, 0xc9, 0x17, 0x20, 0x23, 0x1a,
             0xb6, 0xd8, 0x9f, 0xe9, 0xbe,
         ];
-        check_partial_decoding(&input);
+        check_partial_decoding(&input, &[Instruction::SetMethodAccessRule]);
     }
 
     #[test]
@@ -409,7 +431,10 @@ mod tests {
             0xe8, 0xb2, 0xc2, 0x12, 0xfa, 0xd2, 0x13, 0x84, 0x0e, 0x74, 0xd7, 0x32, 0x35, 0xd6,
             0x1f, 0xde, 0xa5, 0xf2, 0xcd, 0x3d,
         ];
-        check_partial_decoding(&input);
+        check_partial_decoding(
+            &input,
+            &[Instruction::CallMethod, Instruction::CreateIdentity],
+        );
     }
 
     #[test]
@@ -448,7 +473,14 @@ mod tests {
             0x18, 0x02, 0x70, 0x90, 0xc3, 0xf6, 0x28, 0x69, 0x90, 0x15, 0x4b, 0xed, 0x82, 0xe2,
             0xfc, 0x5c, 0x32, 0xc1, 0xe3, 0xf0, 0x76, 0x8b, 0x1c, 0xc4, 0x17, 0x88,
         ];
-        check_partial_decoding(&input);
+        check_partial_decoding(
+            &input,
+            &[
+                Instruction::CallMethod,
+                Instruction::CreateFungibleResource,
+                Instruction::CallMethod,
+            ],
+        );
     }
 
     #[test]
@@ -489,7 +521,14 @@ mod tests {
             0xcc, 0xbc, 0xdd, 0x34, 0x17, 0x75, 0x17, 0xfa, 0xa6, 0x04, 0x8c, 0x96, 0xcf, 0x7e,
             0x53, 0xf1,
         ];
-        check_partial_decoding(&input);
+        check_partial_decoding(
+            &input,
+            &[
+                Instruction::CallMethod,
+                Instruction::CreateFungibleResourceWithOwner,
+                Instruction::CallMethod,
+            ],
+        );
     }
 
     #[test]
@@ -522,7 +561,10 @@ mod tests {
             0xe5, 0xfe, 0xab, 0xba, 0x06, 0xd2, 0x31, 0x45, 0x47, 0x72, 0xec, 0xe6, 0x8d, 0xfd,
             0x30, 0x16, 0xc1, 0x11, 0x40, 0xf3, 0x61, 0x1b, 0xdf, 0x23,
         ];
-        check_partial_decoding(&input);
+        check_partial_decoding(
+            &input,
+            &[Instruction::CallMethod, Instruction::CreateFungibleResource],
+        );
     }
 
     #[test]
@@ -556,7 +598,13 @@ mod tests {
             0x9c, 0x9b, 0x3a, 0xd8, 0x27, 0x67, 0x93, 0x63, 0x0e, 0x8d, 0x2e, 0xf0, 0x76, 0x3a,
             0x39, 0x3d, 0x11, 0x81, 0xcf, 0x3b, 0xff, 0x77, 0x85, 0x27, 0x95, 0xfc, 0xcb, 0xa6,
         ];
-        check_partial_decoding(&input);
+        check_partial_decoding(
+            &input,
+            &[
+                Instruction::CallMethod,
+                Instruction::CreateFungibleResourceWithOwner,
+            ],
+        );
     }
 
     #[test]
@@ -599,7 +647,14 @@ mod tests {
             0x47, 0x9e, 0xb4, 0xce, 0x9c, 0xa4, 0x41, 0x20, 0x10, 0x60, 0x49, 0x03, 0x76, 0x63,
             0xb8, 0x25, 0xb6,
         ];
-        check_partial_decoding(&input);
+        check_partial_decoding(
+            &input,
+            &[
+                Instruction::CallMethod,
+                Instruction::CreateNonFungibleResource,
+                Instruction::CallMethod,
+            ],
+        );
     }
 
     #[test]
@@ -643,7 +698,14 @@ mod tests {
             0x5e, 0xb4, 0x96, 0x18, 0xf2, 0xe7, 0x9f, 0xe8, 0xd9, 0xf8, 0x05, 0xbe, 0x75, 0x4e,
             0x4b, 0x18, 0xc2, 0xc5, 0xe1, 0x62, 0xce,
         ];
-        check_partial_decoding(&input);
+        check_partial_decoding(
+            &input,
+            &[
+                Instruction::CallMethod,
+                Instruction::CreateNonFungibleResourceWithOwner,
+                Instruction::CallMethod,
+            ],
+        );
     }
 
     #[test]
@@ -675,7 +737,13 @@ mod tests {
             0xb9, 0xc3, 0x07, 0x22, 0xad, 0xff, 0x72, 0x97, 0x9d, 0x8a, 0x64, 0x35, 0xef, 0x97,
             0x32, 0x0a, 0x0c, 0x26, 0xcc, 0x49, 0xa1, 0xf5, 0xb0, 0x3e, 0x17, 0xef, 0x52,
         ];
-        check_partial_decoding(&input);
+        check_partial_decoding(
+            &input,
+            &[
+                Instruction::CallMethod,
+                Instruction::CreateNonFungibleResource,
+            ],
+        );
     }
 
     #[test]
@@ -709,7 +777,13 @@ mod tests {
             0x4c, 0xa7, 0xd6, 0x4e, 0x32, 0xf1, 0xf6, 0x4c, 0x6a, 0x85, 0x1d, 0x93, 0x29, 0xfc,
             0xe9, 0x1c, 0xab,
         ];
-        check_partial_decoding(&input);
+        check_partial_decoding(
+            &input,
+            &[
+                Instruction::CallMethod,
+                Instruction::CreateNonFungibleResourceWithOwner,
+            ],
+        );
     }
 
     #[test]
@@ -744,7 +818,10 @@ mod tests {
             0x8d, 0x50, 0xd8, 0x92, 0x39, 0x70, 0xb8, 0x2b, 0x53, 0x99, 0xda, 0xe8, 0x36, 0x60,
             0x96, 0xd3, 0x59, 0x5d, 0xe8,
         ];
-        check_partial_decoding(&input);
+        check_partial_decoding(
+            &input,
+            &[Instruction::CallFunction, Instruction::CallMethod],
+        );
     }
 
     #[test]
@@ -772,7 +849,14 @@ mod tests {
             0xf8, 0x31, 0xd9, 0xa4, 0xd7, 0x6f, 0x38, 0xa8, 0x4e, 0x22, 0x75, 0xc8, 0x54, 0x4f,
             0x5e, 0x87, 0xe9, 0x01,
         ];
-        check_partial_decoding(&input);
+        check_partial_decoding(
+            &input,
+            &[
+                Instruction::SetMetadata,
+                Instruction::SetMetadata,
+                Instruction::SetMetadata,
+            ],
+        );
     }
 
     #[test]
@@ -814,7 +898,15 @@ mod tests {
             0xd9, 0xe1, 0xb5, 0x26, 0xa5, 0xb1, 0x8b, 0x8c, 0x3f, 0x20, 0xb2, 0x3b, 0xf5, 0xe4,
             0x3d, 0x26, 0xed, 0x32, 0x5b, 0x10, 0x70,
         ];
-        check_partial_decoding(&input);
+        check_partial_decoding(
+            &input,
+            &[
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+                Instruction::MintFungible,
+                Instruction::CallMethod,
+            ],
+        );
     }
 
     #[test]
@@ -860,7 +952,15 @@ mod tests {
             0x9e, 0xd5, 0x5e, 0x71, 0x68, 0x2e, 0x00, 0x1c, 0x2d, 0xc1, 0xc8, 0xf3, 0xa5, 0x3c,
             0x1e, 0x69, 0x50, 0xfa, 0x99, 0x15, 0x29, 0x93, 0xec,
         ];
-        check_partial_decoding(&input);
+        check_partial_decoding(
+            &input,
+            &[
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+                Instruction::MintNonFungible,
+                Instruction::CallMethod,
+            ],
+        );
     }
 
     #[test]
@@ -939,7 +1039,10 @@ mod tests {
             0x3e, 0xfe, 0x1b, 0x68, 0x86, 0x96, 0x06, 0x98, 0xad, 0x8e, 0x1b, 0xaa, 0xca, 0xa1,
             0xce, 0xa7, 0x72, 0x49, 0x06, 0x33, 0x1a, 0xcc, 0xd2,
         ];
-        check_partial_decoding(&input);
+        check_partial_decoding(
+            &input,
+            &[Instruction::CallMethod, Instruction::PublishPackage],
+        );
     }
 
     #[test]
@@ -988,7 +1091,13 @@ mod tests {
             0xbb, 0x08, 0x62, 0xc3, 0x4e, 0x06, 0x46, 0x70, 0x3b, 0x85, 0xab, 0x49, 0xab, 0xe1,
             0x33, 0xf9,
         ];
-        check_partial_decoding(&input);
+        check_partial_decoding(
+            &input,
+            &[
+                Instruction::CallMethod,
+                Instruction::PublishPackageWithOwner,
+            ],
+        );
     }
 
     #[test]
@@ -1013,7 +1122,7 @@ mod tests {
             0x00, 0x1f, 0xed, 0x9a, 0xc0, 0x4d, 0xc6, 0xae, 0x54, 0xb8, 0x04, 0x54, 0x21, 0xd3,
             0xa7, 0xf4, 0xb2,
         ];
-        check_partial_decoding(&input);
+        check_partial_decoding(&input, &[Instruction::RecallResource]);
     }
 
     #[test]
@@ -1077,7 +1186,28 @@ mod tests {
             0x3b, 0xc7, 0xa4, 0xc2, 0x4c, 0x02, 0x7c, 0x68, 0xda, 0x33, 0x2d, 0xac, 0x8f, 0xb6,
             0x39, 0x97,
         ];
-        check_partial_decoding(&input);
+        check_partial_decoding(
+            &input,
+            &[
+                Instruction::CallMethod,
+                Instruction::TakeFromWorktopByAmount,
+                Instruction::CallMethod,
+                Instruction::AssertWorktopContainsByAmount,
+                Instruction::AssertWorktopContains,
+                Instruction::TakeFromWorktop,
+                Instruction::CreateProofFromBucket,
+                Instruction::CloneProof,
+                Instruction::DropProof,
+                Instruction::DropProof,
+                Instruction::CallMethod,
+                Instruction::PopFromAuthZone,
+                Instruction::DropProof,
+                Instruction::ReturnToWorktop,
+                Instruction::TakeFromWorktopByIds,
+                Instruction::DropAllProofs,
+                Instruction::CallMethod,
+            ],
+        );
     }
 
     #[test]
@@ -1109,7 +1239,15 @@ mod tests {
             0xd7, 0x59, 0xd3, 0x94, 0x0e, 0x6a, 0xfa, 0x14, 0x7c, 0x92, 0xf8, 0x26, 0x39, 0xb1,
             0x25, 0x67, 0x4c, 0x99, 0xae, 0x8c, 0x95, 0x4d,
         ];
-        check_partial_decoding(&input);
+        check_partial_decoding(
+            &input,
+            &[
+                Instruction::SetPackageRoyaltyConfig,
+                Instruction::SetComponentRoyaltyConfig,
+                Instruction::ClaimPackageRoyalty,
+                Instruction::ClaimComponentRoyalty,
+            ],
+        );
     }
 
     #[test]
@@ -1240,6 +1378,15 @@ mod tests {
             0xfc, 0x10, 0x70, 0xb8, 0x7a, 0xc3, 0x47, 0x43, 0xa0, 0xa9, 0xa9, 0x16, 0x0b, 0xd1,
             0xdf, 0xce, 0xfc, 0xce, 0x84, 0x25, 0xdb, 0xf3, 0xed, 0xa3, 0x4d, 0xad, 0xe2, 0xe4,
         ];
-        check_partial_decoding(&input);
+        check_partial_decoding(
+            &input,
+            &[
+                Instruction::TakeFromWorktop,
+                Instruction::CreateProofFromAuthZone,
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+            ],
+        );
     }
 }
