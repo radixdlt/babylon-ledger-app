@@ -95,3 +95,27 @@ impl From<DecoderError> for AppError {
         }
     }
 }
+
+impl From<u32> for AppError {
+    fn from(value: u32) -> Self {
+        match value {
+            CX_CARRY=> AppError::CxErrorCarry,
+            CX_EC_INFINITE_POINT=> AppError::CxErrorEcInfinitePoint,
+            CX_EC_INVALID_CURVE=> AppError::CxErrorEcInvalidCurve,
+            CX_EC_INVALID_POINT=> AppError::CxErrorEcInvalidPoint,
+            CX_INTERNAL_ERROR=> AppError::CxErrorInternalError,
+            CX_INVALID_PARAMETER=> AppError::CxErrorInvalidParameter,
+            CX_INVALID_PARAMETER_SIZE=> AppError::CxErrorInvalidParameterSize,
+            CX_INVALID_PARAMETER_VALUE=> AppError::CxErrorInvalidParameterValue,
+            CX_LOCKED=> AppError::CxErrorLocked,
+            CX_MEMORY_FULL=> AppError::CxErrorMemoryFull,
+            CX_NOT_INVERTIBLE=> AppError::CxErrorNotInvertible,
+            CX_NOT_LOCKED=> AppError::CxErrorNotLocked,
+            CX_NOT_UNLOCKED=> AppError::CxErrorNotUnlocked,
+            CX_NO_RESIDUE=> AppError::CxErrorNoResidue,
+            CX_OVERFLOW=> AppError::CxErrorOverflow,
+            CX_UNLOCKED=> AppError::CxErrorUnlocked,
+            _ => AppError::Unknown,
+        }
+    }
+}

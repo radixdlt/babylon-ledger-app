@@ -1,20 +1,18 @@
 use crate::app_error::AppError;
 use crate::command_class::CommandClass;
 use crate::crypto::bip32::Bip32Path;
-use crate::crypto::ed25519::KeyPair25519;
-use crate::crypto::secp256k1::KeyPairSecp256k1;
-use crate::tx_sign_state::SignOutcome::Signature;
-use nanos_sdk::bindings::{
-    cx_err_t, cx_hash_sha256, cx_md_t, size_t, CX_LAST, CX_RND_RFC6979, CX_SHA256,
-};
+use crate::crypto::ed25519::{KeyPair25519, ED25519_SIGNATURE_LEN};
+use crate::crypto::hash::{Digest, HashType, Hasher};
+use crate::crypto::secp256k1::{KeyPairSecp256k1, SECP256K1_SIGNATURE_LEN};
+use core::any::Any;
+use core::cmp::max;
+
 use nanos_sdk::io::Comm;
 use nanos_ui::ui;
 use sbor::decoder_error::DecoderError;
 use sbor::instruction_extractor::{ExtractorEvent, InstructionExtractor, InstructionHandler};
 use sbor::sbor_decoder::{DecodingOutcome, SborDecoder, SborEventHandler};
 use sbor::sbor_notifications::SborEvent;
-
-const SIGNATURE_SIZE: usize = 32;
 
 #[repr(u8)]
 #[derive(Eq, PartialEq, Copy, Clone)]
@@ -29,18 +27,15 @@ struct SignFlowState {
     tx_packet_count: u32,
     tx_size: usize,
     path: Bip32Path,
-    intermediate_hash: [u8; Self::HASH_BUFFER_SIZE],
-    final_hash: [u8;  Self::HASH_BUFFER_SIZE],
-    data_buffer: [u8;  Self::DATA_BUFFER_SIZE],
-    data_counter: u16,
+    hasher: Hasher,
 }
 
 impl InstructionHandler for SignFlowState {
     fn handle(&mut self, event: ExtractorEvent) {
         // TODO: display instruction
         match event {
-            ExtractorEvent::InstructionStart(instruction_info) => {}
-            ExtractorEvent::ParameterStart(_) => {}
+            ExtractorEvent::InstructionStart(_) => {}
+            ExtractorEvent::ParameterStart(_, _) => {}
             ExtractorEvent::ParameterData(_) => {}
             ExtractorEvent::ParameterEnd(_) => {}
             ExtractorEvent::InstructionEnd(_, _) => {}
@@ -55,9 +50,6 @@ impl InstructionHandler for SignFlowState {
 }
 
 impl SignFlowState {
-    const HASH_BUFFER_SIZE: usize = 32;
-    const DATA_BUFFER_SIZE: usize = 128;
-
     fn process_data(
         &mut self,
         comm: &mut Comm,
@@ -73,22 +65,21 @@ impl SignFlowState {
 
         let data = comm.get_data()?;
         self.update_counters(data.len());
-        self.update_hash(data);
+        self.hasher.update(data)?;
 
-        if class == CommandClass::LastData {
-            self.finalize_hash();
-        }
         Ok(())
     }
 
+    fn finalize(&mut self) -> Result<Digest, AppError> {
+        self.hasher.finalize()
+    }
+
     fn reset(&mut self) {
-        self.intermediate_hash.fill(0);
+        self.hasher.reset();
         self.tx_packet_count = 0;
         self.tx_size = 0;
         self.sign_type = SignTxType::None;
         self.path = Bip32Path::new(0);
-        self.data_buffer.fill(0);
-        self.data_counter = 0;
     }
 
     fn start(&mut self, sign_type: SignTxType, path: Bip32Path) {
@@ -136,38 +127,24 @@ impl SignFlowState {
         Ok(())
     }
 
-    fn sign_tx(&self, tx_type: SignTxType) -> Result<SignOutcome, AppError> {
+    fn sign_tx(&self, tx_type: SignTxType, digest: Digest) -> Result<SignOutcome, AppError> {
+        self.validate_digest(tx_type, digest)?;
+
         match tx_type {
             SignTxType::None => return Err(AppError::BadTxSignState),
             SignTxType::Ed25519 => KeyPair25519::derive(&self.path)
-                .and_then(|keypair| keypair.sign(&self.intermediate_hash))
-                .map(|signature| Signature(signature)),
+                .and_then(|keypair| keypair.sign(digest.as_digest()))
+                .map(|signature| SignOutcome::Signature {
+                    len: signature.len() as u8,
+                    signature,
+                }),
 
             SignTxType::Secp256k1 => KeyPairSecp256k1::derive(&self.path)
-                .and_then(|keypair| keypair.sign(&self.intermediate_hash))
-                .map(|signature| Signature(signature)),
-        }
-    }
-
-    fn update_hash(&mut self, data: &[u8]) {
-        unsafe {
-            cx_hash_sha256(
-                data.as_ptr(),
-                data.len() as size_t,
-                self.intermediate_hash.as_mut_ptr(),
-                self.intermediate_hash.len() as size_t,
-            );
-        }
-    }
-
-    fn finalize_hash(&mut self) {
-        unsafe {
-            cx_hash_sha256(
-                self.intermediate_hash.as_ptr(),
-                self.intermediate_hash.len() as size_t,
-                self.final_hash.as_mut_ptr(),
-                self.final_hash.len() as size_t,
-            );
+                .and_then(|keypair| keypair.sign(digest.as_digest()))
+                .map(|signature| SignOutcome::Signature {
+                    len: signature.len() as u8,
+                    signature,
+                }),
         }
     }
 
@@ -175,12 +152,27 @@ impl SignFlowState {
         self.tx_size += size;
         self.tx_packet_count += 1;
     }
+
+    fn validate_digest(&self, tx_type: SignTxType, digest: Digest) -> Result<(), AppError> {
+        match (tx_type, digest.hash_type()) {
+            (SignTxType::Ed25519, HashType::SHA512) => Ok(()),
+            (SignTxType::Secp256k1, HashType::DoubleSHA256) => Ok(()),
+            _ => Err(AppError::BadTxSignState),
+        }
+    }
 }
 
+const MAX_SIGNATURE_SIZE: usize = max(ED25519_SIGNATURE_LEN, SECP256K1_SIGNATURE_LEN);
+
+#[repr(u8)]
+#[derive(Copy, Clone)]
 pub enum SignOutcome {
     SendNextPacket,
     SigningRejected,
-    Signature([u8; SIGNATURE_SIZE]),
+    Signature {
+        len: u8,
+        signature: [u8; MAX_SIGNATURE_SIZE],
+    },
 }
 
 struct InstructionProcessor {
@@ -189,8 +181,8 @@ struct InstructionProcessor {
 }
 
 impl InstructionProcessor {
-    pub fn sign_tx(&self, tx_type: SignTxType) -> Result<SignOutcome, AppError> {
-        self.state.sign_tx(tx_type)
+    pub fn sign_tx(&self, tx_type: SignTxType, digest: Digest) -> Result<SignOutcome, AppError> {
+        self.state.sign_tx(tx_type, digest)
     }
 
     pub fn tx_size(&self) -> usize {
@@ -205,11 +197,13 @@ impl InstructionProcessor {
     ) -> Result<(), AppError> {
         self.state.process_data(comm, class, tx_type)
     }
-}
 
-impl InstructionProcessor {
     pub fn reset(&mut self) {
         self.state.reset();
+    }
+
+    pub fn finalize(&mut self) -> Result<Digest, AppError> {
+        self.state.finalize()
     }
 }
 
@@ -233,11 +227,8 @@ impl TxSignState {
                     sign_type: SignTxType::None,
                     tx_packet_count: 0,
                     tx_size: 0,
-                    intermediate_hash: [0; SignFlowState::HASH_BUFFER_SIZE],
-                    final_hash: [0;  SignFlowState::HASH_BUFFER_SIZE],
                     path: Bip32Path::new(0),
-                    data_buffer: [0;  SignFlowState::DATA_BUFFER_SIZE],
-                    data_counter: 0,
+                    hasher: Hasher::new(),
                 },
                 extractor: InstructionExtractor::new(),
             },
@@ -279,33 +270,42 @@ impl TxSignState {
 
     fn finalize_sign_tx(&mut self, tx_type: SignTxType) -> Result<SignOutcome, AppError> {
         //TODO: show hash to the user?
+        let digest = self.processor.state.finalize()?;
 
         // ask for confirmation, handle rejection
         if !ui::Validator::new("Sign Intent?").ask() {
             return Ok(SignOutcome::SigningRejected);
         }
 
-        self.processor.sign_tx(tx_type)
+        self.processor.sign_tx(tx_type, digest)
     }
 
     fn decode_tx_intent(&mut self, data: &[u8], class: CommandClass) -> Result<(), AppError> {
         let result = self.call_decoder(data);
 
         match result {
-            Ok(outcome) => match outcome {
-                DecodingOutcome::Done(size)
-                    if size == self.processor.tx_size() && class == CommandClass::LastData =>
-                {
-                    Ok(())
-                }
-                DecodingOutcome::NeedMoreData(size)
-                    if size == self.processor.tx_size() && class == CommandClass::Continuation =>
-                {
-                    Ok(())
-                }
-                _ => Err(AppError::BadTxSignLen),
-            },
+            Ok(outcome) => self.validate_outcome(class, outcome),
             Err(err) => Err(err.into()),
+        }
+    }
+
+    fn validate_outcome(
+        &mut self,
+        class: CommandClass,
+        outcome: DecodingOutcome,
+    ) -> Result<(), AppError> {
+        match outcome {
+            DecodingOutcome::Done(size)
+                if size == self.processor.tx_size() && class == CommandClass::LastData =>
+            {
+                Ok(())
+            }
+            DecodingOutcome::NeedMoreData(size)
+                if size == self.processor.tx_size() && class == CommandClass::Continuation =>
+            {
+                Ok(())
+            }
+            _ => Err(AppError::BadTxSignLen),
         }
     }
 

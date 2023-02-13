@@ -554,7 +554,7 @@ mod tests {
             );
             let mut cnt = 0;
 
-            self.collected[0..self.count].iter().zip(vb).all(|(a, b)| {
+            self.collected[..self.count].iter().zip(vb).all(|(a, b)| {
                 assert_eq!(*a, *b, "Elements are not equal at index {}", cnt);
                 cnt += 1;
                 true

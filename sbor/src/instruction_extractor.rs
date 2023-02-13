@@ -270,7 +270,7 @@ mod tests {
         pub fn verify(&self, expected: &[Instruction]) {
             assert_eq!(self.instruction_count, expected.len());
             let mut cnt = 0;
-            self.instructions[0..self.instruction_count]
+            self.instructions[..self.instruction_count]
                 .iter()
                 .zip(expected)
                 .all(|(a, b)| {

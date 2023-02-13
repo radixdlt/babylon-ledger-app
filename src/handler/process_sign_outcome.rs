@@ -5,8 +5,8 @@ use crate::tx_sign_state::SignOutcome;
 pub fn process_sign_outcome(comm: &mut Comm, outcome: SignOutcome) -> Result<(), AppError> {
     match outcome {
         SignOutcome::SigningRejected => Err(AppError::BadTxSignUserRejected),
-        SignOutcome::Signature(signature) => {
-            comm.append(&signature);
+        SignOutcome::Signature { len, signature} => {
+            comm.append(&signature[..(len as usize)]);
             Ok(())
         },
         SignOutcome::SendNextPacket => Ok(())
