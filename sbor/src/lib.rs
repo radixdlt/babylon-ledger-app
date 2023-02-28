@@ -61,6 +61,9 @@
 pub mod decoder_error;
 pub mod instruction;
 pub mod instruction_extractor;
+pub mod instruction_printer;
 pub mod sbor_decoder;
 pub mod sbor_notifications;
 pub mod type_info;
+pub mod display_io;
+pub mod bech32;

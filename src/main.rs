@@ -25,6 +25,7 @@ mod crypto;
 mod handler;
 mod tx_sign_state;
 mod utilities;
+mod ledger_display_io;
 
 nanos_sdk::set_panic!(nanos_sdk::exiting_panic);
 

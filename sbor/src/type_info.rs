@@ -47,7 +47,7 @@ pub const TYPE_PRECISE_DECIMAL: u8 = 0xb6;
 pub const TYPE_NON_FUNGIBLE_LOCAL_ID: u8 = 0xb7;
 
 // end of custom types
-const ADDRESS_LEN: u8 = 27; // 1 byte discriminator + 26 bytes address
+pub const ADDRESS_LEN: u8 = 27; // 1 byte discriminator + 26 bytes address
 pub const COMPONENT_LEN: u8 = 36;
 
 pub const INTEGER_LEN: u8 = 8;

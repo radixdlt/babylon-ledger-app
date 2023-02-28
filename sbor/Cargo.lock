@@ -3,5 +3,14 @@
 version = 3
 
 [[package]]
+name = "arrform"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e7cf566ecc5c9d82b973e81d30babf6583c9b497f86295c952d538c3254ef4e6"
+
+[[package]]
 name = "sbor"
 version = "0.1.0"
+dependencies = [
+ "arrform",
+]

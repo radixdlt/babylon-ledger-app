@@ -7,10 +7,12 @@ use crate::crypto::secp256k1::{KeyPairSecp256k1, SECP256K1_SIGNATURE_LEN};
 use core::any::Any;
 use core::cmp::max;
 
+use crate::ledger_display_io::LedgerDisplayIO;
 use nanos_sdk::io::Comm;
 use nanos_ui::ui;
 use sbor::decoder_error::DecoderError;
 use sbor::instruction_extractor::{ExtractorEvent, InstructionExtractor, InstructionHandler};
+use sbor::instruction_printer::InstructionPrinter;
 use sbor::sbor_decoder::{DecodingOutcome, SborDecoder, SborEventHandler};
 use sbor::sbor_notifications::SborEvent;
 
@@ -28,25 +30,6 @@ struct SignFlowState {
     tx_size: usize,
     path: Bip32Path,
     hasher: Hasher,
-}
-
-impl InstructionHandler for SignFlowState {
-    fn handle(&mut self, event: ExtractorEvent) {
-        // TODO: display instruction
-        match event {
-            ExtractorEvent::InstructionStart(_) => {}
-            ExtractorEvent::ParameterStart(_, _) => {}
-            ExtractorEvent::ParameterData(_) => {}
-            ExtractorEvent::ParameterEnd(_) => {}
-            ExtractorEvent::InstructionEnd(_, _) => {}
-            ExtractorEvent::Notify(_, _) => {}
-            ExtractorEvent::NextPhase(_) => {}
-            ExtractorEvent::WrongParameterCount(_, _) => {}
-            ExtractorEvent::UnknownInstruction(_) => {}
-            ExtractorEvent::InvalidEventSequence => {}
-            ExtractorEvent::UnknownParameterType(_) => {}
-        }
-    }
 }
 
 impl SignFlowState {
@@ -178,6 +161,7 @@ pub enum SignOutcome {
 struct InstructionProcessor {
     state: SignFlowState,
     extractor: InstructionExtractor,
+    printer: InstructionPrinter,
 }
 
 impl InstructionProcessor {
@@ -214,9 +198,11 @@ pub struct TxSignState {
 
 impl SborEventHandler for InstructionProcessor {
     fn handle(&mut self, evt: SborEvent) {
-        self.extractor.handle_event(&mut self.state, evt);
+        self.extractor.handle_event(&mut self.printer, evt);
     }
 }
+
+const LEDGER_DISPLAY: LedgerDisplayIO = LedgerDisplayIO {};
 
 impl TxSignState {
     pub fn new() -> Self {
@@ -231,6 +217,7 @@ impl TxSignState {
                     hasher: Hasher::new(),
                 },
                 extractor: InstructionExtractor::new(),
+                printer: InstructionPrinter::new(&LEDGER_DISPLAY),
             },
         }
     }

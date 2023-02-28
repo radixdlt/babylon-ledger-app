@@ -131,7 +131,7 @@ Use following command to load development seed phrase and set PIN on the develop
 python3 -m ledgerblue.hostOnboard --apdu --id 0 --prefix "" --passphrase "" --pin 5555 --words "equip will roof matter pink blind book anxiety banner elbow sun young"
 ```
 
-The process takes some time (few minutes) to finish. Once
+The process takes some time (few minutes) to finish. Once process finishes, device is ready to use for testing/development purposes.
 
 ### Testing
 
