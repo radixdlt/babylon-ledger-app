@@ -18,6 +18,9 @@ Instructions are provided for Ubuntu 22.04
 
 ### Prerequisites
 
+__WARNING__: At the moment of writing (2023-03-01) Rust nightly build can't properly link binaries. To workaround this,
+use `rustup default nightly-2022-12-31` instead of plan `rustup default nightly`.
+
 #### Install ARM GCC, Binutils, cross-compilation headers:
 
 ```
