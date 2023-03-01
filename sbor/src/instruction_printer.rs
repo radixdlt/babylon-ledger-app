@@ -1,5 +1,6 @@
-use crate::bech32::network::*;
 use crate::bech32::encoder::*;
+use crate::bech32::hrp::*;
+use crate::bech32::network::*;
 use crate::display_io::DisplayIO;
 use crate::instruction::{InstructionInfo, ParameterType};
 use crate::instruction_extractor::{ExtractorEvent, InstructionHandler};
@@ -316,17 +317,17 @@ impl ParameterPrinter for VecOfU8ParameterPrinter {
 // Address printers
 
 struct AddressParameterPrinter {
-    resource_id: ResourceId,
+    resource_id: HrpType,
 }
 
 const RESOURCE_ADDRESS_PARAMETER_PRINTER: AddressParameterPrinter = AddressParameterPrinter {
-    resource_id: ResourceId::Resource,
+    resource_id: HrpType::Resource,
 };
 const COMPONENT_ADDRESS_PARAMETER_PRINTER: AddressParameterPrinter = AddressParameterPrinter {
-    resource_id: ResourceId::Component,
+    resource_id: HrpType::Component,
 };
 const PACKAGE_ADDRESS_PARAMETER_PRINTER: AddressParameterPrinter = AddressParameterPrinter {
-    resource_id: ResourceId::Package,
+    resource_id: HrpType::Package,
 };
 
 impl ParameterPrinter for AddressParameterPrinter {
@@ -347,20 +348,45 @@ impl ParameterPrinter for AddressParameterPrinter {
     }
 
     fn display(&self, state: &ParameterPrinterState, display: &'static dyn DisplayIO) {
+        match hrp_prefix(self.resource_id, state.data[0]) {
+            None => {
+                display.scroll(b"Unknown address type");
+                return;
+            }
+            Some(hrp_prefix) => {
+                self.format_address(&state, display, hrp_prefix)
+            }
+        }
+    }
+}
+
+impl AddressParameterPrinter {
+    fn format_address(&self, state: &ParameterPrinterState, display: &dyn DisplayIO, hrp_prefix: &str) {
         let encodind_result = Bech32::encode(
             arrform!(
-                { Bech32::HRP_MAX_LEN },
-                "{}{}",
-                hrp_prefix(self.resource_id),
-                hrp_suffix(state.network_id)
-            )
-            .as_bytes(),
-            &state.data[..(state.data_counter as usize)],
+                        { Bech32::HRP_MAX_LEN },
+                        "{}{}",
+                        hrp_prefix,
+                        hrp_suffix(state.network_id)
+                    )
+                .as_bytes(),
+            &state.data[1..(state.data_counter as usize)],
         );
-
         match encodind_result {
             Ok(encoder) => display.scroll(encoder.encoded()),
-            Err(_) => display.scroll(b"<invalid address>"),
+            Err(err) => {
+                display.scroll(
+                    arrform!(
+                                { Bech32::HRP_MAX_LEN + 250 },
+                                "Error decoding {:?}({}) address {:?}: >>{:?}<<",
+                                self.resource_id,
+                                state.data[0],
+                                err,
+                                &state.data[..(state.data_counter as usize)]
+                            )
+                        .as_bytes(),
+                );
+            }
         }
     }
 }

@@ -7,6 +7,88 @@ pub struct Bech32 {
     actual_len: usize,
 }
 
+struct Base32Expander {
+    expanded: [u8; Bech32::MAX_LEN],
+    expanded_len: usize,
+}
+
+impl Base32Expander {
+    fn new() -> Self {
+        Self {
+            expanded: [0; Bech32::MAX_LEN],
+            expanded_len: 0,
+        }
+    }
+
+    fn expanded(&mut self) -> &[u8] {
+       &self.expanded[..self.expanded_len]
+    }
+
+    fn append(&mut self, byte: u8) {
+        // NOTE: No bound checking as caller already verified that data fits into the buffer
+        self.expanded[self.expanded_len] = byte;
+        self.expanded_len += 1;
+    }
+
+// Base32 expansion code is based on rust-bech32 implementation. Original copyright is cited below:
+// Copyright (c) 2017 Clark Moody
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+    fn expand(&mut self, data: &[u8]) -> Result<(), Bech32Error> {
+        let max_len = (data.len() * 8 + 4)/5;
+
+        if max_len > self.expanded.len() {
+            return Err(Bech32Error::InputTooLong);
+        }
+
+        let mut remaining_bits = 0u32;
+        let mut work_buffer: u8 = 0;
+
+        for &b in data {
+            if remaining_bits >= 5 {
+                self.append((work_buffer & 0b1111_1000) >> 3);
+                work_buffer <<= 5;
+                remaining_bits -= 5;
+            }
+
+            let from_buffer = work_buffer >> 3;
+            let from_byte = b >> (3 + remaining_bits);
+
+            self.append(from_buffer | from_byte);
+            work_buffer = b << (5 - remaining_bits);
+            remaining_bits += 3;
+        }
+
+        if remaining_bits >= 5 {
+            self.append((work_buffer & 0b1111_1000) >> 3);
+            work_buffer <<= 5;
+            remaining_bits -= 5;
+        }
+
+        if remaining_bits != 0 {
+            self.append(work_buffer >> 3);
+        }
+
+        Ok(())
+    }
+}
+
 impl Bech32 {
     pub const MAX_LEN: usize = 90; // BIP173
     pub const HRP_MAX_LEN: usize = 83; // BIP173
@@ -21,6 +103,13 @@ impl Bech32 {
     }
 
     pub fn encode(hrp: &[u8], data: &[u8]) -> Result<Bech32, Bech32Error> {
+        let mut expander = Base32Expander::new();
+        expander.expand(data)?;
+
+        Self::encode_from_base32(hrp, expander.expanded())
+    }
+
+    pub fn encode_from_base32(hrp: &[u8], data: &[u8]) -> Result<Bech32, Bech32Error> {
         Self::check_hrp(hrp)?;
         let mut encoder = Bech32::new();
         encoder.encode_hrp(hrp)?;
@@ -52,7 +141,7 @@ impl Bech32 {
         Ok(())
     }
 
-    fn encode_hrp(&mut self, hrp: &[u8]) -> Result<&mut Self, Bech32Error> {
+    fn encode_hrp(&mut self, hrp: &[u8]) -> Result<(), Bech32Error> {
         for &ch in hrp {
             self.polymod_step(ch >> 5);
         }
@@ -64,14 +153,14 @@ impl Bech32 {
             self.append(ch)?;
         }
 
-        Ok(self)
+        Ok(())
     }
 
-    fn append_separator(&mut self) -> Result<&mut Self, Bech32Error> {
+    fn append_separator(&mut self) -> Result<(), Bech32Error> {
         self.append(b'1')
     }
 
-    fn encode_data(&mut self, data: &[u8]) -> Result<&mut Self, Bech32Error> {
+    fn encode_data(&mut self, data: &[u8]) -> Result<(), Bech32Error> {
         for &byte in data {
             if (byte >> 5) != 0 {
                 return Err(Bech32Error::InvalidDataByte);
@@ -80,10 +169,10 @@ impl Bech32 {
             self.polymod_step(byte);
             self.append(CHARSET[byte as usize])?;
         }
-        Ok(self)
+        Ok(())
     }
 
-    fn encode_checksum(&mut self) -> Result<&mut Self, Bech32Error> {
+    fn encode_checksum(&mut self) -> Result<(), Bech32Error> {
         for _ in 0..6 {
             self.polymod_step(0);
         }
@@ -94,10 +183,10 @@ impl Bech32 {
             let byte = (self.chk >> ((5 - i) * 5)) as u8;
             self.append(CHARSET[(byte & 0x1f) as usize])?;
         }
-        Ok(self)
+        Ok(())
     }
 
-    fn append(&mut self, byte: u8) -> Result<&mut Self, Bech32Error> {
+    fn append(&mut self, byte: u8) -> Result<(), Bech32Error> {
         if self.actual_len == Self::MAX_LEN {
             return Err(Bech32Error::EncodedAddressTooLong);
         }
@@ -105,7 +194,7 @@ impl Bech32 {
         self.encoded[self.actual_len] = byte;
         self.actual_len += 1;
 
-        Ok(self)
+        Ok(())
     }
 
     const GEN: [u32; 5] = [
@@ -135,6 +224,7 @@ pub enum Bech32Error {
     InvalidHrpChar,
     InvalidDataByte,
     EncodedAddressTooLong,
+    InputTooLong,
 }
 
 #[cfg(test)]
@@ -142,7 +232,7 @@ mod tests {
     use super::*;
 
     fn test_encode(hrp: &[u8], data: &[u8], encoded: &[u8]) {
-        match Bech32::encode(hrp, data) {
+        match Bech32::encode_from_base32(hrp, data) {
             Ok(data) => assert_eq!(data.encoded(), encoded),
             Err(err) => assert!(
                 false,
@@ -154,7 +244,7 @@ mod tests {
 
     #[test]
     fn test_hrp_len() {
-        match Bech32::encode(b"", &[1u8, 2, 3, 4]) {
+        match Bech32::encode_from_base32(b"", &[1u8, 2, 3, 4]) {
             Ok(_) => assert!(false),
             Err(err) => assert_eq!(err, Bech32Error::InvalidHrpLen),
         };
@@ -162,7 +252,7 @@ mod tests {
 
     #[test]
     fn test_hrp_case() {
-        match Bech32::encode(b"A", &[1u8, 2, 3, 4]) {
+        match Bech32::encode_from_base32(b"A", &[1u8, 2, 3, 4]) {
             Ok(_) => assert!(false),
             Err(err) => assert_eq!(err, Bech32Error::UpperCaseNotSupported),
         };
