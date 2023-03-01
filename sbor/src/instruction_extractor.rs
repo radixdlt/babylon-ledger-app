@@ -5,7 +5,7 @@ use crate::sbor_notifications::SborEvent;
 use crate::type_info::{to_type_info, TypeKind, TYPE_ARRAY, TYPE_ENUM, TYPE_NONE, TYPE_TUPLE};
 
 #[repr(u8)]
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug)]
 pub enum ExtractorPhase {
     Init,
     IntentShell,
@@ -20,7 +20,7 @@ pub enum ExtractorPhase {
 }
 
 #[repr(u8)]
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug)]
 pub enum InstructionPhase {
     WaitForDiscriminator,
     WaitForParameterCount,

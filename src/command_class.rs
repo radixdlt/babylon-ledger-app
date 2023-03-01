@@ -1,7 +1,7 @@
 // APDU Command Class for Radix Ledger Apps
 
 #[repr(u8)]
-#[derive(Eq, PartialEq, Copy, Clone)]
+#[derive(PartialEq, Copy, Clone)]
 pub enum CommandClass {
     Regular,
     Continuation,

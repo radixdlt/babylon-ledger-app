@@ -11,7 +11,7 @@ use core::result::Result::{Err, Ok};
 pub const STACK_DEPTH: u8 = 48;
 pub const SBOR_LEADING_BYTE: u8 = 0x5c;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy)]
 struct State {
     items_to_read: u32,
     items_read: u32,
@@ -27,23 +27,22 @@ struct State {
     flip_flop: FlipFlopState,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(u8)]
+#[derive(Debug, Clone, Copy)]
 pub enum DecodingOutcome {
     Done(usize),
     NeedMoreData(usize),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
+#[derive(Debug, Clone, Copy)]
 enum SubTypeKind {
     Element,
     Key,
     Value,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
+#[derive(Debug, Clone, Copy)]
 enum FlipFlopState {
     Key,
     Value,

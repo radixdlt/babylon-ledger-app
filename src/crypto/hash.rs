@@ -2,7 +2,6 @@ use crate::app_error::AppError;
 use core::ffi::c_uint;
 use core::intrinsics::write_bytes;
 use core::mem::size_of;
-use core::ptr::hash;
 use nanos_sdk::bindings::{cx_sha512_t, CX_OK};
 
 const SHA256_DIGEST_SIZE: usize = 32; // 256 bits
@@ -10,7 +9,7 @@ const SHA512_DIGEST_SIZE: usize = 64; // 512 bits
 const MAX_DIGEST_SIZE: usize = SHA512_DIGEST_SIZE;
 
 #[repr(u8)]
-#[derive(Eq, PartialEq, Copy, Clone)]
+#[derive(Copy, Clone)]
 pub enum HashType {
     DoubleSHA256,
     SHA512,

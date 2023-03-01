@@ -1,6 +1,5 @@
 #![no_std]
 #![no_main]
-#![allow(unused_imports)]
 #![allow(dead_code)]
 #![feature(result_option_inspect)]
 #![feature(const_cmp)]
@@ -12,20 +11,16 @@ use nanos_ui::ui::SingleMessage;
 use handler::dispatcher;
 
 use crate::app_error::AppError;
-use crate::command::Command;
-use crate::crypto::bip32::Bip32Path;
-use crate::crypto::ed25519::KeyPair25519;
 use crate::tx_sign_state::TxSignState;
-use crate::utilities::version::{MODEL_DATA, VERSION_DATA};
 
 mod app_error;
 mod command;
 mod command_class;
 mod crypto;
 mod handler;
+mod ledger_display_io;
 mod tx_sign_state;
 mod utilities;
-mod ledger_display_io;
 
 nanos_sdk::set_panic!(nanos_sdk::exiting_panic);
 

@@ -15,7 +15,7 @@ opt-level = 0
 lto = false
 
 [profile.release]
-opt-level = 's'
+opt-level = 1
 lto = true
 
 [package.metadata.nanos]

@@ -217,7 +217,8 @@ impl Bech32 {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[repr(u8)]
+#[derive(Debug, Clone)]
 pub enum Bech32Error {
     InvalidHrpLen,
     UpperCaseNotSupported,

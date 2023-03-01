@@ -9,7 +9,7 @@ use nanos_sdk::bindings::{
     CX_EC_INVALID_CURVE, CX_EC_INVALID_POINT, CX_INTERNAL_ERROR, CX_INVALID_PARAMETER,
     CX_INVALID_PARAMETER_SIZE, CX_INVALID_PARAMETER_VALUE, CX_LOCKED, CX_MEMORY_FULL,
     CX_NOT_INVERTIBLE, CX_NOT_LOCKED, CX_NOT_UNLOCKED, CX_NO_RESIDUE, CX_OK, CX_OVERFLOW,
-    CX_SHA512, CX_UNLOCKED, HDW_ED25519_SLIP10, HDW_NORMAL,
+    CX_UNLOCKED, HDW_ED25519_SLIP10, HDW_NORMAL,
 };
 pub use nanos_sdk::bindings::{cx_ecfp_private_key_t, cx_ecfp_public_key_t, size_t};
 
@@ -26,7 +26,7 @@ impl Drop for Seed {
 }
 
 #[repr(u8)]
-#[derive(Copy, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum Curve {
     Secp256k1 = CX_CURVE_SECP256K1,
     Ed25519 = CX_CURVE_Ed25519,

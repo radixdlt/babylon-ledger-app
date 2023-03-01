@@ -51,6 +51,10 @@ impl InstructionPrinter {
         }
     }
 
+    pub fn set_network(&mut self, network_id: NetworkId) {
+        self.state.set_network(network_id);
+    }
+
     pub fn start_instruction(&mut self, info: InstructionInfo) {
         self.active_instruction = Some(info);
         self.display.scroll(info.name);
@@ -102,6 +106,10 @@ impl ParameterPrinterState {
             flip_flop: false,
             network_id,
         }
+    }
+
+    pub fn set_network(&mut self, network_id: NetworkId) {
+        self.network_id = network_id;
     }
 
     pub fn reset(&mut self) {

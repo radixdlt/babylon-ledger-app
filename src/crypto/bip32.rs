@@ -1,12 +1,10 @@
-use core::intrinsics::{copy, write_bytes};
-use core::ptr::copy_nonoverlapping;
+use core::intrinsics::write_bytes;
 use core::str::from_utf8;
 
 use nanos_sdk::io::Comm;
 use nanos_ui::ui;
 
-use crate::utilities::conversion::{read_u32_be, read_u32_le, to_hex, to_hex_str, to_str};
-use crate::utilities::{debug, debug_arr, debug_prepared_message, debug_u32};
+use crate::utilities::conversion::{read_u32_be, to_hex_str};
 use crate::AppError;
 
 const BIP32_REQUIRED_LEN: u8 = 6;

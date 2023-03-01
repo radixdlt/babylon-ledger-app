@@ -1,5 +1,5 @@
 #[repr(u8)]
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub enum NetworkId {
     MainNet = 1,              //, "mainnet", "rdx"),
     StokeNet = 2,             //, "stokenet", "tdx_2_"),

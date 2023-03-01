@@ -3,7 +3,7 @@
 // Keep in sync with
 // https://raw.githubusercontent.com/radixdlt/radixdlt-scrypto/develop/transaction/src/model/instruction.rs
 #[repr(u8)]
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub enum Instruction {
     TakeFromWorktop,               //{ resource_address: ResourceAddress, },
     TakeFromWorktopByAmount,       // { amount: Decimal, resource_address: ResourceAddress, },
@@ -46,7 +46,7 @@ pub enum Instruction {
 }
 
 #[repr(u8)]
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub enum ParameterType {
     Ignored,
     AccessRule,
@@ -392,5 +392,3 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
         _ => None,
     }
 }
-
-//////////////////////////////////////////////////////////////////////////////

@@ -4,20 +4,20 @@ use crate::crypto::bip32::Bip32Path;
 use crate::crypto::ed25519::{KeyPair25519, ED25519_SIGNATURE_LEN};
 use crate::crypto::hash::{Digest, HashType, Hasher};
 use crate::crypto::secp256k1::{KeyPairSecp256k1, SECP256K1_SIGNATURE_LEN};
-use core::any::Any;
 use core::cmp::max;
 
 use crate::ledger_display_io::LedgerDisplayIO;
 use nanos_sdk::io::Comm;
 use nanos_ui::ui;
+use sbor::bech32::network::NetworkId;
 use sbor::decoder_error::DecoderError;
-use sbor::instruction_extractor::{ExtractorEvent, InstructionExtractor, InstructionHandler};
+use sbor::instruction_extractor::InstructionExtractor;
 use sbor::instruction_printer::InstructionPrinter;
 use sbor::sbor_decoder::{DecodingOutcome, SborDecoder, SborEventHandler};
 use sbor::sbor_notifications::SborEvent;
 
 #[repr(u8)]
-#[derive(Eq, PartialEq, Copy, Clone)]
+#[derive(PartialEq, Copy, Clone)]
 pub enum SignTxType {
     None,
     Ed25519,
@@ -173,6 +173,10 @@ impl InstructionProcessor {
         self.state.tx_size
     }
 
+    pub fn set_network(&mut self, network_id: NetworkId) {
+        self.printer.set_network(network_id);
+    }
+
     pub fn process_data(
         &mut self,
         comm: &mut Comm,
@@ -217,9 +221,13 @@ impl TxSignState {
                     hasher: Hasher::new(),
                 },
                 extractor: InstructionExtractor::new(),
-                printer: InstructionPrinter::new(&LEDGER_DISPLAY),
+                printer: InstructionPrinter::new(&LEDGER_DISPLAY, NetworkId::LocalNet),
             },
         }
+    }
+
+    pub fn set_network(&mut self, network_id: NetworkId) {
+        self.processor.set_network(network_id);
     }
 
     pub fn process_request(

@@ -1,7 +1,5 @@
 use crate::app_error::AppError;
 use crate::command_class::CommandClass;
-use crate::crypto::bip32::Bip32Path;
-use crate::crypto::secp256k1::KeyPairSecp256k1;
 use crate::handler::process_sign_outcome::process_sign_outcome;
 use crate::tx_sign_state::{SignTxType, TxSignState};
 use nanos_sdk::io::Comm;

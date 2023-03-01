@@ -1,13 +1,10 @@
-use core::ffi::{c_uchar, c_uint};
-use core::ptr::{copy, null_mut, write_bytes};
-use core::str::from_utf8;
-use nanos_sdk::bindings::{cx_err_t, cx_md_t, CX_SHA256, CX_SHA512, size_t};
+use core::ptr::write_bytes;
+use nanos_sdk::bindings::{cx_err_t, cx_md_t, CX_SHA512, size_t};
 
 use crate::app_error::AppError;
 use crate::crypto::bip32::Bip32Path;
 use crate::crypto::curves::{cx_ecfp_public_key_t, generate_key_pair, Curve};
 use crate::crypto::key_pair::InternalKeyPair;
-use crate::utilities::{debug, debug_arr, debug_u32};
 
 const ED25519_PUBLIC_KEY_LEN: usize = 32;
 const ED25519_PRIVATE_KEY_LEN: usize = 32;

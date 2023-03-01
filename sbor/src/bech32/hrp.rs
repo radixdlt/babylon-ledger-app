@@ -1,7 +1,7 @@
 use crate::bech32::network::NetworkId;
 
 #[repr(u8)]
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub enum HrpType {
     Package,
     Resource,
