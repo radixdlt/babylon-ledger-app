@@ -83,7 +83,7 @@ pub const NFL_BYTES: u8 = 2;
 pub const NFL_UUID: u8 = 3;
 
 #[repr(u8)]
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum DecoderPhase {
     ReadingTypeId,
     ReadingElementTypeId,
@@ -97,7 +97,7 @@ pub enum DecoderPhase {
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum TypeKind {
     None,
     Bool,
@@ -134,7 +134,7 @@ pub enum TypeKind {
     NonFungibleLocalId,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Copy, Clone, Debug)]
 pub struct TypeInfo {
     pub next_phases: &'static [DecoderPhase],
     pub fixed_len: u8,

@@ -1,7 +1,7 @@
 // Process events received from decoder and extract data related to instructions
 
 use crate::instruction::{to_instruction, InstructionInfo};
-use crate::sbor_notifications::SborEvent;
+use crate::sbor_decoder::SborEvent;
 use crate::type_info::{to_type_info, TypeKind, TYPE_ARRAY, TYPE_ENUM, TYPE_NONE, TYPE_TUPLE};
 
 #[repr(u8)]
@@ -236,10 +236,9 @@ impl InstructionExtractor {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::instruction::Instruction;
-    use crate::instruction_extractor::{ExtractorEvent, InstructionExtractor, InstructionHandler};
-    use crate::sbor_decoder::{DecodingOutcome, SborDecoder, SborEventHandler};
-    use crate::sbor_notifications::SborEvent;
+    use crate::sbor_decoder::*;
 
     struct InstructionProcessor {
         extractor: InstructionExtractor,

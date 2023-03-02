@@ -1,5 +1,5 @@
 // Errors which could appear during decoding
-#[derive(Debug, Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum DecoderError {
     UnknownType(usize, u8),          // Unknown main type id
     UnknownSubType(usize, u8),       // Unknown sub type id (element, key, value)

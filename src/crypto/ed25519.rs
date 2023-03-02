@@ -1,5 +1,5 @@
 use core::ptr::write_bytes;
-use nanos_sdk::bindings::{cx_err_t, cx_md_t, CX_SHA512, size_t};
+use nanos_sdk::bindings::{cx_err_t, cx_md_t, size_t, CX_SHA512};
 
 use crate::app_error::AppError;
 use crate::crypto::bip32::Bip32Path;
@@ -86,7 +86,7 @@ impl KeyPair25519 {
                 message.as_ptr(),
                 message.len() as size_t,
                 signature.as_mut_ptr(),
-                signature.len() as size_t
+                signature.len() as size_t,
             );
         }
 

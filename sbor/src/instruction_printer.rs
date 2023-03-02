@@ -4,7 +4,7 @@ use crate::bech32::network::*;
 use crate::display_io::DisplayIO;
 use crate::instruction::{InstructionInfo, ParameterType};
 use crate::instruction_extractor::{ExtractorEvent, InstructionHandler};
-use crate::sbor_notifications::SborEvent;
+use crate::sbor_decoder::SborEvent;
 use crate::type_info::ADDRESS_LEN;
 use arrform::{arrform, ArrForm};
 use core::str::from_utf8;
@@ -133,7 +133,7 @@ trait ParameterPrinter {
 fn get_printer_for_type(param_type: ParameterType) -> &'static dyn ParameterPrinter {
     match param_type {
         ParameterType::Ignored => &IGNORED_PARAMETER_PRINTER,
-        ParameterType::AccessRule => &IGNORED_PARAMETER_PRINTER,
+        ParameterType::AccessRule => &ACCESS_RULE_PARAMETER_PRINTER,
         ParameterType::AccessRuleKey => &IGNORED_PARAMETER_PRINTER,
         ParameterType::AccessRules => &IGNORED_PARAMETER_PRINTER,
         ParameterType::BTreeMapByNonFungibleLocalId => &IGNORED_PARAMETER_PRINTER,
@@ -361,23 +361,26 @@ impl ParameterPrinter for AddressParameterPrinter {
                 display.scroll(b"Unknown address type");
                 return;
             }
-            Some(hrp_prefix) => {
-                self.format_address(&state, display, hrp_prefix)
-            }
+            Some(hrp_prefix) => self.format_address(&state, display, hrp_prefix),
         }
     }
 }
 
 impl AddressParameterPrinter {
-    fn format_address(&self, state: &ParameterPrinterState, display: &dyn DisplayIO, hrp_prefix: &str) {
+    fn format_address(
+        &self,
+        state: &ParameterPrinterState,
+        display: &dyn DisplayIO,
+        hrp_prefix: &str,
+    ) {
         let encodind_result = Bech32::encode(
             arrform!(
-                        { Bech32::HRP_MAX_LEN },
-                        "{}{}",
-                        hrp_prefix,
-                        hrp_suffix(state.network_id)
-                    )
-                .as_bytes(),
+                { Bech32::HRP_MAX_LEN },
+                "{}{}",
+                hrp_prefix,
+                hrp_suffix(state.network_id)
+            )
+            .as_bytes(),
             &state.data[1..(state.data_counter as usize)],
         );
         match encodind_result {
@@ -385,29 +388,65 @@ impl AddressParameterPrinter {
             Err(err) => {
                 display.scroll(
                     arrform!(
-                                { Bech32::HRP_MAX_LEN + 250 },
-                                "Error decoding {:?}({}) address {:?}: >>{:?}<<",
-                                self.resource_id,
-                                state.data[0],
-                                err,
-                                &state.data[..(state.data_counter as usize)]
-                            )
-                        .as_bytes(),
+                        { Bech32::HRP_MAX_LEN + 250 },
+                        "Error decoding {:?}({}) address {:?}: >>{:?}<<",
+                        self.resource_id,
+                        state.data[0],
+                        err,
+                        &state.data[..(state.data_counter as usize)]
+                    )
+                    .as_bytes(),
                 );
             }
         }
     }
 }
 
+// AccessRule parameter printer
+// Vec<u8> parameter printer
+struct AccessRuleParameterPrinter {}
+
+const ACCESS_RULE_PARAMETER_PRINTER: AccessRuleParameterPrinter = AccessRuleParameterPrinter {};
+
+impl ParameterPrinter for AccessRuleParameterPrinter {
+    fn handle_data_event(
+        &self,
+        state: &mut ParameterPrinterState,
+        event: SborEvent,
+        _display: &'static dyn DisplayIO,
+    ) {
+        if let SborEvent::Discriminator(byte) = event {
+            if state.data_counter > 0 {
+                return;
+            }
+
+            state.data[state.data_counter as usize] = byte;
+            state.data_counter += 1;
+        }
+    }
+
+    fn display(&self, state: &ParameterPrinterState, display: &'static dyn DisplayIO) {
+        let message:&[u8] = match (state.data_counter, state.data[0]) {
+            (1, 0) => b"AllowAll",
+            (1, 1) => b"DenyAll",
+            (1, 2) => b"Protected(<rules not decoded>)",
+            (1, _) => b"<unknown access rule>",
+            (_, _) => b"<invalid encoding>",
+        };
+
+        display.scroll(message);
+    }
+}
+
+
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::bech32::network::NetworkId;
     use crate::display_io::DisplayIO;
     use crate::instruction::Instruction;
-    use crate::instruction_extractor::{ExtractorEvent, InstructionExtractor, InstructionHandler};
-    use crate::instruction_printer::InstructionPrinter;
-    use crate::sbor_decoder::{DecodingOutcome, SborDecoder, SborEventHandler};
-    use crate::sbor_notifications::SborEvent;
+    use crate::instruction_extractor::*;
+    use crate::sbor_decoder::*;
     use core::cmp::min;
     use core::str::from_utf8;
 

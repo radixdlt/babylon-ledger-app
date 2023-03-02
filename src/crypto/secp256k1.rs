@@ -1,5 +1,7 @@
 use core::ptr::write_bytes;
-use nanos_sdk::bindings::{CX_ECCINFO_PARITY_ODD, cx_err_t, CX_LAST, cx_md_t, CX_RND_RFC6979, CX_SHA256};
+use nanos_sdk::bindings::{
+    cx_err_t, cx_md_t, CX_ECCINFO_PARITY_ODD, CX_LAST, CX_RND_RFC6979, CX_SHA256,
+};
 
 use crate::app_error::AppError;
 use crate::crypto::bip32::Bip32Path;

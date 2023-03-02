@@ -3,7 +3,7 @@
 // Keep in sync with
 // https://raw.githubusercontent.com/radixdlt/radixdlt-scrypto/develop/transaction/src/model/instruction.rs
 #[repr(u8)]
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Instruction {
     TakeFromWorktop,               //{ resource_address: ResourceAddress, },
     TakeFromWorktopByAmount,       // { amount: Decimal, resource_address: ResourceAddress, },

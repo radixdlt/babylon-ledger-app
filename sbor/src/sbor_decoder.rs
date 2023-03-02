@@ -1,7 +1,6 @@
 // SBOR decoder
 
 use crate::decoder_error::DecoderError;
-use crate::sbor_notifications::SborEvent;
 use crate::type_info::*;
 use core::default::Default;
 use core::option::Option::{None, Some};
@@ -11,7 +10,7 @@ use core::result::Result::{Err, Ok};
 pub const STACK_DEPTH: u8 = 48;
 pub const SBOR_LEADING_BYTE: u8 = 0x5c;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Copy, Clone, Debug)]
 struct State {
     items_to_read: u32,
     items_read: u32,
@@ -27,14 +26,30 @@ struct State {
     flip_flop: FlipFlopState,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum DecodingOutcome {
     Done(usize),
     NeedMoreData(usize),
 }
 
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum SborEvent {
+    Start {
+        type_id: u8,
+        nesting_level: u8,
+        fixed_size: u8,
+    },
+    Len(u32),
+    Discriminator(u8),
+    Data(u8),
+    End {
+        type_id: u8,
+        nesting_level: u8,
+    },
+}
+
 #[repr(u8)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Copy, Clone, Debug)]
 enum SubTypeKind {
     Element,
     Key,
@@ -42,7 +57,7 @@ enum SubTypeKind {
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Copy, Clone, Debug)]
 enum FlipFlopState {
     Key,
     Value,
@@ -467,8 +482,7 @@ mod tests {
     use core::fmt::Formatter;
     use core::fmt::Result;
 
-    use crate::sbor_decoder::{DecodingOutcome, SborDecoder, SborEventHandler};
-    use crate::sbor_notifications::SborEvent;
+    use super::*;
 
     #[cfg(test)]
     impl Display for SborEvent {

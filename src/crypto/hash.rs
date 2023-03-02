@@ -9,13 +9,13 @@ const SHA512_DIGEST_SIZE: usize = 64; // 512 bits
 const MAX_DIGEST_SIZE: usize = SHA512_DIGEST_SIZE;
 
 #[repr(u8)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum HashType {
     DoubleSHA256,
     SHA512,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Digest {
     container: [u8; MAX_DIGEST_SIZE],
     hash_type: HashType,
@@ -137,9 +137,8 @@ impl Hasher {
     fn finalize_double_sha256(&mut self) -> Result<Digest, AppError> {
         let mut first_pass_digest = [0u8; SHA256_DIGEST_SIZE];
 
-        let rc = unsafe {
-            cx_hash_final(self.work_data.as_mut_ptr(), first_pass_digest.as_mut_ptr())
-        };
+        let rc =
+            unsafe { cx_hash_final(self.work_data.as_mut_ptr(), first_pass_digest.as_mut_ptr()) };
 
         if rc != CX_OK {
             return Err(rc.into());
@@ -148,7 +147,12 @@ impl Hasher {
         let mut digest = Digest::new(HashType::DoubleSHA256);
 
         let rc = unsafe {
-            cx_hash_sha256(&mut first_pass_digest as *mut u8, SHA256_DIGEST_SIZE as c_uint, digest.as_mut(), SHA256_DIGEST_SIZE as c_uint)
+            cx_hash_sha256(
+                &mut first_pass_digest as *mut u8,
+                SHA256_DIGEST_SIZE as c_uint,
+                digest.as_mut(),
+                SHA256_DIGEST_SIZE as c_uint,
+            )
         };
 
         self.reset();
@@ -159,9 +163,7 @@ impl Hasher {
     fn finalize_sha512(&mut self) -> Result<Digest, AppError> {
         let mut digest = Digest::new(HashType::SHA512);
 
-        let rc = unsafe {
-            cx_hash_final(self.work_data.as_mut_ptr(), digest.as_mut())
-        };
+        let rc = unsafe { cx_hash_final(self.work_data.as_mut_ptr(), digest.as_mut()) };
 
         Self::to_result(rc).map(|_| digest)
     }
