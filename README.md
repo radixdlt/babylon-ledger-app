@@ -47,10 +47,11 @@ rustup component add rust-src
 rustup target add thumbv6m-none-eabi
 ```
 
-#### Install Cargo Ledger and LedgerBlue (format conversion and upload to device tools)
+#### Install Cargo Ledger, LedgerBlue and ledgerctl tools 
 
 `cargo install --git https://github.com/LedgerHQ/cargo-ledger`
 `python3 -m pip install ledgerblue`
+``
 
 ## Build Commands
 
@@ -62,15 +63,18 @@ For building binaries for all supported targets, use following script:
 prepare-binaries.sh
 ```
 
-### Loading binaries for testing purposes
+### Compiling and loading binaries for development/testing purposes
 
-For testing purposes also can be used following script:
+Following script builds debug binaries for Ledger Nano S:
 
+```shell
+build-nanos.sh
 ```
-load-nanos.sh
-```
 
-It builds binaries for Ledger Nano and makes attempt to load it into attached device.
+Following script loads pre-built debug binaries into Ledger Nano S:
+```shell
+flash-nanos.sh
+```
 
 ### Individual Targets
 
@@ -89,14 +93,6 @@ To prepare necessary data, use one of the following commands:
 cargo ledger nanos
 cargo ledger nanospus
 cargo ledger nanox
-```
-
-If necessary, binaries also could be uploaded to target device (must be attached and unlocked by the moment, when
-command is executed).
-To do this, add `-l` flag to the `cargo ledger` command, as follows:
-
-```
-cargo ledger nanos -l
 ```
 
 ### Development Device Setup (Nano S)
