@@ -11,12 +11,12 @@ nanos_ui = { git = "https://github.com/LedgerHQ/ledger-nanos-ui.git" }
 sbor = { path = "./sbor", default-features = false }
 
 [profile.dev]
-opt-level = 0
+opt-level = "z"
 lto = false
 
 [profile.release]
-opt-level = 1
-lto = true
+opt-level = "z"
+lto = false
 
 [package.metadata.nanos]
 curve = ["secp256k1", "ed25519"]
