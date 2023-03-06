@@ -37,9 +37,13 @@ For convenience command above also present as shell script located in project ro
 run-app-builder.sh
 ```
 
-For development purposes it is convenient to use following command to build debug binaries:
+For development purposes it is convenient to use following command to build debug binaries for Ledger Nano S:
 ```shell
 build-nanos.sh
+```
+Similar command for Nano S Plus:
+```shell
+build-nanos-plus.sh
 ```
 
 ### Flashing Built Firmware
@@ -64,7 +68,13 @@ Installing `cargo-ledger`:
 ```shell
 cargo install --git https://github.com/LedgerHQ/cargo-ledger
 ```
-Once necessary tools successfully installed, following command can be used to flash firmware:
+Once necessary tools successfully installed, following command can be used to flash firmware into Ledger Nano S:
 ```shell
 flash-nanos.sh
 ```
+Similar command for Ledger Nano S Plus:
+```shell
+flash-nanos-plus.sh
+```
+__WARNING:__ Binaries for Nano S and Nano S Plus are incompatible, hence it is mandatory to use correct build and flash 
+commands which correspond actual device used for development.

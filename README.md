@@ -14,11 +14,12 @@ binaries using `prepare-binaries.sh` script.
 
 ## Local Build Environment Setup
 
-Instructions are provided for Ubuntu 22.04
+Instructions are provided for Ubuntu 22.04. For other operating systems it is suggested to use 
+Docker builder image. Refer to builder image [documentation](./app-builder/README.md) for details.
 
 ### Prerequisites
 
-__WARNING__: At the moment of writing (2023-03-01) Rust nightly build can't properly link binaries. To workaround this,
+__WARNING__: At the moment of writing (2023-03-01) Rust nightly build can't properly link binaries. As a workaround,
 use `rustup default nightly-2023-01-31` instead of plan `rustup default nightly`.
 
 #### Install ARM GCC, Binutils, cross-compilation headers:
@@ -65,28 +66,44 @@ prepare-binaries.sh
 
 ### Compiling and loading binaries for development/testing purposes
 
-Following script builds debug binaries for Ledger Nano S:
-
+Following script builds debug binary for Ledger Nano S:
 ```shell
 build-nanos.sh
 ```
-
-Following script loads pre-built debug binaries into Ledger Nano S:
+Following script loads pre-built debug binary into Ledger Nano S:
 ```shell
 flash-nanos.sh
 ```
+For Ledger Nano S Plus corresponding commands are following:
+```shell
+build-nanos-plus.sh
+```
+and
+```shell
+flash-nanos-plus.sh
+```
+__WARNING:__ Binaries for different devices are incompatible. So, build and flash scripts
+should be used in pairs and correspond to actual device.
 
 ### Individual Targets
+
+#### Prerequisite
+In order to work commands below require following environment variables to be set:
+```shell
+export LEDGER_TARGETS=./target-config
+export CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
+
+```
 
 Build commands for individual targets:
 
 ```
-cargo build --release -Z build-std=core --target=./target-config/nanos.json
-cargo build --release -Z build-std=core --target=./target-config/nanosplus.json
-cargo build --release -Z build-std=core --target=./target-config/nanox.json
+cargo build --release -Z build-std=core -Z build-std-features=compiler-builtins-mem --target=./target-config/nanos.json
+cargo build --release -Z build-std=core -Z build-std-features=compiler-builtins-mem --target=./target-config/nanosplus.json
+cargo build --release -Z build-std=core -Z build-std-features=compiler-builtins-mem --target=./target-config/nanox.json
 ```
 
-Note that these commands build application but do not prepare data necessary for uploading app to hardware wallet.
+Note that these commands build application but do not prepare data necessary for flashing app to hardware wallet.
 To prepare necessary data, use one of the following commands:
 
 ```
