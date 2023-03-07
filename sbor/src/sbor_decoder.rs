@@ -1241,7 +1241,7 @@ mod tests {
             0x1a, //        element 0 discriminator (SetMethodAccessRule)
             0x04, //        4 fields
             0x22, //          enum 0
-            0x00, //          discriminator (GlobalAddress::Component)
+            0x00, //          discriminator (ManifestAddress::Package)
             0x01, //            1 parameter
             0x81, //              parameter type (component address)
             0x02, //              discriminator

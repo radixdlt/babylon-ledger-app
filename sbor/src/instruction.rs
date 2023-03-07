@@ -1,14 +1,48 @@
 // Instructions recognized by instruction extractor
-
 // Keep in sync with
 // https://raw.githubusercontent.com/radixdlt/radixdlt-scrypto/develop/transaction/src/model/instruction.rs
+
+const TAKE_FROM_WORKTOP: u8 = 00;
+const TAKE_FROM_WORKTOP_BY_AMOUNT: u8 = 01;
+const TAKE_FROM_WORKTOP_BY_IDS: u8 = 02;
+const RETURN_TO_WORKTOP: u8 = 03;
+const ASSERT_WORKTOP_CONTAINS: u8 = 04;
+const ASSERT_WORKTOP_CONTAINS_BY_AMOUNT: u8 = 05;
+const ASSERT_WORKTOP_CONTAINS_BY_IDS: u8 = 06;
+const POP_FROM_AUTH_ZONE: u8 = 07;
+const PUSH_TO_AUTH_ZONE: u8 = 08;
+const CLEAR_AUTH_ZONE: u8 = 09;
+const CREATE_PROOF_FROM_AUTH_ZONE: u8 = 10;
+const CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT: u8 = 11;
+const CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS: u8 = 12;
+const CREATE_PROOF_FROM_BUCKET: u8 = 13;
+const CLONE_PROOF: u8 = 14;
+const DROP_PROOF: u8 = 15;
+const DROP_ALL_PROOFS: u8 = 16;
+const PUBLISH_PACKAGE: u8 = 17;
+const BURN_RESOURCE: u8 = 18;
+const RECALL_RESOURCE: u8 = 19;
+const SET_METADATA: u8 = 20;
+const SET_PACKAGE_ROYALTY_CONFIG: u8 = 21;
+const SET_COMPONENT_ROYALTY_CONFIG: u8 = 22;
+const CLAIM_PACKAGE_ROYALTY: u8 = 23;
+const CLAIM_COMPONENT_ROYALTY: u8 = 24;
+const SET_METHOD_ACCESS_RULE: u8 = 25;
+const MINT_FUNGIBLE: u8 = 26;
+const MINT_NON_FUNGIBLE: u8 = 27;
+const MINT_UUID_NON_FUNGIBLE: u8 = 28;
+const ASSERT_ACCESS_RULE: u8 = 29;
+const CALL_FUNCTION: u8 = 30;
+const CALL_METHOD: u8 = 31;
+
+
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Instruction {
-    TakeFromWorktop,               //{ resource_address: ResourceAddress, },
-    TakeFromWorktopByAmount,       // { amount: Decimal, resource_address: ResourceAddress, },
+    TakeFromWorktop, //{ resource_address: ResourceAddress, },
+    TakeFromWorktopByAmount, // { amount: Decimal, resource_address: ResourceAddress, },
     TakeFromWorktopByIds, // { ids: BTreeSet<NonFungibleLocalId>, resource_address: ResourceAddress, },
-    ReturnToWorktop,      // { bucket_id: ManifestBucket, },
+    ReturnToWorktop, // { bucket_id: ManifestBucket, },
     AssertWorktopContains, // { resource_address: ResourceAddress, },
     AssertWorktopContainsByAmount, // { amount: Decimal, resource_address: ResourceAddress, },
     AssertWorktopContainsByIds, // { ids: BTreeSet<NonFungibleLocalId>, resource_address: ResourceAddress, },
@@ -18,29 +52,23 @@ pub enum Instruction {
     CreateProofFromAuthZone, // { resource_address: ResourceAddress, },
     CreateProofFromAuthZoneByAmount, // { amount: Decimal, resource_address: ResourceAddress, },
     CreateProofFromAuthZoneByIds, // { ids: BTreeSet<NonFungibleLocalId>, resource_address: ResourceAddress, },
-    CreateProofFromBucket,        // { bucket_id: ManifestBucket, },
-    CloneProof,                   // { proof_id: ManifestProof, },
-    DropProof,                    // { proof_id: ManifestProof, },
+    CreateProofFromBucket, // { bucket_id: ManifestBucket, },
+    CloneProof, // { proof_id: ManifestProof, },
+    DropProof, // { proof_id: ManifestProof, },
     DropAllProofs,
-    PublishPackage, // { code: ManifestBlobRef, abi: ManifestBlobRef, royalty_config: BTreeMap<String, RoyaltyConfig>, metadata: BTreeMap<String, String>, access_rules: AccessRules, },
-    PublishPackageWithOwner, // { code: ManifestBlobRef, abi: ManifestBlobRef, owner_badge: NonFungibleGlobalId, },
-    BurnResource,            // { bucket_id: ManifestBucket, },
-    RecallResource,          // { vault_id: VaultId, amount: Decimal, },
-    SetMetadata,             // { entity_address: GlobalAddress, key: String, value: String, },
+    PublishPackage, // { code: ManifestBlobRef, schema: ManifestBlobRef, royalty_config: BTreeMap<String, RoyaltyConfig>, metadata: BTreeMap<String, String>, access_rules: AccessRules, },
+    BurnResource, // { bucket_id: ManifestBucket, },
+    RecallResource, // { vault_id: ObjectId, amount: Decimal, },
+    SetMetadata, // { entity_address: ManifestAddress, key: String, value: String, },
     SetPackageRoyaltyConfig, // { package_address: PackageAddress, royalty_config: BTreeMap<String, RoyaltyConfig>, },
     SetComponentRoyaltyConfig, // { component_address: ComponentAddress, royalty_config: RoyaltyConfig, },
-    ClaimPackageRoyalty,       // { package_address: PackageAddress, },
-    ClaimComponentRoyalty,     // { component_address: ComponentAddress, },
-    SetMethodAccessRule, // { entity_address: GlobalAddress, index: u32, key: AccessRuleKey, rule: AccessRule, },
-    MintFungible,        // { resource_address: ResourceAddress, amount: Decimal, },
+    ClaimPackageRoyalty, // { package_address: PackageAddress, },
+    ClaimComponentRoyalty, // { component_address: ComponentAddress, },
+    SetMethodAccessRule, // { entity_address: ManifestAddress, key: MethodKey, rule: AccessRule, },
+    MintFungible, // { resource_address: ResourceAddress, amount: Decimal, },
     MintNonFungible, // { resource_address: ResourceAddress, entries: BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>, },
     MintUuidNonFungible, // { resource_address: ResourceAddress, entries: Vec<(Vec<u8>, Vec<u8>)>, },
-    CreateFungibleResource, // { divisibility: u8, metadata: BTreeMap<String, String>, access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>, initial_supply: Option<Decimal>, },
-    CreateFungibleResourceWithOwner, // { divisibility: u8, metadata: BTreeMap<String, String>, owner_badge: NonFungibleGlobalId, initial_supply: Option<Decimal>, },
-    CreateNonFungibleResource, // { id_type: NonFungibleIdType, metadata: BTreeMap<String, String>, access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>, initial_supply: Option<BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>>, },
-    CreateNonFungibleResourceWithOwner, // { id_type: NonFungibleIdType, metadata: BTreeMap<String, String>, owner_badge: NonFungibleGlobalId, initial_supply: Option<BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>>, },
-    CreateAccessController, // { controlled_asset: ManifestBucket, primary_role: AccessRule, recovery_role: AccessRule, confirmation_role: AccessRule, timed_recovery_delay_in_minutes: Option<u32>, },
-    CreateIdentity,         // { access_rule: AccessRule, },
+    AssertAccessRule, // { access_rule: AccessRule, },
     CallFunction, // { package_address: PackageAddress, blueprint_name: String, function_name: String, args: Vec<u8>, },
     CallMethod,   // { component_address: ComponentAddress, method_name: String, args: Vec<u8>, },
 }
@@ -50,32 +78,25 @@ pub enum Instruction {
 pub enum ParameterType {
     Ignored,
     AccessRule,
-    AccessRuleKey,
     AccessRules,
     BTreeMapByNonFungibleLocalId,
-    BTreeMapByResourceMethodAuthKey,
     BTreeMapByStringToRoyaltyConfig,
     BTreeMapByStringToString,
     BTreeSetOfNonFungibleLocalId,
     ComponentAddress,
     Decimal,
-    GlobalAddress,
+    ManifestAddress,
     ManifestBlobRef,
     ManifestBucket,
     ManifestProof,
-    NonFungibleGlobalId,
-    NonFungibleIdType,
-    OptionOfBTreeMapByNonFungibleLocalId,
-    OptionOfDecimal,
-    OptionOfU32,
+    MethodKey,
     PackageAddress,
     ResourceAddress,
     RoyaltyConfig,
     String,
-    VaultId,
+    ObjectId,
     VecOfVecTuple,
     VecOfU8,
-    U32,
     U8,
 }
 
@@ -89,19 +110,19 @@ pub struct InstructionInfo {
 
 pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
     match input {
-        0 => Some(InstructionInfo {
+        TAKE_FROM_WORKTOP => Some(InstructionInfo {
             instruction: Instruction::TakeFromWorktop,
             parameter_count: 1,
             name: b"TakeFromWorktop",
             params: &[ParameterType::ResourceAddress],
         }),
-        1 => Some(InstructionInfo {
+        TAKE_FROM_WORKTOP_BY_AMOUNT => Some(InstructionInfo {
             instruction: Instruction::TakeFromWorktopByAmount,
             parameter_count: 2,
             name: b"TakeFromWorktopByAmount",
             params: &[ParameterType::Decimal, ParameterType::ResourceAddress],
         }),
-        2 => Some(InstructionInfo {
+        TAKE_FROM_WORKTOP_BY_IDS => Some(InstructionInfo {
             instruction: Instruction::TakeFromWorktopByIds,
             parameter_count: 2,
             name: b"TakeFromWorktopByIds",
@@ -110,25 +131,25 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
                 ParameterType::ResourceAddress,
             ],
         }),
-        3 => Some(InstructionInfo {
+        RETURN_TO_WORKTOP => Some(InstructionInfo {
             instruction: Instruction::ReturnToWorktop,
             parameter_count: 1,
             name: b"ReturnToWorktop",
             params: &[ParameterType::ManifestBucket],
         }),
-        4 => Some(InstructionInfo {
+        ASSERT_WORKTOP_CONTAINS => Some(InstructionInfo {
             instruction: Instruction::AssertWorktopContains,
             parameter_count: 1,
             name: b"AssertWorktopContains",
             params: &[ParameterType::ResourceAddress],
         }),
-        5 => Some(InstructionInfo {
+        ASSERT_WORKTOP_CONTAINS_BY_AMOUNT => Some(InstructionInfo {
             instruction: Instruction::AssertWorktopContainsByAmount,
             parameter_count: 2,
             name: b"AssertWorktopContainsByAmount",
             params: &[ParameterType::Decimal, ParameterType::ResourceAddress],
         }),
-        6 => Some(InstructionInfo {
+        ASSERT_WORKTOP_CONTAINS_BY_IDS => Some(InstructionInfo {
             instruction: Instruction::AssertWorktopContainsByIds,
             parameter_count: 2,
             name: b"AssertWorktopContainsByIds",
@@ -137,37 +158,37 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
                 ParameterType::ResourceAddress,
             ],
         }),
-        7 => Some(InstructionInfo {
+        POP_FROM_AUTH_ZONE => Some(InstructionInfo {
             instruction: Instruction::PopFromAuthZone,
             parameter_count: 0,
             name: b"PopFromAuthZone",
             params: &[],
         }),
-        8 => Some(InstructionInfo {
+        PUSH_TO_AUTH_ZONE => Some(InstructionInfo {
             instruction: Instruction::PushToAuthZone,
             parameter_count: 1,
             name: b"PushToAuthZone",
             params: &[ParameterType::ManifestProof],
         }),
-        9 => Some(InstructionInfo {
+        CLEAR_AUTH_ZONE => Some(InstructionInfo {
             instruction: Instruction::ClearAuthZone,
             parameter_count: 0,
             name: b"ClearAuthZone",
             params: &[],
         }),
-        10 => Some(InstructionInfo {
+        CREATE_PROOF_FROM_AUTH_ZONE => Some(InstructionInfo {
             instruction: Instruction::CreateProofFromAuthZone,
             parameter_count: 1,
             name: b"CreateProofFromAuthZone",
             params: &[ParameterType::ResourceAddress],
         }),
-        11 => Some(InstructionInfo {
+        CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT => Some(InstructionInfo {
             instruction: Instruction::CreateProofFromAuthZoneByAmount,
             parameter_count: 2,
             name: b"CreateProofFromAuthZoneByAmount",
             params: &[ParameterType::Decimal, ParameterType::ResourceAddress],
         }),
-        12 => Some(InstructionInfo {
+        CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS => Some(InstructionInfo {
             instruction: Instruction::CreateProofFromAuthZoneByIds,
             parameter_count: 2,
             name: b"CreateProofFromAuthZoneByIds",
@@ -176,31 +197,31 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
                 ParameterType::ResourceAddress,
             ],
         }),
-        13 => Some(InstructionInfo {
+        CREATE_PROOF_FROM_BUCKET => Some(InstructionInfo {
             instruction: Instruction::CreateProofFromBucket,
             parameter_count: 1,
             name: b"CreateProofFromBucket",
             params: &[ParameterType::ManifestBucket],
         }),
-        14 => Some(InstructionInfo {
+        CLONE_PROOF => Some(InstructionInfo {
             instruction: Instruction::CloneProof,
             parameter_count: 1,
             name: b"CloneProof",
             params: &[ParameterType::ManifestProof],
         }),
-        15 => Some(InstructionInfo {
+        DROP_PROOF => Some(InstructionInfo {
             instruction: Instruction::DropProof,
             parameter_count: 1,
             name: b"DropProof",
             params: &[ParameterType::ManifestProof],
         }),
-        16 => Some(InstructionInfo {
+        DROP_ALL_PROOFS => Some(InstructionInfo {
             instruction: Instruction::DropAllProofs,
             parameter_count: 0,
             name: b"DropAllProofs",
             params: &[],
         }),
-        17 => Some(InstructionInfo {
+        PUBLISH_PACKAGE => Some(InstructionInfo {
             instruction: Instruction::PublishPackage,
             parameter_count: 5,
             name: b"PublishPackage",
@@ -212,39 +233,29 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
                 ParameterType::AccessRules,
             ],
         }),
-        18 => Some(InstructionInfo {
-            instruction: Instruction::PublishPackageWithOwner,
-            parameter_count: 3,
-            name: b"PublishPackageWithOwner",
-            params: &[
-                ParameterType::ManifestBlobRef,
-                ParameterType::ManifestBlobRef,
-                ParameterType::NonFungibleGlobalId,
-            ],
-        }),
-        19 => Some(InstructionInfo {
+        BURN_RESOURCE => Some(InstructionInfo {
             instruction: Instruction::BurnResource,
             parameter_count: 1,
             name: b"BurnResource",
             params: &[ParameterType::ManifestBucket],
         }),
-        20 => Some(InstructionInfo {
+        RECALL_RESOURCE => Some(InstructionInfo {
             instruction: Instruction::RecallResource,
             parameter_count: 2,
             name: b"RecallResource",
-            params: &[ParameterType::VaultId, ParameterType::Decimal],
+            params: &[ParameterType::ObjectId, ParameterType::Decimal],
         }),
-        21 => Some(InstructionInfo {
+        SET_METADATA => Some(InstructionInfo {
             instruction: Instruction::SetMetadata,
             parameter_count: 3,
             name: b"SetMetadata",
             params: &[
-                ParameterType::GlobalAddress,
+                ParameterType::ManifestAddress,
                 ParameterType::String,
                 ParameterType::String,
             ],
         }),
-        22 => Some(InstructionInfo {
+        SET_PACKAGE_ROYALTY_CONFIG => Some(InstructionInfo {
             instruction: Instruction::SetPackageRoyaltyConfig,
             parameter_count: 2,
             name: b"SetPackageRoyaltyConfig",
@@ -253,7 +264,7 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
                 ParameterType::BTreeMapByStringToRoyaltyConfig,
             ],
         }),
-        23 => Some(InstructionInfo {
+        SET_COMPONENT_ROYALTY_CONFIG => Some(InstructionInfo {
             instruction: Instruction::SetComponentRoyaltyConfig,
             parameter_count: 2,
             name: b"SetComponentRoyaltyConfig",
@@ -262,36 +273,35 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
                 ParameterType::RoyaltyConfig,
             ],
         }),
-        24 => Some(InstructionInfo {
+        CLAIM_PACKAGE_ROYALTY => Some(InstructionInfo {
             instruction: Instruction::ClaimPackageRoyalty,
             parameter_count: 1,
             name: b"ClaimPackageRoyalty",
             params: &[ParameterType::PackageAddress],
         }),
-        25 => Some(InstructionInfo {
+        CLAIM_COMPONENT_ROYALTY => Some(InstructionInfo {
             instruction: Instruction::ClaimComponentRoyalty,
             parameter_count: 1,
             name: b"ClaimComponentRoyalty",
             params: &[ParameterType::ComponentAddress],
         }),
-        26 => Some(InstructionInfo {
+        SET_METHOD_ACCESS_RULE => Some(InstructionInfo {
             instruction: Instruction::SetMethodAccessRule,
             parameter_count: 4,
             name: b"SetMethodAccessRule",
             params: &[
-                ParameterType::GlobalAddress,
-                ParameterType::U32,
-                ParameterType::AccessRuleKey,
+                ParameterType::ManifestAddress,
+                ParameterType::MethodKey,
                 ParameterType::AccessRule,
             ],
         }),
-        27 => Some(InstructionInfo {
+        MINT_FUNGIBLE => Some(InstructionInfo {
             instruction: Instruction::MintFungible,
             parameter_count: 2,
             name: b"MintFungible",
             params: &[ParameterType::ResourceAddress, ParameterType::Decimal],
         }),
-        28 => Some(InstructionInfo {
+        MINT_NON_FUNGIBLE => Some(InstructionInfo {
             instruction: Instruction::MintNonFungible,
             parameter_count: 2,
             name: b"MintNonFungible",
@@ -300,75 +310,19 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
                 ParameterType::BTreeMapByNonFungibleLocalId,
             ],
         }),
-        29 => Some(InstructionInfo {
+        MINT_UUID_NON_FUNGIBLE => Some(InstructionInfo {
             instruction: Instruction::MintUuidNonFungible,
             parameter_count: 2,
             name: b"MintUuidNonFungible",
             params: &[ParameterType::ResourceAddress, ParameterType::VecOfVecTuple],
         }),
-        30 => Some(InstructionInfo {
-            instruction: Instruction::CreateFungibleResource,
-            parameter_count: 4,
-            name: b"CreateFungibleResource",
-            params: &[
-                ParameterType::U8,
-                ParameterType::BTreeMapByStringToString,
-                ParameterType::BTreeMapByResourceMethodAuthKey,
-                ParameterType::OptionOfDecimal,
-            ],
-        }),
-        31 => Some(InstructionInfo {
-            instruction: Instruction::CreateFungibleResourceWithOwner,
-            parameter_count: 4,
-            name: b"CreateFungibleResourceWithOwner",
-            params: &[
-                ParameterType::U8,
-                ParameterType::BTreeMapByStringToString,
-                ParameterType::NonFungibleGlobalId,
-                ParameterType::OptionOfDecimal,
-            ],
-        }),
-        32 => Some(InstructionInfo {
-            instruction: Instruction::CreateNonFungibleResource,
-            parameter_count: 4,
-            name: b"CreateNonFungibleResource",
-            params: &[
-                ParameterType::NonFungibleIdType,
-                ParameterType::BTreeMapByStringToString,
-                ParameterType::BTreeMapByResourceMethodAuthKey,
-                ParameterType::OptionOfBTreeMapByNonFungibleLocalId,
-            ],
-        }),
-        33 => Some(InstructionInfo {
-            instruction: Instruction::CreateNonFungibleResourceWithOwner,
-            parameter_count: 4,
-            name: b"CreateNonFungibleResourceWithOwner",
-            params: &[
-                ParameterType::NonFungibleIdType,
-                ParameterType::BTreeMapByStringToString,
-                ParameterType::NonFungibleGlobalId,
-                ParameterType::OptionOfBTreeMapByNonFungibleLocalId,
-            ],
-        }),
-        34 => Some(InstructionInfo {
-            instruction: Instruction::CreateAccessController,
-            parameter_count: 5,
-            name: b"CreateAccessController",
-            params: &[
-                ParameterType::ManifestBucket,
-                ParameterType::AccessRule,
-                ParameterType::AccessRule,
-                ParameterType::AccessRule,
-                ParameterType::OptionOfU32,
-            ],
-        }),
-        35 => Some(InstructionInfo {
-            instruction: Instruction::CreateIdentity,
+        ASSERT_ACCESS_RULE => Some(InstructionInfo {
+            instruction: Instruction::AssertAccessRule,
             parameter_count: 1,
             name: b"CreateIdentity",
             params: &[ParameterType::AccessRule],
         }),
-        36 => Some(InstructionInfo {
+        CALL_FUNCTION => Some(InstructionInfo {
             instruction: Instruction::CallFunction,
             parameter_count: 4,
             name: b"CallFunction",
@@ -379,7 +333,7 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
                 ParameterType::VecOfU8,
             ],
         }),
-        37 => Some(InstructionInfo {
+        CALL_METHOD => Some(InstructionInfo {
             instruction: Instruction::CallMethod,
             parameter_count: 3,
             name: b"CallMethod",

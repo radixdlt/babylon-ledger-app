@@ -25,6 +25,7 @@ icon = "icons/nanos_app_radix.gif"
 icon_small = "icons/nanos_app_radix.gif"
 path = ["44'/1022'"]
 name = "Radix Babylon"
+api_level = "1"
 
 [package.metadata.nanox]
 curve = ["secp256k1", "ed25519"]
@@ -33,6 +34,7 @@ icon = "icons/nanox_app_radix.gif"
 icon_small = "icons/nanox_app_radix.gif"
 path = ["44'/1022'"]
 name = "Radix Babylon"
+api_level = "1"
 
 [package.metadata.nanosplus]
 curve = ["secp256k1", "ed25519"]
@@ -41,3 +43,4 @@ icon = "icons/nanox_app_radix.gif"
 icon_small = "icons/nanox_app_radix.gif"
 path = ["44'/1022'"]
 name = "Radix Babylon"
+api_level = "1"
