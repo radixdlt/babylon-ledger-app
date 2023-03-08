@@ -103,7 +103,6 @@ pub enum ParameterType {
 #[derive(Copy, Clone, Debug)]
 pub struct InstructionInfo {
     pub instruction: Instruction,
-    pub parameter_count: u8,
     pub name: &'static [u8],
     pub params: &'static [ParameterType],
 }
@@ -112,19 +111,16 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
     match input {
         TAKE_FROM_WORKTOP => Some(InstructionInfo {
             instruction: Instruction::TakeFromWorktop,
-            parameter_count: 1,
             name: b"TakeFromWorktop",
             params: &[ParameterType::ResourceAddress],
         }),
         TAKE_FROM_WORKTOP_BY_AMOUNT => Some(InstructionInfo {
             instruction: Instruction::TakeFromWorktopByAmount,
-            parameter_count: 2,
             name: b"TakeFromWorktopByAmount",
             params: &[ParameterType::Decimal, ParameterType::ResourceAddress],
         }),
         TAKE_FROM_WORKTOP_BY_IDS => Some(InstructionInfo {
             instruction: Instruction::TakeFromWorktopByIds,
-            parameter_count: 2,
             name: b"TakeFromWorktopByIds",
             params: &[
                 ParameterType::BTreeSetOfNonFungibleLocalId,
@@ -133,25 +129,21 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
         }),
         RETURN_TO_WORKTOP => Some(InstructionInfo {
             instruction: Instruction::ReturnToWorktop,
-            parameter_count: 1,
             name: b"ReturnToWorktop",
             params: &[ParameterType::ManifestBucket],
         }),
         ASSERT_WORKTOP_CONTAINS => Some(InstructionInfo {
             instruction: Instruction::AssertWorktopContains,
-            parameter_count: 1,
             name: b"AssertWorktopContains",
             params: &[ParameterType::ResourceAddress],
         }),
         ASSERT_WORKTOP_CONTAINS_BY_AMOUNT => Some(InstructionInfo {
             instruction: Instruction::AssertWorktopContainsByAmount,
-            parameter_count: 2,
             name: b"AssertWorktopContainsByAmount",
             params: &[ParameterType::Decimal, ParameterType::ResourceAddress],
         }),
         ASSERT_WORKTOP_CONTAINS_BY_IDS => Some(InstructionInfo {
             instruction: Instruction::AssertWorktopContainsByIds,
-            parameter_count: 2,
             name: b"AssertWorktopContainsByIds",
             params: &[
                 ParameterType::BTreeSetOfNonFungibleLocalId,
@@ -160,37 +152,31 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
         }),
         POP_FROM_AUTH_ZONE => Some(InstructionInfo {
             instruction: Instruction::PopFromAuthZone,
-            parameter_count: 0,
             name: b"PopFromAuthZone",
             params: &[],
         }),
         PUSH_TO_AUTH_ZONE => Some(InstructionInfo {
             instruction: Instruction::PushToAuthZone,
-            parameter_count: 1,
             name: b"PushToAuthZone",
             params: &[ParameterType::ManifestProof],
         }),
         CLEAR_AUTH_ZONE => Some(InstructionInfo {
             instruction: Instruction::ClearAuthZone,
-            parameter_count: 0,
             name: b"ClearAuthZone",
             params: &[],
         }),
         CREATE_PROOF_FROM_AUTH_ZONE => Some(InstructionInfo {
             instruction: Instruction::CreateProofFromAuthZone,
-            parameter_count: 1,
             name: b"CreateProofFromAuthZone",
             params: &[ParameterType::ResourceAddress],
         }),
         CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT => Some(InstructionInfo {
             instruction: Instruction::CreateProofFromAuthZoneByAmount,
-            parameter_count: 2,
             name: b"CreateProofFromAuthZoneByAmount",
             params: &[ParameterType::Decimal, ParameterType::ResourceAddress],
         }),
         CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS => Some(InstructionInfo {
             instruction: Instruction::CreateProofFromAuthZoneByIds,
-            parameter_count: 2,
             name: b"CreateProofFromAuthZoneByIds",
             params: &[
                 ParameterType::BTreeSetOfNonFungibleLocalId,
@@ -199,31 +185,26 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
         }),
         CREATE_PROOF_FROM_BUCKET => Some(InstructionInfo {
             instruction: Instruction::CreateProofFromBucket,
-            parameter_count: 1,
             name: b"CreateProofFromBucket",
             params: &[ParameterType::ManifestBucket],
         }),
         CLONE_PROOF => Some(InstructionInfo {
             instruction: Instruction::CloneProof,
-            parameter_count: 1,
             name: b"CloneProof",
             params: &[ParameterType::ManifestProof],
         }),
         DROP_PROOF => Some(InstructionInfo {
             instruction: Instruction::DropProof,
-            parameter_count: 1,
             name: b"DropProof",
             params: &[ParameterType::ManifestProof],
         }),
         DROP_ALL_PROOFS => Some(InstructionInfo {
             instruction: Instruction::DropAllProofs,
-            parameter_count: 0,
             name: b"DropAllProofs",
             params: &[],
         }),
         PUBLISH_PACKAGE => Some(InstructionInfo {
             instruction: Instruction::PublishPackage,
-            parameter_count: 5,
             name: b"PublishPackage",
             params: &[
                 ParameterType::ManifestBlobRef,
@@ -235,19 +216,16 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
         }),
         BURN_RESOURCE => Some(InstructionInfo {
             instruction: Instruction::BurnResource,
-            parameter_count: 1,
             name: b"BurnResource",
             params: &[ParameterType::ManifestBucket],
         }),
         RECALL_RESOURCE => Some(InstructionInfo {
             instruction: Instruction::RecallResource,
-            parameter_count: 2,
             name: b"RecallResource",
             params: &[ParameterType::ObjectId, ParameterType::Decimal],
         }),
         SET_METADATA => Some(InstructionInfo {
             instruction: Instruction::SetMetadata,
-            parameter_count: 3,
             name: b"SetMetadata",
             params: &[
                 ParameterType::ManifestAddress,
@@ -257,7 +235,6 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
         }),
         SET_PACKAGE_ROYALTY_CONFIG => Some(InstructionInfo {
             instruction: Instruction::SetPackageRoyaltyConfig,
-            parameter_count: 2,
             name: b"SetPackageRoyaltyConfig",
             params: &[
                 ParameterType::PackageAddress,
@@ -266,7 +243,6 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
         }),
         SET_COMPONENT_ROYALTY_CONFIG => Some(InstructionInfo {
             instruction: Instruction::SetComponentRoyaltyConfig,
-            parameter_count: 2,
             name: b"SetComponentRoyaltyConfig",
             params: &[
                 ParameterType::ComponentAddress,
@@ -275,19 +251,16 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
         }),
         CLAIM_PACKAGE_ROYALTY => Some(InstructionInfo {
             instruction: Instruction::ClaimPackageRoyalty,
-            parameter_count: 1,
             name: b"ClaimPackageRoyalty",
             params: &[ParameterType::PackageAddress],
         }),
         CLAIM_COMPONENT_ROYALTY => Some(InstructionInfo {
             instruction: Instruction::ClaimComponentRoyalty,
-            parameter_count: 1,
             name: b"ClaimComponentRoyalty",
             params: &[ParameterType::ComponentAddress],
         }),
         SET_METHOD_ACCESS_RULE => Some(InstructionInfo {
             instruction: Instruction::SetMethodAccessRule,
-            parameter_count: 4,
             name: b"SetMethodAccessRule",
             params: &[
                 ParameterType::ManifestAddress,
@@ -297,13 +270,11 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
         }),
         MINT_FUNGIBLE => Some(InstructionInfo {
             instruction: Instruction::MintFungible,
-            parameter_count: 2,
             name: b"MintFungible",
             params: &[ParameterType::ResourceAddress, ParameterType::Decimal],
         }),
         MINT_NON_FUNGIBLE => Some(InstructionInfo {
             instruction: Instruction::MintNonFungible,
-            parameter_count: 2,
             name: b"MintNonFungible",
             params: &[
                 ParameterType::ResourceAddress,
@@ -312,19 +283,16 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
         }),
         MINT_UUID_NON_FUNGIBLE => Some(InstructionInfo {
             instruction: Instruction::MintUuidNonFungible,
-            parameter_count: 2,
             name: b"MintUuidNonFungible",
             params: &[ParameterType::ResourceAddress, ParameterType::VecOfVecTuple],
         }),
         ASSERT_ACCESS_RULE => Some(InstructionInfo {
             instruction: Instruction::AssertAccessRule,
-            parameter_count: 1,
             name: b"CreateIdentity",
             params: &[ParameterType::AccessRule],
         }),
         CALL_FUNCTION => Some(InstructionInfo {
             instruction: Instruction::CallFunction,
-            parameter_count: 4,
             name: b"CallFunction",
             params: &[
                 ParameterType::PackageAddress,
@@ -335,7 +303,6 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
         }),
         CALL_METHOD => Some(InstructionInfo {
             instruction: Instruction::CallMethod,
-            parameter_count: 3,
             name: b"CallMethod",
             params: &[
                 ParameterType::ComponentAddress,

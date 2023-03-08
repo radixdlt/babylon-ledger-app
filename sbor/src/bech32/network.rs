@@ -12,6 +12,6 @@ pub enum NetworkId {
     MarduNet = 36,            //, "mardunet", "tdx_24_"),
     LocalNet = 240,           //, "localnet", "loc"),
     IntegrationTestNet = 241, //, "inttestnet", "test"),
-    LocalSimulator = 242,     //, "simulator", "sim");
+    Simulator = 242,          //, "simulator", "sim");
 }
 

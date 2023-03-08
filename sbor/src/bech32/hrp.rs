@@ -1,11 +1,12 @@
 use crate::bech32::network::NetworkId;
 
 #[repr(u8)]
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum HrpType {
     Package,
-    Resource,
     Component,
+    Resource,
+    Autodetect,
 }
 
 pub fn hrp_suffix(net_id: NetworkId) -> &'static str {
@@ -21,25 +22,24 @@ pub fn hrp_suffix(net_id: NetworkId) -> &'static str {
         NetworkId::MarduNet => "tdx_24_",
         NetworkId::LocalNet => "loc",
         NetworkId::IntegrationTestNet => "test",
-        NetworkId::LocalSimulator => "sim",
+        NetworkId::Simulator => "sim",
     }
 }
 
 pub fn hrp_prefix(entity_id: HrpType, discriminator: u8) -> Option<&'static str> {
     match entity_id {
+        HrpType::Autodetect => None,
         HrpType::Package => Some("package_"),
         HrpType::Resource => Some("resource_"),
         HrpType::Component => match discriminator {
-            // NOTE: this part depends on Scrypto ComponentAddress enum
-            0 => Some("component_"), // Normal
-
-            1 | 6 | 7 => Some("account_"), // Account, EcdsaSecp256k1VirtualAccount, EddsaEd25519VirtualAccount
-            2 | 8 | 9 => Some("identity_"), // Identity, EcdsaSecp256k1VirtualIdentity, EddsaEd25519VirtualIdentity
-
-            3 => Some("clock_"),             // Clock
-            4 => Some("epochmanager_"),      // EpochManager
-            5 => Some("validator_"),         // Validator
-            10 => Some("accesscontroller_"), // AccessController
+            // NOTE: this part depends on Scrypto entity ID's
+            0x02 => Some("component_"), // Normal
+            0x04 => Some("epochmanager_"),      // EpochManager
+            0x05 => Some("validator_"),         // Validator
+            0x06 => Some("clock_"),             // Clock
+            0x0c => Some("accesscontroller_"), // AccessController
+            0x03 | 0x07 | 0x08 => Some("account_"), // Account, EcdsaSecp256k1VirtualAccount, EddsaEd25519VirtualAccount
+            0x09 | 0x0a | 0x0b => Some("identity_"), // Identity, EcdsaSecp256k1VirtualIdentity, EddsaEd25519VirtualIdentity
             _ => None,
         },
     }

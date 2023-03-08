@@ -24,27 +24,15 @@ pub const TYPE_TUPLE: u8 = 0x21;
 pub const TYPE_ENUM: u8 = 0x22;
 pub const TYPE_MAP: u8 = 0x23;
 
-// custom types (see https://raw.githubusercontent.com/radixdlt/radixdlt-scrypto/develop/radix-engine-interface/src/data/custom_type_id.rs
-// for actual list of custom types)
-pub const TYPE_PACKAGE_ADDRESS: u8 = 0x80;
-pub const TYPE_COMPONENT_ADDRESS: u8 = 0x81;
-pub const TYPE_RESOURCE_ADDRESS: u8 = 0x82;
-
-pub const TYPE_OWN: u8 = 0x90;
-
-pub const TYPE_BUCKET: u8 = 0xa0;
-pub const TYPE_PROOF: u8 = 0xa1;
-pub const TYPE_EXPRESSION: u8 = 0xa2;
-pub const TYPE_BLOB: u8 = 0xa3;
-
-pub const TYPE_HASH: u8 = 0xb0;
-pub const TYPE_ECDSA_SECP256K1_PUBIC_KEY: u8 = 0xb1;
-pub const TYPE_ECDSA_SECP256K1_SIGNATURE: u8 = 0xb2;
-pub const TYPE_EDDSA_ED25519_PUBIC_KEY: u8 = 0xb3;
-pub const TYPE_EDDSA_ED25519_SIGNATURE: u8 = 0xb4;
-pub const TYPE_DECIMAL: u8 = 0xb5;
-pub const TYPE_PRECISE_DECIMAL: u8 = 0xb6;
-pub const TYPE_NON_FUNGIBLE_LOCAL_ID: u8 = 0xb7;
+// Manifest custom types
+pub const TYPE_ADDRESS: u8 = 0x80;
+pub const TYPE_BUCKET: u8 = 0x81;
+pub const TYPE_PROOF: u8 = 0x82;
+pub const TYPE_EXPRESSION: u8 = 0x83;
+pub const TYPE_BLOB: u8 = 0x84;
+pub const TYPE_DECIMAL: u8 = 0x85;
+pub const TYPE_PRECISE_DECIMAL: u8 = 0x86;
+pub const TYPE_NON_FUNGIBLE_LOCAL_ID: u8 = 0x87;
 
 // end of custom types
 pub const ADDRESS_LEN: u8 = 27; // 1 byte discriminator + 26 bytes address
@@ -56,25 +44,11 @@ pub const UUID_LEN: u8 = 16;
 pub const ID_LEN: u8 = 4;
 const BUCKET_LEN: u8 = ID_LEN;
 const PROOF_LEN: u8 = ID_LEN;
-
-const HASH_LEN: u8 = 32;
-const BLOB_LEN: u8 = HASH_LEN;
-const SECP256K1_PUB_KEY_LEN: u8 = 33;
-const SECP256K1_SIG_LEN: u8 = 65;
-const ED25519_PUB_KEY_LEN: u8 = 32;
-const ED25519_SIG_LEN: u8 = 64;
-
+const BLOB_LEN: u8 = 32;
 const DECIMAL_LEN: u8 = 32; // 256 bits
 const PRECISE_DECIMAL_LEN: u8 = 64; // 512 bits
 
 pub const TYPE_DATA_BUFFER_SIZE: usize = 256;
-
-// Own discriminators
-pub const OWN_BUCKET: u8 = 0;
-pub const OWN_PROOF: u8 = 1;
-pub const OWN_VAULT: u8 = 2;
-pub const OWN_COMPONENT: u8 = 3;
-pub const OWN_KEY_VALUE_STORE: u8 = 4;
 
 // Non-fungible local ID discriminators
 pub const NFL_STRING: u8 = 0;
@@ -92,7 +66,6 @@ pub enum DecoderPhase {
     ReadingLen,
     ReadingData,
     ReadingDiscriminator,
-    ReadingOwnDiscriminator,
     ReadingNFLDiscriminator,
 }
 
@@ -116,19 +89,11 @@ pub enum TypeKind {
     Tuple,
     Enum,
     Map,
-    PackageAddress,
-    ComponentAddress,
-    ResourceAddress,
-    Own,
+    Address,
     Bucket,
     Proof,
     Expression,
     Blob,
-    Hash,
-    EcdsaSecp256k1PubicKey,
-    EcdsaSecp256k1Signature,
-    EddsaEd25519PubicKey,
-    EddsaEd25519Signature,
     Decimal,
     PreciseDecimal,
     NonFungibleLocalId,
@@ -173,12 +138,6 @@ const MAP_DECODING: [DecoderPhase; 5] = [
     DecoderPhase::ReadingKeyTypeId,
     DecoderPhase::ReadingValueTypeId,
     DecoderPhase::ReadingLen,
-    DecoderPhase::ReadingData,
-];
-
-const OWN_DECODING: [DecoderPhase; 3] = [
-    DecoderPhase::ReadingTypeId,
-    DecoderPhase::ReadingOwnDiscriminator,
     DecoderPhase::ReadingData,
 ];
 
@@ -296,32 +255,13 @@ pub fn to_type_info(byte: u8) -> Option<TypeInfo> {
             fixed_len: 0,
         }),
 
-        // see https://raw.githubusercontent.com/radixdlt/radixdlt-scrypto/develop/radix-engine-interface/src/data/custom_value.rs
-        // for necessary details (fixed/variable size, fixed length)
-        TYPE_PACKAGE_ADDRESS => Some(TypeInfo {
-            type_id: TYPE_PACKAGE_ADDRESS,
-            type_kind: TypeKind::PackageAddress,
+        TYPE_ADDRESS => Some(TypeInfo {
+            type_id: TYPE_ADDRESS,
+            type_kind: TypeKind::Address,
             next_phases: &FIXED_LEN_DECODING,
             fixed_len: ADDRESS_LEN,
         }),
-        TYPE_COMPONENT_ADDRESS => Some(TypeInfo {
-            type_id: TYPE_COMPONENT_ADDRESS,
-            type_kind: TypeKind::ComponentAddress,
-            next_phases: &FIXED_LEN_DECODING,
-            fixed_len: ADDRESS_LEN,
-        }),
-        TYPE_RESOURCE_ADDRESS => Some(TypeInfo {
-            type_id: TYPE_RESOURCE_ADDRESS,
-            type_kind: TypeKind::ResourceAddress,
-            next_phases: &FIXED_LEN_DECODING,
-            fixed_len: ADDRESS_LEN,
-        }),
-        TYPE_OWN => Some(TypeInfo {
-            type_id: TYPE_OWN,
-            type_kind: TypeKind::Own,
-            next_phases: &OWN_DECODING, // Enum without leading len byte for payload
-            fixed_len: 0,
-        }),
+
         TYPE_BUCKET => Some(TypeInfo {
             type_id: TYPE_BUCKET,
             type_kind: TypeKind::Bucket,
@@ -345,36 +285,6 @@ pub fn to_type_info(byte: u8) -> Option<TypeInfo> {
             type_kind: TypeKind::Blob,
             next_phases: &FIXED_LEN_DECODING,
             fixed_len: BLOB_LEN,
-        }),
-        TYPE_HASH => Some(TypeInfo {
-            type_id: TYPE_HASH,
-            type_kind: TypeKind::Hash,
-            next_phases: &FIXED_LEN_DECODING,
-            fixed_len: HASH_LEN,
-        }),
-        TYPE_ECDSA_SECP256K1_PUBIC_KEY => Some(TypeInfo {
-            type_id: TYPE_ECDSA_SECP256K1_PUBIC_KEY,
-            type_kind: TypeKind::EcdsaSecp256k1PubicKey,
-            next_phases: &FIXED_LEN_DECODING,
-            fixed_len: SECP256K1_PUB_KEY_LEN,
-        }),
-        TYPE_ECDSA_SECP256K1_SIGNATURE => Some(TypeInfo {
-            type_id: TYPE_ECDSA_SECP256K1_SIGNATURE,
-            type_kind: TypeKind::EcdsaSecp256k1Signature,
-            next_phases: &FIXED_LEN_DECODING,
-            fixed_len: SECP256K1_SIG_LEN,
-        }),
-        TYPE_EDDSA_ED25519_PUBIC_KEY => Some(TypeInfo {
-            type_id: TYPE_EDDSA_ED25519_PUBIC_KEY,
-            type_kind: TypeKind::EddsaEd25519PubicKey,
-            next_phases: &FIXED_LEN_DECODING,
-            fixed_len: ED25519_PUB_KEY_LEN,
-        }),
-        TYPE_EDDSA_ED25519_SIGNATURE => Some(TypeInfo {
-            type_id: TYPE_EDDSA_ED25519_SIGNATURE,
-            type_kind: TypeKind::EddsaEd25519Signature,
-            next_phases: &FIXED_LEN_DECODING,
-            fixed_len: ED25519_SIG_LEN,
         }),
         TYPE_DECIMAL => Some(TypeInfo {
             type_id: TYPE_DECIMAL,

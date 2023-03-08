@@ -11,10 +11,8 @@ pub enum ExtractorPhase {
     IntentShell,
     HeaderShell,
     ManifestShell,
-    ManifestContentShell,
-    InstructionsShell,
+    InstructionShell,
     Instruction,
-    InstructionType,
     InstructionParameter,
     Done,
 }
@@ -35,7 +33,7 @@ pub enum ExtractorEvent {
     ParameterData(SborEvent),
     ParameterEnd(u32),
     InstructionEnd,
-    WrongParameterCount(u32, u32),
+    WrongParameterCount(InstructionInfo, u32),
     UnknownInstruction(u8),
     InvalidEventSequence,
     UnknownParameterType(u8),
@@ -77,52 +75,42 @@ impl InstructionExtractor {
                 }
             }
             ExtractorPhase::HeaderShell => {
-                if Self::is_start(event, TYPE_TUPLE, 2) {
+                if Self::is_start(event, TYPE_TUPLE, 1) {
                     self.phase = ExtractorPhase::ManifestShell;
                 }
             }
             ExtractorPhase::ManifestShell => {
-                if Self::is_start(event, TYPE_TUPLE, 3) {
-                    self.phase = ExtractorPhase::ManifestContentShell;
+                if Self::is_start(event, TYPE_ARRAY, 2) {
+                    self.phase = ExtractorPhase::InstructionShell;
                 }
             }
-            ExtractorPhase::ManifestContentShell => {
-                if Self::is_start(event, TYPE_TUPLE, 3) {
-                    self.phase = ExtractorPhase::InstructionsShell;
-                }
-            }
-            ExtractorPhase::InstructionsShell => {
-                if Self::is_start(event, TYPE_ARRAY, 4) {
+            ExtractorPhase::InstructionShell => {
+                if Self::is_start(event, TYPE_ENUM, 3) {
                     self.phase = ExtractorPhase::Instruction;
-                }
-            }
-            ExtractorPhase::Instruction => {
-                if Self::is_start(event, TYPE_ENUM, 5) {
-                    self.phase = ExtractorPhase::InstructionType;
                     self.start_instruction();
                 }
 
-                if Self::is_end(event, TYPE_NONE, 4) {
+                if Self::is_end(event, TYPE_NONE, 2) {
                     self.phase = ExtractorPhase::Done;
                 }
             }
-            ExtractorPhase::InstructionType => {
+            ExtractorPhase::Instruction => {
                 if !self.process_instruction_state(handler, event) {
                     return;
                 }
 
-                if Self::is_start(event, TYPE_NONE, 6) {
+                if Self::is_start(event, TYPE_NONE, 4) {
                     self.phase = ExtractorPhase::InstructionParameter;
                     self.process_parameter_start(handler, event);
                 }
 
-                if Self::is_end(event, TYPE_NONE, 5) {
-                    self.phase = ExtractorPhase::Instruction;
+                if Self::is_end(event, TYPE_NONE, 3) {
+                    self.phase = ExtractorPhase::InstructionShell;
                 }
             }
             ExtractorPhase::InstructionParameter => {
-                if Self::is_end(event, TYPE_NONE, 6) {
-                    self.phase = ExtractorPhase::InstructionType;
+                if Self::is_end(event, TYPE_NONE, 4) {
+                    self.phase = ExtractorPhase::Instruction;
                     handler.handle(ExtractorEvent::ParameterEnd(self.parameter_count));
                     self.parameter_count += 1;
 
@@ -178,11 +166,8 @@ impl InstructionExtractor {
             (InstructionPhase::WaitForParameterCount, SborEvent::Len(len)) => {
                 match to_instruction(self.discriminator) {
                     Some(info) => {
-                        if len != info.parameter_count as u32 {
-                            handler.handle(ExtractorEvent::WrongParameterCount(
-                                info.parameter_count as u32,
-                                len,
-                            ));
+                        if len != info.params.len() as u32 {
+                            handler.handle(ExtractorEvent::WrongParameterCount(info, len));
                             self.phase = ExtractorPhase::Done;
                             return false;
                         }
@@ -297,7 +282,7 @@ mod tests {
                 println!("Instruction::{:?},", info.instruction);
             }
 
-            // println!("Event: {:?}", event);
+            //println!("Event: {:?}", event);
         }
     }
 
@@ -332,7 +317,7 @@ mod tests {
             }
         }
 
-        //println!("Total {} instructions", handler.handler.instruction_count);
+        println!("Total {} instructions", handler.handler.instruction_count);
         handler.handler.verify(expected_instructions);
         println!();
     }
@@ -340,5 +325,172 @@ mod tests {
     #[test]
     pub fn test_access_rule() {
         check_partial_decoding(&TX_ACCESS_RULE, &[Instruction::SetMethodAccessRule]);
+    }
+
+    #[test]
+    pub fn test_assert_access_rule() {
+        check_partial_decoding(
+            &TX_ASSERT_ACCESS_RULE,
+            &[Instruction::CallMethod, Instruction::AssertAccessRule],
+        );
+    }
+
+    #[test]
+    pub fn test_call_function() {
+        check_partial_decoding(&TX_CALL_FUNCTION, &[Instruction::CallFunction]);
+    }
+
+    #[test]
+    pub fn test_call_method() {
+        check_partial_decoding(&TX_CALL_METHOD, &[Instruction::CallMethod]);
+    }
+
+    #[test]
+    pub fn test_create_access_controller() {
+        check_partial_decoding(
+            &TX_CREATE_ACCESS_CONTROLLER,
+            &[Instruction::TakeFromWorktop, Instruction::CallFunction],
+        );
+    }
+
+    #[test]
+    pub fn test_create_account() {
+        check_partial_decoding(&TX_CREATE_ACCOUNT, &[Instruction::CallFunction]);
+    }
+
+    #[test]
+    pub fn test_create_fungible_resource_with_initial_supply() {
+        check_partial_decoding(
+            &TX_CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY,
+            &[
+                Instruction::CallMethod,
+                Instruction::CallFunction,
+                Instruction::CallMethod,
+            ],
+        );
+    }
+
+    #[test]
+    pub fn test_create_fungible_resource_with_no_initial_supply() {
+        check_partial_decoding(
+            &TX_CREATE_FUNGIBLE_RESOURCE_WITH_NO_INITIAL_SUPPLY,
+            &[Instruction::CallMethod, Instruction::CallFunction],
+        );
+    }
+
+    #[test]
+    pub fn test_create_identity() {
+        check_partial_decoding(&TX_CREATE_IDENTITY, &[Instruction::CallFunction]);
+    }
+
+    #[test]
+    pub fn test_create_non_fungible_resource_with_no_initial_supply() {
+        check_partial_decoding(
+            &TX_CREATE_NON_FUNGIBLE_RESOURCE_WITH_NO_INITIAL_SUPPLY,
+            &[Instruction::CallMethod, Instruction::CallFunction],
+        );
+    }
+
+    #[test]
+    pub fn test_metadata() {
+        check_partial_decoding(
+            &TX_METADATA,
+            &[
+                Instruction::SetMetadata,
+                Instruction::SetMetadata,
+                Instruction::SetMetadata,
+            ],
+        );
+    }
+
+    #[test]
+    pub fn test_mint_fungible() {
+        check_partial_decoding(
+            &TX_MINT_FUNGIBLE,
+            &[
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+                Instruction::MintFungible,
+                Instruction::CallMethod,
+            ],
+        );
+    }
+
+    #[test]
+    pub fn test_mint_non_fungible() {
+        check_partial_decoding(
+            &TX_MINT_NON_FUNGIBLE,
+            &[
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+                Instruction::MintNonFungible,
+                Instruction::CallMethod,
+            ],
+        );
+    }
+
+    #[test]
+    pub fn test_publish_package() {
+        check_partial_decoding(
+            &TX_PUBLISH_PACKAGE,
+            &[Instruction::CallMethod, Instruction::PublishPackage],
+        );
+    }
+
+    #[test]
+    pub fn test_resource_recall() {
+        check_partial_decoding(&TX_RESOURCE_RECALL, &[Instruction::RecallResource]);
+    }
+
+    #[test]
+    pub fn test_resource_worktop() {
+        check_partial_decoding(
+            &TX_RESOURCE_WORKTOP,
+            &[
+                Instruction::CallMethod,
+                Instruction::TakeFromWorktopByAmount,
+                Instruction::CallMethod,
+                Instruction::AssertWorktopContainsByAmount,
+                Instruction::AssertWorktopContains,
+                Instruction::TakeFromWorktop,
+                Instruction::CreateProofFromBucket,
+                Instruction::CloneProof,
+                Instruction::DropProof,
+                Instruction::DropProof,
+                Instruction::CallMethod,
+                Instruction::PopFromAuthZone,
+                Instruction::DropProof,
+                Instruction::ReturnToWorktop,
+                Instruction::TakeFromWorktopByIds,
+                Instruction::DropAllProofs,
+                Instruction::CallMethod,
+            ],
+        );
+    }
+
+    #[test]
+    pub fn test_royalty() {
+        check_partial_decoding(
+            &TX_ROYALTY,
+            &[
+                Instruction::SetPackageRoyaltyConfig,
+                Instruction::SetComponentRoyaltyConfig,
+                Instruction::ClaimPackageRoyalty,
+                Instruction::ClaimComponentRoyalty,
+            ],
+        );
+    }
+
+    #[test]
+    pub fn test_values() {
+        check_partial_decoding(
+            &TX_VALUES,
+            &[
+                Instruction::TakeFromWorktop,
+                Instruction::CreateProofFromAuthZone,
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+            ],
+        );
     }
 }

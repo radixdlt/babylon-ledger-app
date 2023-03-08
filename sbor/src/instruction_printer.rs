@@ -22,6 +22,7 @@ struct ParameterPrinterState {
     nesting_level: u8,
     flip_flop: bool,
     network_id: NetworkId,
+    resource_id: HrpType,
 }
 
 impl InstructionHandler for InstructionPrinter {
@@ -74,7 +75,7 @@ impl InstructionPrinter {
         self.state.reset();
         self.instruction_printer = self
             .active_instruction
-            .filter(|info| (info.parameter_count as u32) > ordinal)
+            .filter(|info| (info.params.len() as u32) > ordinal)
             .map(|info| info.params[ordinal as usize])
             .map(|param_type| get_printer_for_type(param_type));
     }
@@ -105,6 +106,7 @@ impl ParameterPrinterState {
             nesting_level: 0,
             flip_flop: false,
             network_id,
+            resource_id: HrpType::Autodetect,
         }
     }
 
@@ -117,6 +119,7 @@ impl ParameterPrinterState {
         self.data_counter = 0;
         self.nesting_level = 0;
         self.flip_flop = false;
+        self.resource_id = HrpType::Autodetect;
     }
 }
 
@@ -142,7 +145,7 @@ fn get_printer_for_type(param_type: ParameterType) -> &'static dyn ParameterPrin
         ParameterType::BTreeSetOfNonFungibleLocalId => &IGNORED_PARAMETER_PRINTER,
         ParameterType::ComponentAddress => &COMPONENT_ADDRESS_PARAMETER_PRINTER,
         ParameterType::Decimal => &IGNORED_PARAMETER_PRINTER,
-        ParameterType::ManifestAddress => &IGNORED_PARAMETER_PRINTER,
+        ParameterType::ManifestAddress => &MANIFEST_ADDRESS_PARAMETER_PRINTER,
         ParameterType::ManifestBlobRef => &IGNORED_PARAMETER_PRINTER,
         ParameterType::ManifestBucket => &IGNORED_PARAMETER_PRINTER,
         ParameterType::ManifestProof => &IGNORED_PARAMETER_PRINTER,
@@ -283,8 +286,7 @@ impl ParameterPrinter for VecOfU8ParameterPrinter {
     }
 }
 
-// Address printers
-
+// Address printers for ResourceAddress/ComponentAddress/PackageAddress/ManifestAddress
 struct AddressParameterPrinter {
     resource_id: HrpType,
 }
@@ -298,6 +300,9 @@ const COMPONENT_ADDRESS_PARAMETER_PRINTER: AddressParameterPrinter = AddressPara
 const PACKAGE_ADDRESS_PARAMETER_PRINTER: AddressParameterPrinter = AddressParameterPrinter {
     resource_id: HrpType::Package,
 };
+const MANIFEST_ADDRESS_PARAMETER_PRINTER: AddressParameterPrinter = AddressParameterPrinter {
+    resource_id: HrpType::Autodetect,
+};
 
 impl ParameterPrinter for AddressParameterPrinter {
     fn handle_data_event(
@@ -307,6 +312,21 @@ impl ParameterPrinter for AddressParameterPrinter {
         _display: &'static dyn DisplayIO,
     ) {
         if let SborEvent::Data(byte) = event {
+            if state.flip_flop == false {
+                state.flip_flop = true;
+                if self.resource_id == HrpType::Autodetect {
+                    // See ManifestAddress enum in radixdlt-scrypto
+                    state.resource_id = match byte {
+                        0x00 => HrpType::Resource,
+                        0x01 => HrpType::Package,
+                        0x02..=0x0C => HrpType::Component,
+                        _ => HrpType::Autodetect,
+                    };
+                } else {
+                    state.resource_id = self.resource_id;
+                }
+            }
+
             if state.data_counter > ADDRESS_LEN {
                 //TODO: an error condition, should we handle it somehow?
             }
@@ -317,7 +337,12 @@ impl ParameterPrinter for AddressParameterPrinter {
     }
 
     fn display(&self, state: &ParameterPrinterState, display: &'static dyn DisplayIO) {
-        match hrp_prefix(self.resource_id, state.data[0]) {
+        if state.data_counter != ADDRESS_LEN {
+            display.scroll(b"Invalid address format");
+            return;
+        }
+
+        match hrp_prefix(state.resource_id, state.data[0]) {
             None => {
                 display.scroll(b"Unknown address type");
                 return;
@@ -351,7 +376,7 @@ impl AddressParameterPrinter {
                     arrform!(
                         { Bech32::HRP_MAX_LEN + 250 },
                         "Error decoding {:?}({}) address {:?}: >>{:?}<<",
-                        self.resource_id,
+                        state.resource_id,
                         state.data[0],
                         err,
                         &state.data[..(state.data_counter as usize)]
@@ -387,7 +412,7 @@ impl ParameterPrinter for AccessRuleParameterPrinter {
     }
 
     fn display(&self, state: &ParameterPrinterState, display: &'static dyn DisplayIO) {
-        let message:&[u8] = match (state.data_counter, state.data[0]) {
+        let message: &[u8] = match (state.data_counter, state.data[0]) {
             (1, 0) => b"AllowAll",
             (1, 1) => b"DenyAll",
             (1, 2) => b"Protected(<rules not decoded>)",
@@ -399,7 +424,6 @@ impl ParameterPrinter for AccessRuleParameterPrinter {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -408,9 +432,9 @@ mod tests {
     use crate::instruction::Instruction;
     use crate::instruction_extractor::*;
     use crate::sbor_decoder::*;
+    use crate::tx_intent_test_data::tests::*;
     use core::cmp::min;
     use core::str::from_utf8;
-    use crate::tx_intent_test_data::tests::*;
 
     static PRINTER: TestPrinter = TestPrinter {};
 
@@ -452,7 +476,7 @@ mod tests {
             Self {
                 instruction_count: 0,
                 instructions: [Instruction::TakeFromWorktop; Self::SIZE],
-                printer: InstructionPrinter::new(&PRINTER, NetworkId::LocalNet),
+                printer: InstructionPrinter::new(&PRINTER, NetworkId::Simulator),
             }
         }
 
@@ -530,5 +554,172 @@ mod tests {
     #[test]
     pub fn test_access_rule() {
         check_partial_decoding(&TX_ACCESS_RULE, &[Instruction::SetMethodAccessRule]);
+    }
+
+    #[test]
+    pub fn test_assert_access_rule() {
+        check_partial_decoding(
+            &TX_ASSERT_ACCESS_RULE,
+            &[Instruction::CallMethod, Instruction::AssertAccessRule],
+        );
+    }
+
+    #[test]
+    pub fn test_call_function() {
+        check_partial_decoding(&TX_CALL_FUNCTION, &[Instruction::CallFunction]);
+    }
+
+    #[test]
+    pub fn test_call_method() {
+        check_partial_decoding(&TX_CALL_METHOD, &[Instruction::CallMethod]);
+    }
+
+    #[test]
+    pub fn test_create_access_controller() {
+        check_partial_decoding(
+            &TX_CREATE_ACCESS_CONTROLLER,
+            &[Instruction::TakeFromWorktop, Instruction::CallFunction],
+        );
+    }
+
+    #[test]
+    pub fn test_create_account() {
+        check_partial_decoding(&TX_CREATE_ACCOUNT, &[Instruction::CallFunction]);
+    }
+
+    #[test]
+    pub fn test_create_fungible_resource_with_initial_supply() {
+        check_partial_decoding(
+            &TX_CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY,
+            &[
+                Instruction::CallMethod,
+                Instruction::CallFunction,
+                Instruction::CallMethod,
+            ],
+        );
+    }
+
+    #[test]
+    pub fn test_create_fungible_resource_with_no_initial_supply() {
+        check_partial_decoding(
+            &TX_CREATE_FUNGIBLE_RESOURCE_WITH_NO_INITIAL_SUPPLY,
+            &[Instruction::CallMethod, Instruction::CallFunction],
+        );
+    }
+
+    #[test]
+    pub fn test_create_identity() {
+        check_partial_decoding(&TX_CREATE_IDENTITY, &[Instruction::CallFunction]);
+    }
+
+    #[test]
+    pub fn test_create_non_fungible_resource_with_no_initial_supply() {
+        check_partial_decoding(
+            &TX_CREATE_NON_FUNGIBLE_RESOURCE_WITH_NO_INITIAL_SUPPLY,
+            &[Instruction::CallMethod, Instruction::CallFunction],
+        );
+    }
+
+    #[test]
+    pub fn test_metadata() {
+        check_partial_decoding(
+            &TX_METADATA,
+            &[
+                Instruction::SetMetadata,
+                Instruction::SetMetadata,
+                Instruction::SetMetadata,
+            ],
+        );
+    }
+
+    #[test]
+    pub fn test_mint_fungible() {
+        check_partial_decoding(
+            &TX_MINT_FUNGIBLE,
+            &[
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+                Instruction::MintFungible,
+                Instruction::CallMethod,
+            ],
+        );
+    }
+
+    #[test]
+    pub fn test_mint_non_fungible() {
+        check_partial_decoding(
+            &TX_MINT_NON_FUNGIBLE,
+            &[
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+                Instruction::MintNonFungible,
+                Instruction::CallMethod,
+            ],
+        );
+    }
+
+    #[test]
+    pub fn test_publish_package() {
+        check_partial_decoding(
+            &TX_PUBLISH_PACKAGE,
+            &[Instruction::CallMethod, Instruction::PublishPackage],
+        );
+    }
+
+    #[test]
+    pub fn test_resource_recall() {
+        check_partial_decoding(&TX_RESOURCE_RECALL, &[Instruction::RecallResource]);
+    }
+
+    #[test]
+    pub fn test_resource_worktop() {
+        check_partial_decoding(
+            &TX_RESOURCE_WORKTOP,
+            &[
+                Instruction::CallMethod,
+                Instruction::TakeFromWorktopByAmount,
+                Instruction::CallMethod,
+                Instruction::AssertWorktopContainsByAmount,
+                Instruction::AssertWorktopContains,
+                Instruction::TakeFromWorktop,
+                Instruction::CreateProofFromBucket,
+                Instruction::CloneProof,
+                Instruction::DropProof,
+                Instruction::DropProof,
+                Instruction::CallMethod,
+                Instruction::PopFromAuthZone,
+                Instruction::DropProof,
+                Instruction::ReturnToWorktop,
+                Instruction::TakeFromWorktopByIds,
+                Instruction::DropAllProofs,
+                Instruction::CallMethod,
+            ],
+        );
+    }
+
+    #[test]
+    pub fn test_royalty() {
+        check_partial_decoding(
+            &TX_ROYALTY,
+            &[
+                Instruction::SetPackageRoyaltyConfig,
+                Instruction::SetComponentRoyaltyConfig,
+                Instruction::ClaimPackageRoyalty,
+                Instruction::ClaimComponentRoyalty,
+            ],
+        );
+    }
+
+    #[test]
+    pub fn test_values() {
+        check_partial_decoding(
+            &TX_VALUES,
+            &[
+                Instruction::TakeFromWorktop,
+                Instruction::CreateProofFromAuthZone,
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+            ],
+        );
     }
 }
