@@ -66,5 +66,6 @@ pub mod sbor_decoder;
 pub mod type_info;
 pub mod display_io;
 pub mod bech32;
+pub mod math;
 #[cfg(test)]
 pub mod tx_intent_test_data;

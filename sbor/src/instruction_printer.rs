@@ -4,8 +4,10 @@ use crate::bech32::network::*;
 use crate::display_io::DisplayIO;
 use crate::instruction::{InstructionInfo, ParameterType};
 use crate::instruction_extractor::{ExtractorEvent, InstructionHandler};
+use crate::math::Decimal;
+use crate::math::byte_receiver::ByteReceiver;
 use crate::sbor_decoder::SborEvent;
-use crate::type_info::ADDRESS_LEN;
+use crate::type_info::{ADDRESS_LEN, TYPE_ENUM, TYPE_STRING};
 use arrform::{arrform, ArrForm};
 use core::str::from_utf8;
 
@@ -19,10 +21,11 @@ pub struct InstructionPrinter {
 struct ParameterPrinterState {
     data: [u8; Self::PARAMETER_AREA_SIZE],
     data_counter: u8,
-    nesting_level: u8,
+    miscellaneous: u8,
     flip_flop: bool,
     network_id: NetworkId,
     resource_id: HrpType,
+    phase: u8,
 }
 
 impl InstructionHandler for InstructionPrinter {
@@ -103,10 +106,11 @@ impl ParameterPrinterState {
         Self {
             data: [0; Self::PARAMETER_AREA_SIZE],
             data_counter: 0,
-            nesting_level: 0,
+            miscellaneous: 0,
             flip_flop: false,
             network_id,
             resource_id: HrpType::Autodetect,
+            phase: 0,
         }
     }
 
@@ -117,9 +121,33 @@ impl ParameterPrinterState {
     pub fn reset(&mut self) {
         self.data = [0; Self::PARAMETER_AREA_SIZE];
         self.data_counter = 0;
-        self.nesting_level = 0;
+        self.miscellaneous = 0;
         self.flip_flop = false;
         self.resource_id = HrpType::Autodetect;
+        self.phase = 0;
+    }
+
+    pub fn data(&self) -> &[u8] {
+        &self.data[0..self.data_counter as usize]
+    }
+
+    pub fn push_byte(&mut self, byte: u8) {
+        if (self.data_counter as usize) < Self::PARAMETER_AREA_SIZE {
+            self.data[self.data_counter as usize] = byte;
+            self.data_counter += 1;
+        }
+    }
+
+    pub fn push_byte_for_string(&mut self, byte: u8) {
+        self.push_byte(byte);
+
+        // Add '...' at the end of truncated string.
+        if self.data_counter as usize == ParameterPrinterState::PARAMETER_AREA_SIZE - 2 {
+            self.data_counter -= 1; // Override last characted
+            self.push_byte(b'.');
+            self.push_byte(b'.');
+            self.push_byte(b'.');
+        }
     }
 }
 
@@ -137,14 +165,14 @@ fn get_printer_for_type(param_type: ParameterType) -> &'static dyn ParameterPrin
     match param_type {
         ParameterType::Ignored => &IGNORED_PARAMETER_PRINTER,
         ParameterType::AccessRule => &ACCESS_RULE_PARAMETER_PRINTER,
-        ParameterType::MethodKey => &IGNORED_PARAMETER_PRINTER,
+        ParameterType::MethodKey => &METHOD_KEY_PARAMETER_PRINTER,
         ParameterType::AccessRules => &IGNORED_PARAMETER_PRINTER,
         ParameterType::BTreeMapByNonFungibleLocalId => &IGNORED_PARAMETER_PRINTER,
         ParameterType::BTreeMapByStringToRoyaltyConfig => &IGNORED_PARAMETER_PRINTER,
         ParameterType::BTreeMapByStringToString => &IGNORED_PARAMETER_PRINTER,
         ParameterType::BTreeSetOfNonFungibleLocalId => &IGNORED_PARAMETER_PRINTER,
         ParameterType::ComponentAddress => &COMPONENT_ADDRESS_PARAMETER_PRINTER,
-        ParameterType::Decimal => &IGNORED_PARAMETER_PRINTER,
+        ParameterType::Decimal => &DECIMAL_PARAMETER_PRINTER,
         ParameterType::ManifestAddress => &MANIFEST_ADDRESS_PARAMETER_PRINTER,
         ParameterType::ManifestBlobRef => &IGNORED_PARAMETER_PRINTER,
         ParameterType::ManifestBucket => &IGNORED_PARAMETER_PRINTER,
@@ -220,19 +248,7 @@ impl ParameterPrinter for StringParameterPrinter {
     ) {
         if let SborEvent::Data(byte) = event {
             //TODO: split longer strings into chunks; keep in mind utf8 boundaries
-            if state.data_counter as usize == ParameterPrinterState::PARAMETER_AREA_SIZE {
-                return;
-            }
-
-            state.data[state.data_counter as usize] = byte;
-            state.data_counter += 1;
-
-            if state.data_counter as usize == ParameterPrinterState::PARAMETER_AREA_SIZE - 4 {
-                state.data[state.data_counter as usize + 1] = b'.';
-                state.data[state.data_counter as usize + 2] = b'.';
-                state.data[state.data_counter as usize + 3] = b'.';
-                state.data_counter += 3;
-            }
+            state.push_byte_for_string(byte);
         }
     }
 
@@ -263,8 +279,7 @@ impl ParameterPrinter for VecOfU8ParameterPrinter {
                 return;
             }
 
-            state.data[state.data_counter as usize] = byte;
-            state.data_counter += 1;
+            state.push_byte(byte);
         }
     }
 
@@ -327,12 +342,7 @@ impl ParameterPrinter for AddressParameterPrinter {
                 }
             }
 
-            if state.data_counter > ADDRESS_LEN {
-                //TODO: an error condition, should we handle it somehow?
-            }
-
-            state.data[state.data_counter as usize] = byte;
-            state.data_counter += 1;
+            state.push_byte(byte);
         }
     }
 
@@ -389,7 +399,6 @@ impl AddressParameterPrinter {
 }
 
 // AccessRule parameter printer
-// Vec<u8> parameter printer
 struct AccessRuleParameterPrinter {}
 
 const ACCESS_RULE_PARAMETER_PRINTER: AccessRuleParameterPrinter = AccessRuleParameterPrinter {};
@@ -406,8 +415,7 @@ impl ParameterPrinter for AccessRuleParameterPrinter {
                 return;
             }
 
-            state.data[state.data_counter as usize] = byte;
-            state.data_counter += 1;
+            state.push_byte(byte);
         }
     }
 
@@ -421,6 +429,146 @@ impl ParameterPrinter for AccessRuleParameterPrinter {
         };
 
         display.scroll(message);
+    }
+}
+
+// MethodKey parameter printer
+struct MethodKeyParameterPrinter {}
+
+const METHOD_KEY_PARAMETER_PRINTER: MethodKeyParameterPrinter = MethodKeyParameterPrinter {};
+
+#[repr(u8)]
+#[derive(Copy, Clone, Debug)]
+enum MethodKeyPhase {
+    Init,
+    ModuleIdDiscrimitor,
+    Ident,
+}
+
+impl From<u8> for MethodKeyPhase {
+    fn from(ins: u8) -> MethodKeyPhase {
+        match ins {
+            0 => MethodKeyPhase::Init,
+            1 => MethodKeyPhase::ModuleIdDiscrimitor,
+            2 => MethodKeyPhase::Ident,
+            _ => MethodKeyPhase::Init,
+        }
+    }
+}
+
+impl From<MethodKeyPhase> for u8 {
+    fn from(ins: MethodKeyPhase) -> u8 {
+        match ins {
+            MethodKeyPhase::Init => 0,
+            MethodKeyPhase::ModuleIdDiscrimitor => 1,
+            MethodKeyPhase::Ident => 2,
+        }
+    }
+}
+
+fn module_id_to_name(byte: u8) -> &'static str {
+    match byte {
+        0 => "SELF",
+        1 => "TypeInfo",
+        2 => "Metadata",
+        3 => "AccessRules",
+        4 => "AccessRules1",
+        5 => "ComponentRoyalty",
+        6 => "PackageRoyalty",
+        7 => "FunctionAccessRules",
+        _ => "<Unknown>",
+    }
+}
+
+impl ParameterPrinter for MethodKeyParameterPrinter {
+    fn handle_data_event(
+        &self,
+        state: &mut ParameterPrinterState,
+        event: SborEvent,
+        _display: &'static dyn DisplayIO,
+    ) {
+        let phase: MethodKeyPhase = state.phase.into();
+
+        match phase {
+            MethodKeyPhase::Init => {
+                if let SborEvent::Start {
+                    type_id: TYPE_ENUM, ..
+                } = event
+                {
+                    state.phase = MethodKeyPhase::ModuleIdDiscrimitor.into();
+                }
+            }
+            MethodKeyPhase::ModuleIdDiscrimitor => {
+                if let SborEvent::Discriminator(byte) = event {
+                    state.miscellaneous = byte;
+                }
+                if let SborEvent::Start {
+                    type_id: TYPE_STRING,
+                    ..
+                } = event
+                {
+                    state.phase = MethodKeyPhase::Ident.into();
+                }
+            }
+            MethodKeyPhase::Ident => {
+                if let SborEvent::Data(byte) = event {
+                    state.push_byte_for_string(byte);
+                }
+            }
+        };
+    }
+
+    fn display(&self, state: &ParameterPrinterState, display: &'static dyn DisplayIO) {
+        let text = match from_utf8(&state.data[0..(state.data_counter as usize)]) {
+            Ok(text) => text,
+            Err(_) => "<invalid string>",
+        };
+
+        let message = arrform!(
+            { ParameterPrinterState::PARAMETER_AREA_SIZE + 32 },
+            "({} {})",
+            module_id_to_name(state.miscellaneous),
+            text
+        );
+
+        display.scroll(message.as_bytes());
+    }
+}
+
+// Decimal parameter printer
+struct DecimalParameterPrinter {}
+
+const DECIMAL_PARAMETER_PRINTER: DecimalParameterPrinter = DecimalParameterPrinter {};
+
+struct DecimalPrinter<'a> {
+    display: &'a dyn DisplayIO,
+}
+
+impl<'a> ByteReceiver for DecimalPrinter<'a> {
+    fn push(&mut self, _byte: u8) {}
+
+    fn push_all(&mut self, data: &[u8]) {
+        self.display.scroll(data);
+    }
+}
+
+impl ParameterPrinter for DecimalParameterPrinter {
+    fn handle_data_event(
+        &self,
+        state: &mut ParameterPrinterState,
+        event: SborEvent,
+        _display: &'static dyn DisplayIO,
+    ) {
+        if let SborEvent::Data(byte) = event {
+            state.push_byte(byte);
+        }
+    }
+
+    fn display(&self, state: &ParameterPrinterState, display: &'static dyn DisplayIO) {
+        match Decimal::try_from(state.data()) {
+            Ok(value) => value.fmt(&mut DecimalPrinter { display }),
+            Err(_) => display.scroll(b"<invalid decimal value>"),
+        }
     }
 }
 
@@ -549,6 +697,22 @@ mod tests {
         //println!("Total {} instructions", handler.handler.instruction_count);
         handler.handler.verify(expected_instructions);
         println!();
+    }
+
+    #[test]
+    pub fn test_push_byte_for_string() {
+        let mut state = ParameterPrinterState::new(NetworkId::LocalNet);
+        for i in 0..ParameterPrinterState::PARAMETER_AREA_SIZE {
+            if state.data_counter != (i as u8) {
+                assert_eq!(
+                    state.data_counter as usize,
+                    ParameterPrinterState::PARAMETER_AREA_SIZE
+                );
+                return;
+            }
+            state.push_byte_for_string(b'a');
+        }
+        assert!(false, "Should not reach here!")
     }
 
     #[test]
