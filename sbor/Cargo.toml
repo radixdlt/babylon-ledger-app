@@ -5,7 +5,5 @@ edition = "2021"
 
 [dependencies]
 arrform = "0.1.1"
-bnum = { version = "0.4.0", default-features = false, features = ["numtraits"] }
-num-traits = { version = "0.2.15", default-features = false }
-num-integer = { version = "0.1.45", default-features = false }
-paste = { version = "1.0.7"}
+crypto-bigint = { version = "0.5.0", default-features = false }
+staticvec = { version = "0.11.9", default-features = false }

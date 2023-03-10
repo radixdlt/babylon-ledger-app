@@ -565,10 +565,10 @@ impl ParameterPrinter for DecimalParameterPrinter {
     }
 
     fn display(&self, state: &ParameterPrinterState, display: &'static dyn DisplayIO) {
-        match Decimal::try_from(state.data()) {
-            Ok(value) => value.fmt(&mut DecimalPrinter { display }),
-            Err(_) => display.scroll(b"<invalid decimal value>"),
-        }
+        // match Decimal::try_from(state.data()) {
+        //     Ok(value) => value.fmt(&mut DecimalPrinter { display }),
+        //     Err(_) => display.scroll(b"<invalid decimal value>"),
+        // }
     }
 }
 
