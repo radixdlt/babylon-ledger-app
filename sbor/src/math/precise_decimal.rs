@@ -167,54 +167,54 @@ impl PreciseDecimal {
         }
     }
 
-    /// Calculates power using exponentiation by squaring.
-    pub fn powi(&self, exp: i64) -> Self {
-        let one_768 = BnumI768::from(Self::ONE.0);
-        let base_768 = BnumI768::from(self.0);
-        let div = |x: i64, y: i64| x.checked_div(y).expect("Overflow");
-        let sub = |x: i64, y: i64| x.checked_sub(y).expect("Overflow");
-        let mul = |x: i64, y: i64| x.checked_mul(y).expect("Overflow");
+    // / Calculates power using exponentiation by squaring.
+    // pub fn powi(&self, exp: i64) -> Self {
+    //     let one_768 = BnumI768::from(Self::ONE.0);
+    //     let base_768 = BnumI768::from(self.0);
+    //     let div = |x: i64, y: i64| x.checked_div(y).expect("Overflow");
+    //     let sub = |x: i64, y: i64| x.checked_sub(y).expect("Overflow");
+    //     let mul = |x: i64, y: i64| x.checked_mul(y).expect("Overflow");
+    //
+    //     if exp < 0 {
+    //         let sub_768 = one_768 * one_768 / base_768;
+    //         let sub_512 = BnumI512::try_from(sub_768).expect("Overflow");
+    //         return PreciseDecimal(sub_512).powi(mul(exp, -1));
+    //     }
+    //     if exp == 0 {
+    //         return Self::ONE;
+    //     }
+    //     if exp == 1 {
+    //         return *self;
+    //     }
+    //     if exp % 2 == 0 {
+    //         let sub_768 = base_768 * base_768 / one_768;
+    //         let sub_512 = BnumI512::try_from(sub_768).expect("Overflow");
+    //         PreciseDecimal(sub_512).powi(div(exp, 2))
+    //     } else {
+    //         let sub_768 = base_768 * base_768 / one_768;
+    //         let sub_512 = BnumI512::try_from(sub_768).expect("Overflow");
+    //         let sub_pdec = PreciseDecimal(sub_512);
+    //         *self * sub_pdec.powi(div(sub(exp, 1), 2))
+    //     }
+    // }
 
-        if exp < 0 {
-            let sub_768 = one_768 * one_768 / base_768;
-            let sub_512 = BnumI512::try_from(sub_768).expect("Overflow");
-            return PreciseDecimal(sub_512).powi(mul(exp, -1));
-        }
-        if exp == 0 {
-            return Self::ONE;
-        }
-        if exp == 1 {
-            return *self;
-        }
-        if exp % 2 == 0 {
-            let sub_768 = base_768 * base_768 / one_768;
-            let sub_512 = BnumI512::try_from(sub_768).expect("Overflow");
-            PreciseDecimal(sub_512).powi(div(exp, 2))
-        } else {
-            let sub_768 = base_768 * base_768 / one_768;
-            let sub_512 = BnumI512::try_from(sub_768).expect("Overflow");
-            let sub_pdec = PreciseDecimal(sub_512);
-            *self * sub_pdec.powi(div(sub(exp, 1), 2))
-        }
-    }
-
-    /// Square root of a PreciseDecimal
-    pub fn sqrt(&self) -> Option<Self> {
-        if self.is_negative() {
-            return None;
-        }
-        if self.is_zero() {
-            return Some(Self::ZERO);
-        }
-
-        // The BnumI512 i associated to a Decimal d is : i = d*10^64.
-        // Therefore, taking sqrt yields sqrt(i) = sqrt(d)*10^32 => We lost precision
-        // To get the right precision, we compute : sqrt(i*10^64) = sqrt(d)*10^64
-        let self_768 = BnumI768::from(self.0);
-        let correct_nb = self_768 * BnumI768::from(PreciseDecimal::one().0);
-        let sqrt = BnumI512::try_from(correct_nb.sqrt()).expect("Overflow");
-        Some(PreciseDecimal(sqrt))
-    }
+    // / Square root of a PreciseDecimal
+    // pub fn sqrt(&self) -> Option<Self> {
+    //     if self.is_negative() {
+    //         return None;
+    //     }
+    //     if self.is_zero() {
+    //         return Some(Self::ZERO);
+    //     }
+    //
+    //     // The BnumI512 i associated to a Decimal d is : i = d*10^64.
+    //     // Therefore, taking sqrt yields sqrt(i) = sqrt(d)*10^32 => We lost precision
+    //     // To get the right precision, we compute : sqrt(i*10^64) = sqrt(d)*10^64
+    //     let self_768 = BnumI768::from(self.0);
+    //     let correct_nb = self_768 * BnumI768::from(PreciseDecimal::one().0);
+    //     let sqrt = BnumI512::try_from(correct_nb.sqrt()).expect("Overflow");
+    //     Some(PreciseDecimal(sqrt))
+    // }
 }
 
 macro_rules! from_int {

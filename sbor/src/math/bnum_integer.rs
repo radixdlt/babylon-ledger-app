@@ -1,8 +1,6 @@
 //! Definitions of safe integers and uints.
 
 use bnum::{BInt, BUint};
-use num_bigint::BigInt;
-use num_integer::Roots;
 use num_traits::{FromPrimitive, One, Pow, ToPrimitive, Zero};
 use paste::paste;
 use core::fmt;
@@ -116,18 +114,6 @@ types! {
     BnumU384, BUint::<6>,
     BnumU512, BUint::<8>,
     BnumU768, BUint::<12>
-}
-
-pub trait Sqrt {
-    fn sqrt(self) -> Self;
-}
-
-pub trait Cbrt {
-    fn cbrt(self) -> Self;
-}
-
-pub trait NthRoot {
-    fn nth_root(self, n: u32) -> Self;
 }
 
 pub trait CheckedSub {
@@ -312,27 +298,6 @@ macro_rules! op_impl {
                           without modifying the original"]
                     fn pow(self, exp: u32) -> Self {
                         Self(self.0.checked_pow(exp).expect("Overflow"))
-                    }
-                }
-
-                impl Sqrt for $t
-                {
-                    fn sqrt(self) -> Self {
-                        Self(self.0.sqrt())
-                    }
-                }
-
-                impl Cbrt for $t
-                {
-                    fn cbrt(self) -> Self {
-                        Self(self.0.cbrt())
-                    }
-                }
-
-                impl NthRoot for $t
-                {
-                    fn nth_root(self, n: u32) -> Self {
-                        Self(self.0.nth_root(n))
                     }
                 }
 
