@@ -11,3 +11,6 @@ app.json
 
 # Python
 test/__pycache__
+
+# Binaries
+*.elf

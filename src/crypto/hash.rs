@@ -146,14 +146,10 @@ impl Hasher {
 
         let mut digest = Digest::new(HashType::DoubleSHA256);
 
-        let rc = unsafe {
-            cx_hash_sha256(
-                &mut first_pass_digest as *mut u8,
-                SHA256_DIGEST_SIZE as c_uint,
-                digest.as_mut(),
-                SHA256_DIGEST_SIZE as c_uint,
-            )
-        };
+        self.init(HashType::DoubleSHA256)?;
+        self.update(&first_pass_digest)?;
+        let rc =
+            unsafe { cx_hash_final(self.work_data.as_mut_ptr(), digest.container.as_mut_ptr()) };
 
         self.reset();
 
