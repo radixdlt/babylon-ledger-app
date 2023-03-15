@@ -115,14 +115,19 @@ impl SignFlowState {
         match tx_type {
             SignTxType::None => return Err(AppError::BadTxSignState),
             SignTxType::Ed25519 => KeyPair25519::derive(&self.path)
-                .and_then(|keypair| keypair.sign(digest.as_digest()))
-                .map(|signature| SignOutcome::Signature {
-                    len: signature.len() as u8,
-                    signature,
+                .and_then(|keypair| keypair.sign(digest.as_bytes()))
+                .map(|signature| {
+                    let mut full_signature = [0u8; MAX_SIGNATURE_SIZE];
+                    full_signature.copy_from_slice(&signature);
+
+                    SignOutcome::Signature {
+                        len: signature.len() as u8,
+                        signature: full_signature,
+                    }
                 }),
 
             SignTxType::Secp256k1 => KeyPairSecp256k1::derive(&self.path)
-                .and_then(|keypair| keypair.sign(digest.as_digest()))
+                .and_then(|keypair| keypair.sign(digest.as_bytes()))
                 .map(|signature| SignOutcome::Signature {
                     len: signature.len() as u8,
                     signature,

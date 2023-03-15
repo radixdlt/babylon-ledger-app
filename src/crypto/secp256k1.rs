@@ -16,7 +16,7 @@ const PUB_KEY_COMPRESSED_LEN: usize = 33;
 const PRIV_KEY_LEN: usize = 32;
 const PUB_KEY_X_COORDINATE_SIZE: usize = 32;
 const PUB_KEY_UNCOMPRESSED_LAST_BYTE: usize = 64;
-pub const SECP256K1_SIGNATURE_LEN: usize = 64;
+pub const SECP256K1_SIGNATURE_LEN: usize = 65;
 
 struct PublicKeySecp256k1(pub [u8; PUB_KEY_COMPRESSED_LEN]);
 struct PrivateKeySecp256k1(pub [u8; PRIV_KEY_LEN]);
@@ -98,7 +98,7 @@ impl KeyPairSecp256k1 {
 
         unsafe {
             let mut info: u32 = 0;
-            let mut len: size_t = signature.len() as size_t;
+            let mut len: size_t = (signature.len() - 1) as size_t;
 
             cx_ecdsa_sign_no_throw(
                 self.private.0.as_ptr() as *const u8,
@@ -106,12 +106,11 @@ impl KeyPairSecp256k1 {
                 CX_SHA256,
                 message.as_ptr(),
                 message.len() as size_t,
-                signature.as_mut_ptr(),
+                signature.as_mut_ptr().offset(1),
                 &mut len as *mut size_t,
                 &mut info as *mut size_t,
             );
 
-            //TODO: check if this matches the network algorithm
             if (info & CX_ECCINFO_PARITY_ODD) != 0 {
                 signature[0] |= 0x01;
             }

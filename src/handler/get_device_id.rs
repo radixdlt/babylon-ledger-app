@@ -12,7 +12,7 @@ pub fn handle(comm: &mut Comm) -> Result<(), AppError> {
     KeyPair25519::derive(&DEVICE_ID_DERIVATION_PATH)
         .and_then(|key| Hasher::one_step_double_sha256(key.public()))
         .map(|digest| {
-            comm.append(digest.as_digest());
+            comm.append(digest.as_bytes());
             ()
         })
 }

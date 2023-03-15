@@ -33,7 +33,7 @@ impl Digest {
         self.container.as_mut_ptr()
     }
 
-    pub fn as_digest(&self) -> &[u8] {
+    pub fn as_bytes(&self) -> &[u8] {
         match self.hash_type {
             HashType::DoubleSHA256 => &self.container[..SHA256_DIGEST_SIZE],
             HashType::SHA512 => &self.container[..SHA512_DIGEST_SIZE],
