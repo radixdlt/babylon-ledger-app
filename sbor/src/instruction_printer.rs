@@ -5,7 +5,6 @@ use crate::display_io::DisplayIO;
 use crate::instruction::{InstructionInfo, ParameterType};
 use crate::instruction_extractor::{ExtractorEvent, InstructionHandler};
 use crate::math::Decimal;
-use crate::math::byte_receiver::ByteReceiver;
 use crate::sbor_decoder::SborEvent;
 use crate::type_info::{ADDRESS_LEN, TYPE_ENUM, TYPE_STRING};
 use arrform::{arrform, ArrForm};
@@ -540,18 +539,6 @@ struct DecimalParameterPrinter {}
 
 const DECIMAL_PARAMETER_PRINTER: DecimalParameterPrinter = DecimalParameterPrinter {};
 
-struct DecimalPrinter<'a> {
-    display: &'a dyn DisplayIO,
-}
-
-impl<'a> ByteReceiver for DecimalPrinter<'a> {
-    fn push(&mut self, _byte: u8) {}
-
-    fn push_all(&mut self, data: &[u8]) {
-        self.display.scroll(data);
-    }
-}
-
 impl ParameterPrinter for DecimalParameterPrinter {
     fn handle_data_event(
         &self,
@@ -565,10 +552,10 @@ impl ParameterPrinter for DecimalParameterPrinter {
     }
 
     fn display(&self, state: &ParameterPrinterState, display: &'static dyn DisplayIO) {
-        // match Decimal::try_from(state.data()) {
-        //     Ok(value) => value.fmt(&mut DecimalPrinter { display }),
-        //     Err(_) => display.scroll(b"<invalid decimal value>"),
-        // }
+        match Decimal::try_from(state.data()) {
+            Ok(value) => display.scroll(arrform!(80, "{}", value).as_bytes()),
+            Err(_) => display.scroll(b"<invalid decimal value>"),
+        }
     }
 }
 
