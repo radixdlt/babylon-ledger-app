@@ -19,21 +19,23 @@ const CREATE_PROOF_FROM_BUCKET: u8 = 13;
 const CLONE_PROOF: u8 = 14;
 const DROP_PROOF: u8 = 15;
 const DROP_ALL_PROOFS: u8 = 16;
-const PUBLISH_PACKAGE: u8 = 17;
-const BURN_RESOURCE: u8 = 18;
-const RECALL_RESOURCE: u8 = 19;
-const SET_METADATA: u8 = 20;
-const SET_PACKAGE_ROYALTY_CONFIG: u8 = 21;
-const SET_COMPONENT_ROYALTY_CONFIG: u8 = 22;
-const CLAIM_PACKAGE_ROYALTY: u8 = 23;
-const CLAIM_COMPONENT_ROYALTY: u8 = 24;
-const SET_METHOD_ACCESS_RULE: u8 = 25;
-const MINT_FUNGIBLE: u8 = 26;
-const MINT_NON_FUNGIBLE: u8 = 27;
-const MINT_UUID_NON_FUNGIBLE: u8 = 28;
-const ASSERT_ACCESS_RULE: u8 = 29;
-const CALL_FUNCTION: u8 = 30;
-const CALL_METHOD: u8 = 31;
+const CLEAR_SIGNATURE_PROOFS: u8 = 17;
+const PUBLISH_PACKAGE: u8 = 18;
+const BURN_RESOURCE: u8 = 19;
+const RECALL_RESOURCE: u8 = 20;
+const SET_METADATA: u8 = 21;
+const REMOVE_METADATA: u8 = 22;
+const SET_PACKAGE_ROYALTY_CONFIG: u8 = 23;
+const SET_COMPONENT_ROYALTY_CONFIG: u8 = 24;
+const CLAIM_PACKAGE_ROYALTY: u8 = 25;
+const CLAIM_COMPONENT_ROYALTY: u8 = 26;
+const SET_METHOD_ACCESS_RULE: u8 = 27;
+const MINT_FUNGIBLE: u8 = 28;
+const MINT_NON_FUNGIBLE: u8 = 29;
+const MINT_UUID_NON_FUNGIBLE: u8 = 30;
+const ASSERT_ACCESS_RULE: u8 = 31;
+const CALL_FUNCTION: u8 = 32;
+const CALL_METHOD: u8 = 33;
 
 
 #[repr(u8)]
@@ -56,21 +58,23 @@ pub enum Instruction {
     CloneProof, // { proof_id: ManifestProof, },
     DropProof, // { proof_id: ManifestProof, },
     DropAllProofs,
-    PublishPackage, // { code: ManifestBlobRef, schema: ManifestBlobRef, royalty_config: BTreeMap<String, RoyaltyConfig>, metadata: BTreeMap<String, String>, access_rules: AccessRules, },
+    ClearSignatureProofs,
+    PublishPackage, // { code: ManifestBlobRef, schema: ManifestBlobRef, royalty_config: BTreeMap<String, RoyaltyConfig>, metadata: BTreeMap<String, String>, access_rules: AccessRulesConfig, },
     BurnResource, // { bucket_id: ManifestBucket, },
     RecallResource, // { vault_id: ObjectId, amount: Decimal, },
     SetMetadata, // { entity_address: ManifestAddress, key: String, value: String, },
+    RemoveMetadata, // { entity_address: ManifestAddress, key: String, },
     SetPackageRoyaltyConfig, // { package_address: PackageAddress, royalty_config: BTreeMap<String, RoyaltyConfig>, },
     SetComponentRoyaltyConfig, // { component_address: ComponentAddress, royalty_config: RoyaltyConfig, },
     ClaimPackageRoyalty, // { package_address: PackageAddress, },
     ClaimComponentRoyalty, // { component_address: ComponentAddress, },
     SetMethodAccessRule, // { entity_address: ManifestAddress, key: MethodKey, rule: AccessRule, },
     MintFungible, // { resource_address: ResourceAddress, amount: Decimal, },
-    MintNonFungible, // { resource_address: ResourceAddress, entries: BTreeMap<NonFungibleLocalId, (Vec<u8>, Vec<u8>)>, },
-    MintUuidNonFungible, // { resource_address: ResourceAddress, entries: Vec<(Vec<u8>, Vec<u8>)>, },
+    MintNonFungible, // { resource_address: ResourceAddress, args: ManifestValue, },
+    MintUuidNonFungible, // { resource_address: ResourceAddress, args: ManifestValue, },
     AssertAccessRule, // { access_rule: AccessRule, },
-    CallFunction, // { package_address: PackageAddress, blueprint_name: String, function_name: String, args: Vec<u8>, },
-    CallMethod,   // { component_address: ComponentAddress, method_name: String, args: Vec<u8>, },
+    CallFunction, // { package_address: PackageAddress, blueprint_name: String, function_name: String, args: ManifestValue, },
+    CallMethod,   // { component_address: ComponentAddress, method_name: String, args: ManifestValue, },
 }
 
 #[repr(u8)]
@@ -78,10 +82,9 @@ pub enum Instruction {
 pub enum ParameterType {
     Ignored,
     AccessRule,
-    AccessRules,
-    BTreeMapByNonFungibleLocalId,
-    BTreeMapByStringToRoyaltyConfig,
-    BTreeMapByStringToString,
+    AccessRulesConfig,
+    BTreeMapByStringToRoyaltyConfig, // Royalty config
+    BTreeMapByStringToString, // Metadata
     BTreeSetOfNonFungibleLocalId,
     ComponentAddress,
     Decimal,
@@ -89,14 +92,13 @@ pub enum ParameterType {
     ManifestBlobRef,
     ManifestBucket,
     ManifestProof,
+    ManifestValue,
     MethodKey,
     PackageAddress,
     ResourceAddress,
     RoyaltyConfig,
     String,
     ObjectId,
-    VecOfVecTuple,
-    VecOfU8,
     U8,
 }
 
@@ -203,6 +205,11 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
             name: b"DropAllProofs",
             params: &[],
         }),
+        CLEAR_SIGNATURE_PROOFS => Some(InstructionInfo {
+            instruction: Instruction::ClearSignatureProofs,
+            name: b"ClearSignatureProofs",
+            params: &[],
+        }),
         PUBLISH_PACKAGE => Some(InstructionInfo {
             instruction: Instruction::PublishPackage,
             name: b"PublishPackage",
@@ -211,7 +218,7 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
                 ParameterType::ManifestBlobRef,
                 ParameterType::BTreeMapByStringToRoyaltyConfig,
                 ParameterType::BTreeMapByStringToString,
-                ParameterType::AccessRules,
+                ParameterType::AccessRulesConfig,
             ],
         }),
         BURN_RESOURCE => Some(InstructionInfo {
@@ -230,6 +237,14 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
             params: &[
                 ParameterType::ManifestAddress,
                 ParameterType::String,
+                ParameterType::String,
+            ],
+        }),
+        REMOVE_METADATA => Some(InstructionInfo {
+            instruction: Instruction::RemoveMetadata,
+            name: b"RemoveMetadata",
+            params: &[
+                ParameterType::ManifestAddress,
                 ParameterType::String,
             ],
         }),
@@ -278,13 +293,13 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
             name: b"MintNonFungible",
             params: &[
                 ParameterType::ResourceAddress,
-                ParameterType::BTreeMapByNonFungibleLocalId,
+                ParameterType::ManifestValue,
             ],
         }),
         MINT_UUID_NON_FUNGIBLE => Some(InstructionInfo {
             instruction: Instruction::MintUuidNonFungible,
             name: b"MintUuidNonFungible",
-            params: &[ParameterType::ResourceAddress, ParameterType::VecOfVecTuple],
+            params: &[ParameterType::ResourceAddress, ParameterType::ManifestValue],
         }),
         ASSERT_ACCESS_RULE => Some(InstructionInfo {
             instruction: Instruction::AssertAccessRule,
@@ -298,7 +313,7 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
                 ParameterType::PackageAddress,
                 ParameterType::String,
                 ParameterType::String,
-                ParameterType::VecOfU8,
+                ParameterType::ManifestValue,
             ],
         }),
         CALL_METHOD => Some(InstructionInfo {
@@ -307,7 +322,7 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
             params: &[
                 ParameterType::ComponentAddress,
                 ParameterType::String,
-                ParameterType::VecOfU8,
+                ParameterType::ManifestValue,
             ],
         }),
         _ => None,

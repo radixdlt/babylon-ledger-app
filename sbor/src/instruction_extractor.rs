@@ -270,6 +270,7 @@ mod tests {
 
     impl SborEventHandler for InstructionProcessor {
         fn handle(&mut self, evt: SborEvent) {
+            // println!("{:?},", evt);
             self.extractor.handle_event(&mut self.handler, evt);
         }
     }
@@ -279,10 +280,10 @@ mod tests {
             if let ExtractorEvent::InstructionStart(info) = event {
                 self.instructions[self.instruction_count] = info.instruction;
                 self.instruction_count += 1;
-                println!("Instruction::{:?},", info.instruction);
+                //println!("Instruction::{:?},", info.instruction);
+            } else {
+                //println!("Event: {:?}", event);
             }
-
-            //println!("Event: {:?}", event);
         }
     }
 
@@ -399,6 +400,9 @@ mod tests {
                 Instruction::SetMetadata,
                 Instruction::SetMetadata,
                 Instruction::SetMetadata,
+                Instruction::RemoveMetadata,
+                Instruction::RemoveMetadata,
+                Instruction::RemoveMetadata,
             ],
         );
     }
@@ -453,16 +457,8 @@ mod tests {
                 Instruction::AssertWorktopContainsByAmount,
                 Instruction::AssertWorktopContains,
                 Instruction::TakeFromWorktop,
-                Instruction::CreateProofFromBucket,
-                Instruction::CloneProof,
-                Instruction::DropProof,
-                Instruction::DropProof,
-                Instruction::CallMethod,
-                Instruction::PopFromAuthZone,
-                Instruction::DropProof,
                 Instruction::ReturnToWorktop,
                 Instruction::TakeFromWorktopByIds,
-                Instruction::DropAllProofs,
                 Instruction::CallMethod,
             ],
         );

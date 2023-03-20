@@ -25,6 +25,7 @@ struct ParameterPrinterState {
     network_id: NetworkId,
     resource_id: HrpType,
     phase: u8,
+    expected_len: u32,
 }
 
 impl InstructionHandler for InstructionPrinter {
@@ -110,6 +111,7 @@ impl ParameterPrinterState {
             network_id,
             resource_id: HrpType::Autodetect,
             phase: 0,
+            expected_len: 0,
         }
     }
 
@@ -124,6 +126,7 @@ impl ParameterPrinterState {
         self.flip_flop = false;
         self.resource_id = HrpType::Autodetect;
         self.phase = 0;
+        self.expected_len = 0;
     }
 
     pub fn data(&self) -> &[u8] {
@@ -164,25 +167,23 @@ fn get_printer_for_type(param_type: ParameterType) -> &'static dyn ParameterPrin
     match param_type {
         ParameterType::Ignored => &IGNORED_PARAMETER_PRINTER,
         ParameterType::AccessRule => &ACCESS_RULE_PARAMETER_PRINTER,
+        ParameterType::AccessRulesConfig => &IGNORED_PARAMETER_PRINTER,
         ParameterType::MethodKey => &METHOD_KEY_PARAMETER_PRINTER,
-        ParameterType::AccessRules => &IGNORED_PARAMETER_PRINTER,
-        ParameterType::BTreeMapByNonFungibleLocalId => &IGNORED_PARAMETER_PRINTER,
         ParameterType::BTreeMapByStringToRoyaltyConfig => &IGNORED_PARAMETER_PRINTER,
         ParameterType::BTreeMapByStringToString => &IGNORED_PARAMETER_PRINTER,
         ParameterType::BTreeSetOfNonFungibleLocalId => &IGNORED_PARAMETER_PRINTER,
         ParameterType::ComponentAddress => &COMPONENT_ADDRESS_PARAMETER_PRINTER,
         ParameterType::Decimal => &DECIMAL_PARAMETER_PRINTER,
         ParameterType::ManifestAddress => &MANIFEST_ADDRESS_PARAMETER_PRINTER,
-        ParameterType::ManifestBlobRef => &IGNORED_PARAMETER_PRINTER,
-        ParameterType::ManifestBucket => &IGNORED_PARAMETER_PRINTER,
-        ParameterType::ManifestProof => &IGNORED_PARAMETER_PRINTER,
+        ParameterType::ManifestBlobRef => &MANIFEST_BLOB_REF_PARAMETER_PRINTER,
+        ParameterType::ManifestBucket => &U32_PARAMETER_PRINTER,
+        ParameterType::ManifestProof => &U32_PARAMETER_PRINTER,
+        ParameterType::ManifestValue => &IGNORED_PARAMETER_PRINTER, // use discriminator to select correct printer
         ParameterType::PackageAddress => &PACKAGE_ADDRESS_PARAMETER_PRINTER,
         ParameterType::ResourceAddress => &RESOURCE_ADDRESS_PARAMETER_PRINTER,
         ParameterType::RoyaltyConfig => &IGNORED_PARAMETER_PRINTER,
         ParameterType::String => &STRING_PARAMETER_PRINTER,
-        ParameterType::ObjectId => &IGNORED_PARAMETER_PRINTER,
-        ParameterType::VecOfVecTuple => &IGNORED_PARAMETER_PRINTER,
-        ParameterType::VecOfU8 => &VEC_OF_U8_PARAMETER_PRINTER,
+        ParameterType::ObjectId => &OBJECT_ID_PARAMETER_PRINTER,
         ParameterType::U8 => &U8_PARAMETER_PRINTER,
     }
 }
@@ -233,6 +234,43 @@ impl ParameterPrinter for U8ParameterPrinter {
     }
 }
 
+// U32 parameter printer
+struct U32ParameterPrinter {}
+
+const U32_PARAMETER_PRINTER: U32ParameterPrinter = U32ParameterPrinter {};
+
+impl ParameterPrinter for U32ParameterPrinter {
+    fn handle_data_event(
+        &self,
+        state: &mut ParameterPrinterState,
+        event: SborEvent,
+        display: &'static dyn DisplayIO,
+    ) {
+        if let SborEvent::Data(byte) = event {
+            state.data[state.data_counter as usize] = byte;
+            state.data_counter += 1;
+
+            if state.data_counter > 4 {
+                display.scroll(b"<Invalid parameter size>");
+            }
+        }
+    }
+
+    fn display(&self, state: &ParameterPrinterState, display: &'static dyn DisplayIO) {
+        if state.data_counter != 4 {
+            return;
+        }
+
+        fn to_array(input: &[u8]) -> [u8; 4] {
+            input.try_into().expect("<should not happen>")
+        }
+
+        let value = u32::from_le_bytes(to_array(&state.data[..(state.data_counter as usize)]));
+
+        display.scroll(arrform!(20, "{}u32", value).as_bytes());
+    }
+}
+
 // String parameter printer
 struct StringParameterPrinter {}
 
@@ -259,20 +297,47 @@ impl ParameterPrinter for StringParameterPrinter {
     }
 }
 
-// Vec<u8> parameter printer
-struct VecOfU8ParameterPrinter {}
+// Printer for various parameters formatted as hex string
+struct HexParameterPrinter {
+    fixed_len: u32,
+}
 
-const VEC_OF_U8_PARAMETER_PRINTER: VecOfU8ParameterPrinter = VecOfU8ParameterPrinter {};
+const OBJECT_ID_LEN: u32 = 1 + 26 + 4; // ENTITY_BYTES_LENGTH + OBJECT_HASH_LENGTH + OBJECT_INDEX_LENGTH
+const OBJECT_ID_PARAMETER_PRINTER: HexParameterPrinter = HexParameterPrinter {
+    fixed_len: OBJECT_ID_LEN,
+};
+const MANIFEST_BLOB_REF_PARAMETER_PRINTER: HexParameterPrinter =
+    HexParameterPrinter { fixed_len: 32 };
 
-impl ParameterPrinter for VecOfU8ParameterPrinter {
+impl HexParameterPrinter {
+    const USER_INFO_SPACE_LEN: usize = 20; // "###/###" - show part of part
+    const PRINTABLE_SIZE: usize =
+        ParameterPrinterState::PARAMETER_AREA_SIZE - HexParameterPrinter::USER_INFO_SPACE_LEN;
+}
+
+impl ParameterPrinter for HexParameterPrinter {
     fn handle_data_event(
         &self,
         state: &mut ParameterPrinterState,
         event: SborEvent,
         display: &'static dyn DisplayIO,
     ) {
+        // TODO: show to user that this is 'piece # of ##'
+        if let SborEvent::Len(len) = event {
+            if self.fixed_len > 0 && self.fixed_len != len {
+                display.scroll(b"<payload size mismatch>");
+                state.flip_flop = true;
+            }
+            state.expected_len = len;
+        }
+
+        // If error is triggered, ignore remaining data
+        if state.flip_flop {
+            return;
+        }
+
         if let SborEvent::Data(byte) = event {
-            if state.data_counter as usize == ParameterPrinterState::PARAMETER_AREA_SIZE {
+            if state.data_counter as usize == Self::PRINTABLE_SIZE {
                 self.display(state, display);
                 state.data_counter = 0;
                 return;
@@ -283,7 +348,11 @@ impl ParameterPrinter for VecOfU8ParameterPrinter {
     }
 
     fn display(&self, state: &ParameterPrinterState, display: &'static dyn DisplayIO) {
-        let mut hex = [0u8; ParameterPrinterState::PARAMETER_AREA_SIZE * 2];
+        if state.flip_flop {
+            return;
+        }
+
+        let mut hex = [0u8; Self::PRINTABLE_SIZE * 2];
 
         let mut i = 0;
         for &c in state.data[..(state.data_counter as usize)].iter() {
@@ -535,6 +604,7 @@ impl ParameterPrinter for MethodKeyParameterPrinter {
 }
 
 // Decimal parameter printer
+// TODO: at present only positive values are printed properly
 struct DecimalParameterPrinter {}
 
 const DECIMAL_PARAMETER_PRINTER: DecimalParameterPrinter = DecimalParameterPrinter {};
@@ -779,6 +849,9 @@ mod tests {
                 Instruction::SetMetadata,
                 Instruction::SetMetadata,
                 Instruction::SetMetadata,
+                Instruction::RemoveMetadata,
+                Instruction::RemoveMetadata,
+                Instruction::RemoveMetadata,
             ],
         );
     }
@@ -833,16 +906,8 @@ mod tests {
                 Instruction::AssertWorktopContainsByAmount,
                 Instruction::AssertWorktopContains,
                 Instruction::TakeFromWorktop,
-                Instruction::CreateProofFromBucket,
-                Instruction::CloneProof,
-                Instruction::DropProof,
-                Instruction::DropProof,
-                Instruction::CallMethod,
-                Instruction::PopFromAuthZone,
-                Instruction::DropProof,
                 Instruction::ReturnToWorktop,
                 Instruction::TakeFromWorktopByIds,
-                Instruction::DropAllProofs,
                 Instruction::CallMethod,
             ],
         );

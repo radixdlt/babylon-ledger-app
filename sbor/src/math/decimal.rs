@@ -65,11 +65,10 @@ impl fmt::Display for Decimal {
                 decimals.insert(0, b'0');
             }
 
-            // // TODO: is it necessary?
-            // // Remove trailing zeros if necessary
-            // while let Some(b'0') = decimals.get(decimals.len() - 1) {
-            //     decimals.remove(decimals.len() - 1);
-            // }
+            // Remove trailing zeros if necessary
+            while let Some(b'0') = decimals.get(decimals.len() - 1) {
+                decimals.remove(decimals.len() - 1);
+            }
 
             f.write_char('.')?;
 
