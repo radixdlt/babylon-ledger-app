@@ -13,13 +13,14 @@ impl Decimal {
     pub const ZERO: Decimal = Decimal(U256::ZERO);
     pub const ONE: Decimal = Decimal(U256::from_u64(10_u64.pow(Decimal::SCALE)));
     pub const MAX: Self = Self(U256::MAX);
+    pub const MAX_PRINT_LEN: usize = 80;
 
     const LOW_TEN: Decimal = Decimal(U256::from_u64(10u64));
 
-    fn fmt_uint(uint: U256) -> StaticVec<u8, 80> {
+    fn fmt_uint(uint: U256) -> StaticVec<u8, { Self::MAX_PRINT_LEN }> {
         let divisor = NonZero::new(Decimal::LOW_TEN.0).unwrap();
         let mut value = uint;
-        let mut vec = StaticVec::<u8, 80>::new();
+        let mut vec = StaticVec::<u8, { Self::MAX_PRINT_LEN }>::new();
 
         loop {
             let (quotent, remainder) = value.div_rem(&divisor);
@@ -87,11 +88,20 @@ mod tests {
     #[test]
     pub fn test_format_decimal() {
         assert_eq!(Decimal(1u128.into()).to_string(), "0.000000000000000001");
-        assert_eq!(Decimal(123456789123456789u128.into()).to_string(), "0.123456789123456789");
+        assert_eq!(
+            Decimal(123456789123456789u128.into()).to_string(),
+            "0.123456789123456789"
+        );
         assert_eq!(Decimal(1000000000000000000u128.into()).to_string(), "1");
         assert_eq!(Decimal(123000000000000000000u128.into()).to_string(), "123");
-        assert_eq!(Decimal(123456789123456789000000000000000000u128.into()).to_string(),"123456789123456789");
-        assert_eq!(Decimal::MAX.to_string(), "115792089237316195423570985008687907853269984665640564039457.584007913129639935");
+        assert_eq!(
+            Decimal(123456789123456789000000000000000000u128.into()).to_string(),
+            "123456789123456789"
+        );
+        assert_eq!(
+            Decimal::MAX.to_string(),
+            "115792089237316195423570985008687907853269984665640564039457.584007913129639935"
+        );
 
         // Signed numbers are not supported yet
         // assert_eq!(format!("{}", Decimal::MAX),"57896044618658097711785492504343953926634992332820282019728.792003956564819967");

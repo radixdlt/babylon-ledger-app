@@ -6,9 +6,10 @@ use crate::instruction::{InstructionInfo, ParameterType};
 use crate::instruction_extractor::{ExtractorEvent, InstructionHandler};
 use crate::math::Decimal;
 use crate::sbor_decoder::SborEvent;
-use crate::type_info::{ADDRESS_LEN, TYPE_ENUM, TYPE_STRING};
+use crate::type_info::*;
 use arrform::{arrform, ArrForm};
 use core::str::from_utf8;
+use staticvec::StaticVec;
 
 pub struct InstructionPrinter {
     active_instruction: Option<InstructionInfo>,
@@ -26,6 +27,7 @@ struct ParameterPrinterState {
     resource_id: HrpType,
     phase: u8,
     expected_len: u32,
+    nesting_level: u8,
 }
 
 impl InstructionHandler for InstructionPrinter {
@@ -84,6 +86,19 @@ impl InstructionPrinter {
     }
 
     pub fn parameter_data(&mut self, source_event: SborEvent) {
+        match source_event {
+            SborEvent::Start {
+                type_id: _,
+                nesting_level,
+                ..
+            }
+            | SborEvent::End {
+                type_id: _,
+                nesting_level,
+            } => self.state.nesting_level = nesting_level,
+            _ => {}
+        }
+
         self.get_printer()
             .handle_data_event(&mut self.state, source_event, self.display);
     }
@@ -112,6 +127,7 @@ impl ParameterPrinterState {
             resource_id: HrpType::Autodetect,
             phase: 0,
             expected_len: 0,
+            nesting_level: 0,
         }
     }
 
@@ -127,6 +143,7 @@ impl ParameterPrinterState {
         self.resource_id = HrpType::Autodetect;
         self.phase = 0;
         self.expected_len = 0;
+        self.nesting_level = 0;
     }
 
     pub fn data(&self) -> &[u8] {
@@ -178,7 +195,7 @@ fn get_printer_for_type(param_type: ParameterType) -> &'static dyn ParameterPrin
         ParameterType::ManifestBlobRef => &MANIFEST_BLOB_REF_PARAMETER_PRINTER,
         ParameterType::ManifestBucket => &U32_PARAMETER_PRINTER,
         ParameterType::ManifestProof => &U32_PARAMETER_PRINTER,
-        ParameterType::ManifestValue => &IGNORED_PARAMETER_PRINTER, // use discriminator to select correct printer
+        ParameterType::ManifestValue => &MANIFEST_VALUE_PARAMETER_PRINTER,
         ParameterType::PackageAddress => &PACKAGE_ADDRESS_PARAMETER_PRINTER,
         ParameterType::ResourceAddress => &RESOURCE_ADDRESS_PARAMETER_PRINTER,
         ParameterType::RoyaltyConfig => &IGNORED_PARAMETER_PRINTER,
@@ -204,6 +221,58 @@ impl ParameterPrinter for IgnoredParameter {
     fn display(&self, _state: &ParameterPrinterState, display: &'static dyn DisplayIO) {
         display.scroll("<not decoded>".as_bytes())
     }
+}
+
+// Autoselecting parameter printer
+struct ManifestValueParameterPrinter {}
+
+const MANIFEST_VALUE_PARAMETER_PRINTER: ManifestValueParameterPrinter =
+    ManifestValueParameterPrinter {};
+
+impl ManifestValueParameterPrinter {
+    fn get_printer_for_discriminator(discriminator: u8) -> &'static dyn ParameterPrinter {
+        match discriminator {
+            TYPE_ADDRESS => &MANIFEST_ADDRESS_PARAMETER_PRINTER,
+            TYPE_BUCKET => &U32_PARAMETER_PRINTER,
+            TYPE_PROOF => &U32_PARAMETER_PRINTER,
+            TYPE_EXPRESSION => &HEX_PARAMETER_PRINTER,
+            TYPE_BLOB => &MANIFEST_BLOB_REF_PARAMETER_PRINTER,
+            TYPE_DECIMAL => &DECIMAL_PARAMETER_PRINTER,
+            TYPE_PRECISE_DECIMAL => &IGNORED_PARAMETER_PRINTER, //TODO: implement it
+            TYPE_NON_FUNGIBLE_LOCAL_ID => &IGNORED_PARAMETER_PRINTER, //TODO: implement it
+            _ => &IGNORED_PARAMETER_PRINTER,
+        }
+    }
+}
+
+impl ParameterPrinter for ManifestValueParameterPrinter {
+    fn handle_data_event(
+        &self,
+        state: &mut ParameterPrinterState,
+        event: SborEvent,
+        display: &'static dyn DisplayIO,
+    ) {
+        if state.nesting_level == 5 {
+            match event {
+                SborEvent::Start { type_id, .. } => {
+                    state.reset();
+                    state.miscellaneous = type_id;
+                }
+                SborEvent::End { .. } => {
+                    ManifestValueParameterPrinter::get_printer_for_discriminator(
+                        state.miscellaneous,
+                    )
+                    .display(state, display);
+                }
+                _ => {}
+            }
+            return;
+        }
+        ManifestValueParameterPrinter::get_printer_for_discriminator(state.miscellaneous)
+            .handle_data_event(state, event, display);
+    }
+
+    fn display(&self, _state: &ParameterPrinterState, _display: &'static dyn DisplayIO) {}
 }
 
 // U8 parameter printer
@@ -308,12 +377,15 @@ const OBJECT_ID_PARAMETER_PRINTER: HexParameterPrinter = HexParameterPrinter {
 };
 const MANIFEST_BLOB_REF_PARAMETER_PRINTER: HexParameterPrinter =
     HexParameterPrinter { fixed_len: 32 };
+const HEX_PARAMETER_PRINTER: HexParameterPrinter = HexParameterPrinter { fixed_len: 0 };
 
 impl HexParameterPrinter {
     const USER_INFO_SPACE_LEN: usize = 20; // "###/###" - show part of part
     const PRINTABLE_SIZE: usize =
-        ParameterPrinterState::PARAMETER_AREA_SIZE - HexParameterPrinter::USER_INFO_SPACE_LEN;
+        ParameterPrinterState::PARAMETER_AREA_SIZE * 2 + HexParameterPrinter::USER_INFO_SPACE_LEN;
 }
+
+const HEX_DIGITS: [u8; 16] = *b"0123456789abcdef";
 
 impl ParameterPrinter for HexParameterPrinter {
     fn handle_data_event(
@@ -352,20 +424,17 @@ impl ParameterPrinter for HexParameterPrinter {
             return;
         }
 
-        let mut hex = [0u8; Self::PRINTABLE_SIZE * 2];
+        let mut message = StaticVec::<u8, { HexParameterPrinter::PRINTABLE_SIZE }>::new();
 
-        let mut i = 0;
+        message.insert_from_slice(0, b"Hex(");
+
         for &c in state.data[..(state.data_counter as usize)].iter() {
-            let c0 = char::from_digit((c >> 4).into(), 16).unwrap();
-            let c1 = char::from_digit((c & 0xf).into(), 16).unwrap();
-            hex[i] = c0 as u8;
-            hex[i + 1] = c1 as u8;
-            i += 2;
+            message.push(HEX_DIGITS[((c >> 4) & 0x0F) as usize]);
+            message.push(HEX_DIGITS[(c & 0x0F) as usize]);
         }
+        message.push(b')');
 
-        let len = (state.data_counter as usize) * 2;
-        let message = from_utf8(&hex[..len]).unwrap();
-        display.scroll(message.as_bytes());
+        display.scroll(message.as_slice());
     }
 }
 
@@ -446,7 +515,7 @@ impl AddressParameterPrinter {
                 hrp_suffix(state.network_id)
             )
             .as_bytes(),
-            &state.data[1..(state.data_counter as usize)],
+            &state.data[0..(state.data_counter as usize)],
         );
         match encodind_result {
             Ok(encoder) => display.scroll(encoder.encoded()),
@@ -490,11 +559,11 @@ impl ParameterPrinter for AccessRuleParameterPrinter {
 
     fn display(&self, state: &ParameterPrinterState, display: &'static dyn DisplayIO) {
         let message: &[u8] = match (state.data_counter, state.data[0]) {
-            (1, 0) => b"AllowAll",
-            (1, 1) => b"DenyAll",
-            (1, 2) => b"Protected(<rules not decoded>)",
-            (1, _) => b"<unknown access rule>",
-            (_, _) => b"<invalid encoding>",
+            (1, 0) => b"Access(AllowAll)",
+            (1, 1) => b"Access(DenyAll)",
+            (1, 2) => b"Access(Protected(<rules not decoded>))",
+            (1, _) => b"Access(<unknown access rule>)",
+            (_, _) => b"Access(<decoding failure>)",
         };
 
         display.scroll(message);
@@ -595,7 +664,7 @@ impl ParameterPrinter for MethodKeyParameterPrinter {
 
         let message = arrform!(
             { ParameterPrinterState::PARAMETER_AREA_SIZE + 32 },
-            "({} {})",
+            "Key({} {})",
             module_id_to_name(state.miscellaneous),
             text
         );
@@ -609,6 +678,11 @@ impl ParameterPrinter for MethodKeyParameterPrinter {
 struct DecimalParameterPrinter {}
 
 const DECIMAL_PARAMETER_PRINTER: DecimalParameterPrinter = DecimalParameterPrinter {};
+
+impl DecimalParameterPrinter {
+    const DECORATION_LEN: usize = b"Dec(".len();
+    const MAX_DISPLAY_LEN: usize = Decimal::MAX_PRINT_LEN + Self::DECORATION_LEN;
+}
 
 impl ParameterPrinter for DecimalParameterPrinter {
     fn handle_data_event(
@@ -624,8 +698,15 @@ impl ParameterPrinter for DecimalParameterPrinter {
 
     fn display(&self, state: &ParameterPrinterState, display: &'static dyn DisplayIO) {
         match Decimal::try_from(state.data()) {
-            Ok(value) => display.scroll(arrform!(80, "{}", value).as_bytes()),
-            Err(_) => display.scroll(b"<invalid decimal value>"),
+            Ok(value) => display.scroll(
+                arrform!(
+                    { DecimalParameterPrinter::MAX_DISPLAY_LEN },
+                    "Dec({})",
+                    value
+                )
+                .as_bytes(),
+            ),
+            Err(_) => display.scroll(b"Dec(<invalid value>)"),
         }
     }
 }
@@ -716,7 +797,7 @@ mod tests {
 
             self.printer.handle(event);
 
-            // println!("Event: {:?}", event);
+            //println!("Event: {:?}", event);
         }
     }
 
