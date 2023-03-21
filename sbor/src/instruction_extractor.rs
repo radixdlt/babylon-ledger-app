@@ -280,7 +280,7 @@ mod tests {
             if let ExtractorEvent::InstructionStart(info) = event {
                 self.instructions[self.instruction_count] = info.instruction;
                 self.instruction_count += 1;
-                //println!("Instruction::{:?},", info.instruction);
+                println!("Instruction::{:?},", info.instruction);
             } else {
                 //println!("Event: {:?}", event);
             }
@@ -356,7 +356,10 @@ mod tests {
 
     #[test]
     pub fn test_create_account() {
-        check_partial_decoding(&TX_CREATE_ACCOUNT, &[Instruction::CallFunction]);
+        check_partial_decoding(
+            &TX_CREATE_ACCOUNT,
+            &[Instruction::CallFunction, Instruction::CallFunction],
+        );
     }
 
     #[test]
@@ -381,7 +384,10 @@ mod tests {
 
     #[test]
     pub fn test_create_identity() {
-        check_partial_decoding(&TX_CREATE_IDENTITY, &[Instruction::CallFunction]);
+        check_partial_decoding(
+            &TX_CREATE_IDENTITY,
+            &[Instruction::CallFunction, Instruction::CallFunction],
+        );
     }
 
     #[test]

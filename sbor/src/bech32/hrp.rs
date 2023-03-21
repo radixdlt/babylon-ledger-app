@@ -4,8 +4,9 @@ use crate::bech32::network::NetworkId;
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum HrpType {
     Package,
+    FungibleResource,
+    NonFungibleResource,
     Component,
-    Resource,
     Autodetect,
 }
 
@@ -30,16 +31,16 @@ pub fn hrp_prefix(entity_id: HrpType, discriminator: u8) -> Option<&'static str>
     match entity_id {
         HrpType::Autodetect => None,
         HrpType::Package => Some("package_"),
-        HrpType::Resource => Some("resource_"),
+        HrpType::FungibleResource | HrpType::NonFungibleResource => Some("resource_"),
         HrpType::Component => match discriminator {
             // NOTE: this part depends on Scrypto entity ID's
-            0x02 => Some("component_"), // Normal
-            0x04 => Some("epochmanager_"),      // EpochManager
-            0x05 => Some("validator_"),         // Validator
-            0x06 => Some("clock_"),             // Clock
-            0x0c => Some("accesscontroller_"), // AccessController
-            0x03 | 0x07 | 0x08 => Some("account_"), // Account, EcdsaSecp256k1VirtualAccount, EddsaEd25519VirtualAccount
-            0x09 | 0x0a | 0x0b => Some("identity_"), // Identity, EcdsaSecp256k1VirtualIdentity, EddsaEd25519VirtualIdentity
+            0x03 => Some("component_"), // Normal
+            0x05 => Some("epochmanager_"),      // EpochManager
+            0x06 => Some("validator_"),         // Validator
+            0x07 => Some("clock_"),             // Clock
+            0x0d => Some("accesscontroller_"), // AccessController
+            0x04 | 0x08 | 0x09 => Some("account_"), // Account, EcdsaSecp256k1VirtualAccount, EddsaEd25519VirtualAccount
+            0x0a | 0x0b | 0x0c => Some("identity_"), // Identity, EcdsaSecp256k1VirtualIdentity, EddsaEd25519VirtualIdentity
             _ => None,
         },
     }

@@ -21,21 +21,22 @@ const DROP_PROOF: u8 = 15;
 const DROP_ALL_PROOFS: u8 = 16;
 const CLEAR_SIGNATURE_PROOFS: u8 = 17;
 const PUBLISH_PACKAGE: u8 = 18;
-const BURN_RESOURCE: u8 = 19;
-const RECALL_RESOURCE: u8 = 20;
-const SET_METADATA: u8 = 21;
-const REMOVE_METADATA: u8 = 22;
-const SET_PACKAGE_ROYALTY_CONFIG: u8 = 23;
-const SET_COMPONENT_ROYALTY_CONFIG: u8 = 24;
-const CLAIM_PACKAGE_ROYALTY: u8 = 25;
-const CLAIM_COMPONENT_ROYALTY: u8 = 26;
-const SET_METHOD_ACCESS_RULE: u8 = 27;
-const MINT_FUNGIBLE: u8 = 28;
-const MINT_NON_FUNGIBLE: u8 = 29;
-const MINT_UUID_NON_FUNGIBLE: u8 = 30;
-const ASSERT_ACCESS_RULE: u8 = 31;
-const CALL_FUNCTION: u8 = 32;
-const CALL_METHOD: u8 = 33;
+const PUBLISH_PACKAGE_ADVANCED: u8 = 19;
+const BURN_RESOURCE: u8 = 20;
+const RECALL_RESOURCE: u8 = 21;
+const SET_METADATA: u8 = 22;
+const REMOVE_METADATA: u8 = 23;
+const SET_PACKAGE_ROYALTY_CONFIG: u8 = 24;
+const SET_COMPONENT_ROYALTY_CONFIG: u8 = 25;
+const CLAIM_PACKAGE_ROYALTY: u8 = 26;
+const CLAIM_COMPONENT_ROYALTY: u8 = 27;
+const SET_METHOD_ACCESS_RULE: u8 = 28;
+const MINT_FUNGIBLE: u8 = 29;
+const MINT_NON_FUNGIBLE: u8 = 30;
+const MINT_UUID_NON_FUNGIBLE: u8 = 31;
+const ASSERT_ACCESS_RULE: u8 = 32;
+const CALL_FUNCTION: u8 = 33;
+const CALL_METHOD: u8 = 34;
 
 
 #[repr(u8)]
@@ -59,7 +60,8 @@ pub enum Instruction {
     DropProof, // { proof_id: ManifestProof, },
     DropAllProofs,
     ClearSignatureProofs,
-    PublishPackage, // { code: ManifestBlobRef, schema: ManifestBlobRef, royalty_config: BTreeMap<String, RoyaltyConfig>, metadata: BTreeMap<String, String>, access_rules: AccessRulesConfig, },
+    PublishPackage, // { code: ManifestBlobRef, schema: ManifestBlobRef, royalty_config: BTreeMap<String, RoyaltyConfig>, metadata: BTreeMap<String, String>, },
+    PublishPackageAdvanced, // { code: ManifestBlobRef, schema: ManifestBlobRef, royalty_config: BTreeMap<String, RoyaltyConfig>, metadata: BTreeMap<String, String>, access_rules: AccessRulesConfig, },
     BurnResource, // { bucket_id: ManifestBucket, },
     RecallResource, // { vault_id: ObjectId, amount: Decimal, },
     SetMetadata, // { entity_address: ManifestAddress, key: String, value: String, },
@@ -211,6 +213,16 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
             params: &[],
         }),
         PUBLISH_PACKAGE => Some(InstructionInfo {
+            instruction: Instruction::PublishPackage,
+            name: b"PublishPackage",
+            params: &[
+                ParameterType::ManifestBlobRef,
+                ParameterType::ManifestBlobRef,
+                ParameterType::BTreeMapByStringToRoyaltyConfig,
+                ParameterType::BTreeMapByStringToString
+            ],
+        }),
+        PUBLISH_PACKAGE_ADVANCED => Some(InstructionInfo {
             instruction: Instruction::PublishPackage,
             name: b"PublishPackage",
             params: &[

@@ -375,7 +375,7 @@ struct AddressParameterPrinter {
 }
 
 const RESOURCE_ADDRESS_PARAMETER_PRINTER: AddressParameterPrinter = AddressParameterPrinter {
-    resource_id: HrpType::Resource,
+    resource_id: HrpType::FungibleResource,
 };
 const COMPONENT_ADDRESS_PARAMETER_PRINTER: AddressParameterPrinter = AddressParameterPrinter {
     resource_id: HrpType::Component,
@@ -400,9 +400,10 @@ impl ParameterPrinter for AddressParameterPrinter {
                 if self.resource_id == HrpType::Autodetect {
                     // See ManifestAddress enum in radixdlt-scrypto
                     state.resource_id = match byte {
-                        0x00 => HrpType::Resource,
-                        0x01 => HrpType::Package,
-                        0x02..=0x0C => HrpType::Component,
+                        0x00 => HrpType::Package,
+                        0x01 => HrpType::FungibleResource,
+                        0x02 => HrpType::NonFungibleResource,
+                        0x03..=0x0d => HrpType::Component,
                         _ => HrpType::Autodetect,
                     };
                 } else {
@@ -805,7 +806,10 @@ mod tests {
 
     #[test]
     pub fn test_create_account() {
-        check_partial_decoding(&TX_CREATE_ACCOUNT, &[Instruction::CallFunction]);
+        check_partial_decoding(
+            &TX_CREATE_ACCOUNT,
+            &[Instruction::CallFunction, Instruction::CallFunction],
+        );
     }
 
     #[test]
@@ -830,7 +834,10 @@ mod tests {
 
     #[test]
     pub fn test_create_identity() {
-        check_partial_decoding(&TX_CREATE_IDENTITY, &[Instruction::CallFunction]);
+        check_partial_decoding(
+            &TX_CREATE_IDENTITY,
+            &[Instruction::CallFunction, Instruction::CallFunction],
+        );
     }
 
     #[test]
