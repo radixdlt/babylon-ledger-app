@@ -51,7 +51,7 @@ impl ParameterPrinter for NonFungibleLocalIdParameterPrinter {
                     return;
                 }
                 message.push(b'<');
-                message.insert_from_slice(1, state.data());
+                message.extend_from_slice(state.data());
                 message.push(b'>');
             }
             // Integer
@@ -66,7 +66,7 @@ impl ParameterPrinter for NonFungibleLocalIdParameterPrinter {
                 }
 
                 let value = u64::from_be_bytes(to_array(state.data()));
-                message.insert_from_slice(0, arrform!(20, "#{}#", value).as_bytes());
+                message.extend_from_slice(arrform!(20, "#{}#", value).as_bytes());
             }
             // Bytes
             2 => {

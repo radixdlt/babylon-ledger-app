@@ -6,6 +6,8 @@ use crate::display_io::DisplayIO;
 use crate::print::parameter_printer::ParameterPrinter;
 use crate::print::state::ParameterPrinterState;
 use crate::sbor_decoder::SborEvent;
+use core::{concat, stringify};
+use paste::paste;
 
 // Parameter which we just skip, without printing anything
 pub struct IgnoredParameter {}
@@ -24,13 +26,12 @@ impl ParameterPrinter for IgnoredParameter {
         display.scroll("<not decoded>".as_bytes())
     }
 }
+// BOOL parameter printer
+pub struct BoolParameterPrinter {}
 
-// U8 parameter printer
-pub struct U8ParameterPrinter {}
+pub const BOOL_PARAMETER_PRINTER: BoolParameterPrinter = BoolParameterPrinter {};
 
-pub const U8_PARAMETER_PRINTER: U8ParameterPrinter = U8ParameterPrinter {};
-
-impl ParameterPrinter for U8ParameterPrinter {
+impl ParameterPrinter for BoolParameterPrinter {
     fn handle_data_event(
         &self,
         state: &mut ParameterPrinterState,
@@ -45,46 +46,61 @@ impl ParameterPrinter for U8ParameterPrinter {
 
     fn display(&self, state: &ParameterPrinterState, display: &'static dyn DisplayIO) {
         if state.data_counter != 1 {
-            //TODO: an error condition, should we handle it somehow?
+            display.scroll(b"<Invalid bool encoding>");
             return;
         }
 
-        display.scroll(arrform!(8, "{}u8", state.data[0]).as_bytes());
+        let message: &[u8] = match state.data[0] {
+            0 => b"false",
+            1 => b"true",
+            _ => b"(invalid bool)",
+        };
+
+        display.scroll(message);
     }
 }
 
-// U32 parameter printer
-pub struct U32ParameterPrinter {}
+macro_rules! printer_for_type {
+    ($type:ty) => {
+        paste! {
+            pub struct [<$type:upper ParameterPrinter>] {}
+            pub const [<$type:upper _PARAMETER_PRINTER>] : [<$type:upper ParameterPrinter>] = [<$type:upper ParameterPrinter>] {};
 
-pub const U32_PARAMETER_PRINTER: U32ParameterPrinter = U32ParameterPrinter {};
+            impl ParameterPrinter for [<$type:upper ParameterPrinter>] {
+                fn handle_data_event(
+                    &self,
+                    state: &mut ParameterPrinterState,
+                    event: SborEvent,
+                    _display: &'static dyn DisplayIO,
+                ) {
+                    if let SborEvent::Data(byte) = event {
+                        state.push_byte(byte);
+                    }
+                }
 
-impl ParameterPrinter for U32ParameterPrinter {
-    fn handle_data_event(
-        &self,
-        state: &mut ParameterPrinterState,
-        event: SborEvent,
-        _display: &'static dyn DisplayIO,
-    ) {
-        if let SborEvent::Data(byte) = event {
-            state.push_byte(byte);
+                fn display(&self, state: &ParameterPrinterState, display: &'static dyn DisplayIO) {
+                    if state.data_counter != (($type::BITS / 8) as u8) {
+                        display.scroll(b"<Invalid encoding>");
+                        return;
+                    }
+
+                    display.scroll(arrform!(8, concat!("{}", stringify!($type)), state.data[0]).as_bytes());
+                }
+            }
         }
-    }
-
-    fn display(&self, state: &ParameterPrinterState, display: &'static dyn DisplayIO) {
-        if state.data_counter != 4 {
-            display.scroll(b"<Invalid u32 encoding>");
-            return;
-        }
-
-        fn to_array(input: &[u8]) -> [u8; 4] {
-            input.try_into().expect("<should not happen>")
-        }
-
-        let value = u32::from_le_bytes(to_array(state.data()));
-
-        display.scroll(arrform!(20, "{}u32", value).as_bytes());
-    }
+    };
 }
+
+printer_for_type!(u8);
+printer_for_type!(u16);
+printer_for_type!(u32);
+printer_for_type!(u64);
+printer_for_type!(u128);
+printer_for_type!(i8);
+printer_for_type!(i16);
+printer_for_type!(i32);
+printer_for_type!(i64);
+printer_for_type!(i128);
 
 // String parameter printer
 pub struct StringParameterPrinter {}
@@ -111,4 +127,3 @@ impl ParameterPrinter for StringParameterPrinter {
         }
     }
 }
-

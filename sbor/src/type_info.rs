@@ -307,3 +307,33 @@ pub fn to_type_info(byte: u8) -> Option<TypeInfo> {
         _ => None,
     }
 }
+
+pub fn to_kind_name(kind: TypeKind) -> &'static [u8] {
+    match kind {
+        TypeKind::None => b"None",
+        TypeKind::Bool => b"Bool",
+        TypeKind::I8 => b"I8",
+        TypeKind::I16 => b"I16",
+        TypeKind::I32 => b"I32",
+        TypeKind::I64 => b"I64",
+        TypeKind::I128 => b"I128",
+        TypeKind::U8 => b"U8",
+        TypeKind::U16 => b"U16",
+        TypeKind::U32 => b"U32",
+        TypeKind::U64 => b"U64",
+        TypeKind::U128 => b"U128",
+        TypeKind::String => b"String",
+        TypeKind::Array => b"Array",
+        TypeKind::Tuple => b"Tuple",
+        TypeKind::Enum => b"Enum",
+        TypeKind::Map => b"Map",
+        TypeKind::Address => b"Address",
+        TypeKind::Bucket => b"Bucket",
+        TypeKind::Proof => b"Proof",
+        TypeKind::Expression => b"Expression",
+        TypeKind::Blob => b"Blob",
+        TypeKind::Decimal => b"Decimal",
+        TypeKind::PreciseDecimal => b"PreciseDecimal",
+        TypeKind::NonFungibleLocalId => b"NonFungibleLocalId",
+    }
+}

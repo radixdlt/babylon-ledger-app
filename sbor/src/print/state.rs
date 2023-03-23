@@ -12,12 +12,11 @@ pub struct ParameterPrinterState {
     pub phase: u8,
     pub expected_len: u32,
     pub nesting_level: u8,
-    pub discriminator_stack: [u8; Self::NESTING_STACK_SIZE as usize],
+    pub manifest_discriminator: u8,
 }
 
 impl ParameterPrinterState {
     pub const PARAMETER_AREA_SIZE: usize = 128;
-    pub const NESTING_STACK_SIZE: u8 = 32;
 
     pub fn new(network_id: NetworkId) -> Self {
         Self {
@@ -31,7 +30,7 @@ impl ParameterPrinterState {
             phase: 0,
             expected_len: 0,
             nesting_level: 0,
-            discriminator_stack: [0; Self::NESTING_STACK_SIZE as usize],
+            manifest_discriminator: 0,
         }
     }
 
@@ -48,20 +47,20 @@ impl ParameterPrinterState {
         self.resource_id = HrpType::Autodetect;
         self.phase = 0;
         self.expected_len = 0;
-        // Nesting level and discriminator stack is preserved
+        // Nesting level and manifest_discriminator is preserved
     }
 
     pub fn data(&self) -> &[u8] {
         &self.data[0..self.data_counter as usize]
     }
 
-    pub fn discriminator(&mut self) -> u8 {
-        self.discriminator_stack[self.nesting_level as usize]
+    pub fn discriminator(&self) -> u8 {
+        self.manifest_discriminator
     }
 
     pub fn start_discriminator(&mut self, discriminator: u8) {
         self.reset();
-        self.discriminator_stack[self.nesting_level as usize] = discriminator;
+        self.manifest_discriminator = discriminator;
     }
 
     pub fn push_byte(&mut self, byte: u8) {

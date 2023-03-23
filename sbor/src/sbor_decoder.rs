@@ -40,6 +40,10 @@ pub enum SborEvent {
         fixed_size: u8,
     },
     Len(u32),
+    ElementType {
+        kind: SubTypeKind,
+        type_id: u8,
+    },
     Discriminator(u8),
     Data(u8),
     End {
@@ -49,8 +53,8 @@ pub enum SborEvent {
 }
 
 #[repr(u8)]
-#[derive(Copy, Clone, Debug)]
-enum SubTypeKind {
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum SubTypeKind {
     Element,
     Key,
     Value,
@@ -287,7 +291,8 @@ impl SborDecoder {
         byte: u8,
     ) -> Result<(), DecoderError> {
         let byte_count = self.byte_count;
-        self.head().read_sub_type_id(byte, sub_type, byte_count)?;
+        self.head()
+            .read_sub_type_id(handler, byte, sub_type, byte_count)?;
         self.advance_phase(handler)
     }
 
@@ -424,6 +429,7 @@ impl State {
 
     fn read_sub_type_id(
         &mut self,
+        handler: &mut impl SborEventHandler,
         byte: u8,
         sub_type: SubTypeKind,
         byte_count: usize,
@@ -436,6 +442,10 @@ impl State {
                     SubTypeKind::Key => self.key_type_id = byte,
                     SubTypeKind::Value => self.value_type_id = byte,
                 }
+                handler.handle(SborEvent::ElementType {
+                    kind: sub_type,
+                    type_id: byte,
+                });
                 Ok(())
             }
         }
@@ -482,6 +492,13 @@ mod tests {
                         *type_id,
                         *nesting_level,
                         *fixed_size
+                    )
+                }
+                SborEvent::ElementType { kind, type_id } => {
+                    write!(
+                        f,
+                        "SborEvent::ElementType{{ kind: {:?}, type_id: {:#02x}}},",
+                        kind, type_id
                     )
                 }
                 SborEvent::Len(len) => {
@@ -822,6 +839,10 @@ mod tests {
                     nesting_level: 0,
                     fixed_size: 0,
                 },
+                SborEvent::ElementType {
+                    kind: SubTypeKind::Element,
+                    type_id: 9,
+                },
                 SborEvent::Len(3),
                 SborEvent::Start {
                     type_id: 9,
@@ -871,6 +892,10 @@ mod tests {
                     type_id: 32,
                     nesting_level: 0,
                     fixed_size: 0,
+                },
+                SborEvent::ElementType {
+                    kind: SubTypeKind::Element,
+                    type_id: 9,
                 },
                 SborEvent::Len(3),
                 SborEvent::Start {
@@ -922,6 +947,10 @@ mod tests {
                     nesting_level: 0,
                     fixed_size: 0,
                 },
+                SborEvent::ElementType {
+                    kind: SubTypeKind::Element,
+                    type_id: 7,
+                },
                 SborEvent::Len(2),
                 SborEvent::Data(0x01),
                 SborEvent::Data(0x02),
@@ -946,6 +975,14 @@ mod tests {
                     type_id: 35,
                     nesting_level: 0,
                     fixed_size: 0,
+                },
+                SborEvent::ElementType {
+                    kind: SubTypeKind::Key,
+                    type_id: 7,
+                },
+                SborEvent::ElementType {
+                    kind: SubTypeKind::Value,
+                    type_id: 7,
                 },
                 SborEvent::Len(2),
                 // Key 0

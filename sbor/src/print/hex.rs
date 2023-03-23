@@ -72,7 +72,7 @@ impl ParameterPrinter for HexParameterPrinter {
 
         let mut message = StaticVec::<u8, { HexParameterPrinter::PRINTABLE_SIZE }>::new();
 
-        message.insert_from_slice(0, b"Hex(");
+        message.extend_from_slice(b"Bytes(");
         to_hex(state.data(), &mut message);
         message.push(b')');
 
