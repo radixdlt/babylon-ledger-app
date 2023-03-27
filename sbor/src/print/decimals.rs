@@ -30,7 +30,7 @@ impl ParameterPrinter for DecimalParameterPrinter {
     }
 
     fn display(&self, state: &ParameterPrinterState, display: &'static dyn DisplayIO) {
-        match Decimal::try_from(state.data()) {
+        match Decimal::try_from(state.data.as_slice()) {
             Ok(value) => display.scroll(
                 arrform!(
                     { DecimalParameterPrinter::MAX_DISPLAY_LEN },
@@ -69,7 +69,7 @@ impl ParameterPrinter for PreciseDecimalParameterPrinter {
     }
 
     fn display(&self, state: &ParameterPrinterState, display: &'static dyn DisplayIO) {
-        match PreciseDecimal::try_from(state.data()) {
+        match PreciseDecimal::try_from(state.data.as_slice()) {
             Ok(value) => display.scroll(
                 arrform!(
                     { PreciseDecimalParameterPrinter::MAX_DISPLAY_LEN },

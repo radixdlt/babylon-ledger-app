@@ -43,7 +43,7 @@ impl ParameterPrinter for TupleParameterPrinter {
         let mut message = StaticVec::<u8, { TupleParameterPrinter::PRINTABLE_SIZE }>::new();
         message.extend_from_slice(b"Tuple<");
 
-        for &type_id in state.data() {
+        for &type_id in state.data.as_slice() {
             match to_type_info(type_id) {
                 None => message.extend_from_slice(b"(unknown)"),
                 Some(info) => message.extend_from_slice(to_kind_name(info.type_kind)),
@@ -51,7 +51,7 @@ impl ParameterPrinter for TupleParameterPrinter {
             message.extend_from_slice(b", ");
         }
 
-        if state.data_counter > 0 {
+        if state.data.len() > 0 {
             // Strip last comma
             message.pop();
             message.pop();

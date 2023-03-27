@@ -264,9 +264,9 @@ mod tests {
     pub fn test_push_byte_for_string() {
         let mut state = ParameterPrinterState::new(NetworkId::LocalNet);
         for i in 0..ParameterPrinterState::PARAMETER_AREA_SIZE {
-            if state.data_counter != (i as u8) {
+            if state.data.len() != (i as u8) {
                 assert_eq!(
-                    state.data_counter as usize,
+                    state.data.len(),
                     ParameterPrinterState::PARAMETER_AREA_SIZE
                 );
                 return;

@@ -55,7 +55,7 @@ impl ParameterPrinter for AddressParameterPrinter {
     }
 
     fn display(&self, state: &ParameterPrinterState, display: &'static dyn DisplayIO) {
-        if state.data_counter != ADDRESS_LEN {
+        if state.data.len() != (ADDRESS_LEN as usize) {
             display.scroll(b"Invalid address format");
             return;
         }
@@ -85,7 +85,7 @@ impl AddressParameterPrinter {
                 hrp_suffix(state.network_id)
             )
                 .as_bytes(),
-            state.data(),
+            state.data.as_slice(),
         );
         match encodind_result {
             Ok(encoder) => display.scroll(encoder.encoded()),
@@ -97,7 +97,7 @@ impl AddressParameterPrinter {
                         state.resource_id,
                         state.data[0],
                         err,
-                        state.data()
+                        state.data.as_slice()
                     )
                         .as_bytes(),
                 );

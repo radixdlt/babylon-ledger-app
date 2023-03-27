@@ -46,7 +46,7 @@ impl ParameterPrinter for EnumParameterPrinter {
         message.extend_from_slice(b"Enum(");
         message.extend_from_slice(arrform!(20, "{}u8, ", state.discriminator).as_bytes());
 
-        for &type_id in state.data() {
+        for &type_id in &state.data {
             match to_type_info(type_id) {
                 None => message.extend_from_slice(b"(unknown)"),
                 Some(info) => message.extend_from_slice(to_kind_name(info.type_kind)),

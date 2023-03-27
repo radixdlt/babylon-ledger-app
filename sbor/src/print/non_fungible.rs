@@ -46,17 +46,17 @@ impl ParameterPrinter for NonFungibleLocalIdParameterPrinter {
         match state.inner_discriminator {
             // String
             0 => {
-                if state.data_counter == 0 || state.data_counter > 64 {
+                if state.data.len() == 0 || state.data.len() > 64 {
                     display.scroll(b"<invalid non-fungible local id string>");
                     return;
                 }
                 message.push(b'<');
-                message.extend_from_slice(state.data());
+                message.extend_from_slice(state.data.as_slice());
                 message.push(b'>');
             }
             // Integer
             1 => {
-                if state.data_counter != 8 {
+                if state.data.len() != 8 {
                     display.scroll(b"<invalid non-fungible local id integer>");
                     return;
                 }
@@ -65,35 +65,35 @@ impl ParameterPrinter for NonFungibleLocalIdParameterPrinter {
                     input.try_into().expect("<should not happen>")
                 }
 
-                let value = u64::from_be_bytes(to_array(state.data()));
+                let value = u64::from_be_bytes(to_array(state.data.as_slice()));
                 message.extend_from_slice(arrform!(20, "#{}#", value).as_bytes());
             }
             // Bytes
             2 => {
-                if state.data_counter == 0 || state.data_counter > 64 {
+                if state.data.len() == 0 || state.data.len() > 64 {
                     display.scroll(b"<invalid non-fungible local id bytes>");
                     return;
                 }
                 message.push(b'[');
-                to_hex(state.data(), &mut message);
+                to_hex(state.data.as_slice(), &mut message);
                 message.push(b']');
             }
             // UUID
             3 => {
-                if state.data_counter != 16 {
+                if state.data.len() != 16 {
                     display.scroll(b"<invalid non-fungible local id UUID>");
                     return;
                 }
                 message.push(b'{');
-                to_hex(&state.data[0..4], &mut message);
+                to_hex(&state.data.as_slice()[0..4], &mut message);
                 message.push(b'-');
-                to_hex(&state.data[4..6], &mut message);
+                to_hex(&state.data.as_slice()[4..6], &mut message);
                 message.push(b'-');
-                to_hex(&state.data[6..8], &mut message);
+                to_hex(&state.data.as_slice()[6..8], &mut message);
                 message.push(b'-');
-                to_hex(&state.data[8..10], &mut message);
+                to_hex(&state.data.as_slice()[8..10], &mut message);
                 message.push(b'-');
-                to_hex(&state.data[10..16], &mut message);
+                to_hex(&state.data.as_slice()[10..16], &mut message);
                 message.push(b'}');
             }
             _ => {

@@ -39,18 +39,17 @@ impl ParameterPrinter for BoolParameterPrinter {
         _display: &'static dyn DisplayIO,
     ) {
         if let SborEvent::Data(byte) = event {
-            state.data[0] = byte;
-            state.data_counter = 1;
+            state.push_byte(byte);
         }
     }
 
     fn display(&self, state: &ParameterPrinterState, display: &'static dyn DisplayIO) {
-        if state.data_counter != 1 {
+        if state.data.len() != 1 {
             display.scroll(b"<Invalid bool encoding>");
             return;
         }
 
-        let message: &[u8] = match state.data[0] {
+        let message: &[u8] = match state.data.as_slice()[0] {
             0 => b"false",
             1 => b"true",
             _ => b"(invalid bool)",
@@ -79,12 +78,17 @@ macro_rules! printer_for_type {
                 }
 
                 fn display(&self, state: &ParameterPrinterState, display: &'static dyn DisplayIO) {
-                    if state.data_counter != (($type::BITS / 8) as u8) {
+                    if state.data.len() != (($type::BITS / 8) as usize) {
                         display.scroll(b"<Invalid encoding>");
                         return;
                     }
+                    fn to_array(input: &[u8]) -> [u8; ($type::BITS / 8) as usize] {
+                        input.try_into().expect("<should not happen>")
+                    }
 
-                    display.scroll(arrform!(8, concat!("{}", stringify!($type)), state.data[0]).as_bytes());
+                    let value = $type::from_le_bytes(to_array(state.data.as_slice()));
+
+                    display.scroll(arrform!(8, concat!("{}", stringify!($type)), value).as_bytes());
                 }
             }
         }
@@ -121,7 +125,7 @@ impl ParameterPrinter for StringParameterPrinter {
     }
 
     fn display(&self, state: &ParameterPrinterState, display: &'static dyn DisplayIO) {
-        match from_utf8(state.data()) {
+        match from_utf8(state.data.as_slice()) {
             Ok(message) => display.scroll(message.as_bytes()),
             Err(_) => display.scroll(b"<String decoding error>"),
         }

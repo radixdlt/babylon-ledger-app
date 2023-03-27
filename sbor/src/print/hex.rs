@@ -55,12 +55,6 @@ impl ParameterPrinter for HexParameterPrinter {
         }
 
         if let SborEvent::Data(byte) = event {
-            if state.data_counter as usize == Self::PRINTABLE_SIZE {
-                self.display(state, display);
-                state.data_counter = 0;
-                return;
-            }
-
             state.push_byte(byte);
         }
     }
@@ -73,7 +67,7 @@ impl ParameterPrinter for HexParameterPrinter {
         let mut message = StaticVec::<u8, { HexParameterPrinter::PRINTABLE_SIZE }>::new();
 
         message.extend_from_slice(b"Bytes(");
-        to_hex(state.data(), &mut message);
+        to_hex(state.data.as_slice(), &mut message);
         message.push(b')');
 
         display.scroll(message.as_slice());

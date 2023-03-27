@@ -95,7 +95,7 @@ impl ParameterPrinter for MethodKeyParameterPrinter {
     }
 
     fn display(&self, state: &ParameterPrinterState, display: &'static dyn DisplayIO) {
-        let text = match from_utf8(state.data()) {
+        let text = match from_utf8(state.data.as_slice()) {
             Ok(text) => text,
             Err(_) => "<invalid string>",
         };

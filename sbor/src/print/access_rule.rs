@@ -16,7 +16,7 @@ impl ParameterPrinter for AccessRuleParameterPrinter {
         _display: &'static dyn DisplayIO,
     ) {
         if let SborEvent::Discriminator(byte) = event {
-            if state.data_counter > 0 {
+            if state.data.len() > 0 {
                 return;
             }
 
@@ -25,7 +25,7 @@ impl ParameterPrinter for AccessRuleParameterPrinter {
     }
 
     fn display(&self, state: &ParameterPrinterState, display: &'static dyn DisplayIO) {
-        let message: &[u8] = match (state.data_counter, state.data[0]) {
+        let message: &[u8] = match (state.data.len(), state.data[0]) {
             (1, 0) => b"Access(AllowAll)",
             (1, 1) => b"Access(DenyAll)",
             (1, 2) => b"Access(Protected(<rules not decoded>))",
