@@ -54,15 +54,6 @@ impl ParameterPrinterState {
         &self.data[0..self.data_counter as usize]
     }
 
-    pub fn discriminator(&self) -> u8 {
-        self.manifest_discriminator
-    }
-
-    pub fn start_discriminator(&mut self, discriminator: u8) {
-        self.reset();
-        self.manifest_discriminator = discriminator;
-    }
-
     pub fn push_byte(&mut self, byte: u8) {
         if (self.data_counter as usize) < Self::PARAMETER_AREA_SIZE {
             self.data[self.data_counter as usize] = byte;

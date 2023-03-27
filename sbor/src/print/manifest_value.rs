@@ -18,7 +18,7 @@ pub struct ManifestValueParameterPrinter {}
 pub const MANIFEST_VALUE_PARAMETER_PRINTER: ManifestValueParameterPrinter =
     ManifestValueParameterPrinter {};
 
-fn get_printer_for_discriminator(discriminator: u8) -> &'static dyn ParameterPrinter {
+pub fn get_printer_for_discriminator(discriminator: u8) -> &'static dyn ParameterPrinter {
     match discriminator {
         // Generic types
         TYPE_BOOL => &BOOL_PARAMETER_PRINTER,
@@ -35,8 +35,8 @@ fn get_printer_for_discriminator(discriminator: u8) -> &'static dyn ParameterPri
         TYPE_STRING => &STRING_PARAMETER_PRINTER,
         TYPE_ARRAY => &ARRAY_PARAMETER_PRINTER,
         TYPE_TUPLE => &TUPLE_PARAMETER_PRINTER,
-        TYPE_ENUM => &ENUM_PARAMETER_PRINTER, // TODO: implement it
-        TYPE_MAP => &MANIFEST_VALUE_PARAMETER_PRINTER, // TODO: implement it
+        TYPE_ENUM => &ENUM_PARAMETER_PRINTER,
+        TYPE_MAP => &MANIFEST_VALUE_PARAMETER_PRINTER, // TODO: implement MAP_PARAMETER_PRINTER
         // Custom types
         TYPE_ADDRESS => &MANIFEST_ADDRESS_PARAMETER_PRINTER,
         TYPE_BUCKET => &U32_PARAMETER_PRINTER,
@@ -50,22 +50,6 @@ fn get_printer_for_discriminator(discriminator: u8) -> &'static dyn ParameterPri
     }
 }
 
-pub fn redirect_display(state: &ParameterPrinterState, display: &'static dyn DisplayIO) {
-    get_printer_for_discriminator(state.discriminator()).display(state, display);
-}
-
-pub fn redirect_event(
-    state: &mut ParameterPrinterState,
-    event: SborEvent,
-    display: &'static dyn DisplayIO,
-) {
-    let printer = get_printer_for_discriminator(state.discriminator());
-
-    if !printer.is_value_printer() {
-        printer.handle_data_event(state, event, display);
-    }
-}
-
 impl ParameterPrinter for ManifestValueParameterPrinter {
     fn handle_data_event(
         &self,
@@ -76,16 +60,25 @@ impl ParameterPrinter for ManifestValueParameterPrinter {
         if state.nesting_level < 5 {
             return;
         }
-        // TODO: remove support for nesting of values, let keep it flat
-        //if state.nesting_level < ParameterPrinterState::NESTING_STACK_SIZE {
         if state.nesting_level == 5 {
             match event {
-                SborEvent::Start { type_id, .. } => state.start_discriminator(type_id),
-                SborEvent::End { .. } => redirect_display(state, display),
+                SborEvent::Start { type_id, .. } => {
+                    state.reset();
+                    state.manifest_discriminator = type_id;
+
+                },
+                SborEvent::End { .. } => {
+                    get_printer_for_discriminator(state.manifest_discriminator).display(state, display);
+                },
                 _ => {}
             };
         }
-        redirect_event(state, event, display);
+
+        let printer = get_printer_for_discriminator(state.manifest_discriminator);
+
+        if !printer.is_value_printer() {
+            printer.handle_data_event(state, event, display);
+        }
     }
 
     fn display(&self, _state: &ParameterPrinterState, _display: &'static dyn DisplayIO) {}

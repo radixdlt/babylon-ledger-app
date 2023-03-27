@@ -34,6 +34,29 @@ pub const TYPE_DECIMAL: u8 = 0x85;
 pub const TYPE_PRECISE_DECIMAL: u8 = 0x86;
 pub const TYPE_NON_FUNGIBLE_LOCAL_ID: u8 = 0x87;
 
+pub const SIMPLE_TYPES: [u8; 20] = [
+    TYPE_BOOL,
+    TYPE_I8,
+    TYPE_I16,
+    TYPE_I32,
+    TYPE_I64,
+    TYPE_I128,
+    TYPE_U8,
+    TYPE_U16,
+    TYPE_U32,
+    TYPE_U64,
+    TYPE_U128,
+    TYPE_STRING,
+    TYPE_ADDRESS,
+    TYPE_BUCKET,
+    TYPE_PROOF,
+    TYPE_EXPRESSION,
+    TYPE_BLOB,
+    TYPE_DECIMAL,
+    TYPE_PRECISE_DECIMAL,
+    TYPE_NON_FUNGIBLE_LOCAL_ID,
+];
+
 // end of custom types
 pub const ADDRESS_LEN: u8 = 27; // 1 byte discriminator + 26 bytes address
 pub const COMPONENT_LEN: u8 = 36;

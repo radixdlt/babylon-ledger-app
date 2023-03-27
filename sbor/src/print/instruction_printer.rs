@@ -2,8 +2,9 @@ use crate::bech32::network::*;
 use crate::display_io::DisplayIO;
 use crate::instruction::{InstructionInfo, ParameterType};
 use crate::instruction_extractor::{ExtractorEvent, InstructionHandler};
-use crate::print::address::*;
 use crate::print::access_rule::*;
+use crate::print::address::*;
+use crate::print::array::ARRAY_PARAMETER_PRINTER;
 use crate::print::decimals::*;
 use crate::print::hex::*;
 use crate::print::manifest_value::*;
@@ -112,7 +113,7 @@ fn get_printer_for_type(param_type: ParameterType) -> &'static dyn ParameterPrin
         ParameterType::MethodKey => &METHOD_KEY_PARAMETER_PRINTER,
         ParameterType::BTreeMapByStringToRoyaltyConfig => &IGNORED_PARAMETER_PRINTER,
         ParameterType::BTreeMapByStringToString => &IGNORED_PARAMETER_PRINTER,
-        ParameterType::BTreeSetOfNonFungibleLocalId => &MANIFEST_VALUE_PARAMETER_PRINTER,
+        ParameterType::BTreeSetOfNonFungibleLocalId => &ARRAY_PARAMETER_PRINTER,
         ParameterType::ComponentAddress => &COMPONENT_ADDRESS_PARAMETER_PRINTER,
         ParameterType::Decimal => &DECIMAL_PARAMETER_PRINTER,
         ParameterType::ManifestAddress => &MANIFEST_ADDRESS_PARAMETER_PRINTER,

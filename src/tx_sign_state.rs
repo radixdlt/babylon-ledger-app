@@ -12,7 +12,7 @@ use nanos_ui::ui;
 use sbor::bech32::network::NetworkId;
 use sbor::decoder_error::DecoderError;
 use sbor::instruction_extractor::InstructionExtractor;
-use sbor::instruction_printer::InstructionPrinter;
+use sbor::print::instruction_printer::InstructionPrinter;
 use sbor::sbor_decoder::*;
 
 #[repr(u8)]

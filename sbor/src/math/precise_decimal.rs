@@ -1,8 +1,7 @@
 use crate::math::MathError;
 use core::fmt;
 use core::fmt::Write;
-use crypto_bigint::NonZero;
-use crypto_bigint::{Zero, U512};
+use crypto_bigint::{NonZero, Zero, U512};
 use staticvec::StaticVec;
 
 #[derive(Copy, Clone)]
@@ -11,15 +10,10 @@ pub struct PreciseDecimal(U512);
 impl PreciseDecimal {
     pub const SCALE: u32 = 64;
     pub const ZERO: PreciseDecimal = PreciseDecimal(U512::ZERO);
-    pub const ONE: PreciseDecimal = PreciseDecimal(U512::from_words([
-        0,
-        7942358959831785217,
-        16807427164405733357,
-        1593091,
-        0,
-        0,
-        0,
-        0,
+    pub const ONE: PreciseDecimal = PreciseDecimal(U512::from_le_slice(&[
+        0, 0, 0, 0, 0, 0, 0, 0, 1, 31, 106, 191, 100, 237, 56, 110, 237, 151, 167, 218, 244, 249,
+        63, 233, 3, 79, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]));
     pub const MAX: Self = Self(U512::MAX);
     pub const MAX_PRINT_LEN: usize = 180;
@@ -93,6 +87,7 @@ impl fmt::Display for PreciseDecimal {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crypto_bigint::Encoding;
 
     #[test]
     pub fn test_format_decimal() {
@@ -104,10 +99,7 @@ mod tests {
             PreciseDecimal(123456789123456789u128.into()).to_string(),
             "0.0000000000000000000000000000000000000000000000123456789123456789"
         );
-        assert_eq!(
-            PreciseDecimal::ONE.to_string(),
-            "1"
-        );
+        assert_eq!(PreciseDecimal::ONE.to_string(), "1");
         assert_eq!(
             PreciseDecimal(123000000000000000000000000000000000000u128.into()).to_string(),
             "0.0000000000000000000000000123"
