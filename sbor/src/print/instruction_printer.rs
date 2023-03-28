@@ -1,5 +1,4 @@
 use crate::bech32::network::*;
-use crate::display_io::DisplayIO;
 use crate::instruction::{InstructionInfo, ParameterType};
 use crate::instruction_extractor::{ExtractorEvent, InstructionHandler};
 use crate::print::access_rule::*;
@@ -11,23 +10,23 @@ use crate::print::manifest_value::*;
 use crate::print::method_key::*;
 use crate::print::parameter_printer::ParameterPrinter;
 use crate::print::primitives::*;
-use crate::print::state::ParameterPrinterState;
+use crate::print::state::{ParameterPrinterState, ValueState};
+use crate::print::tty::TTY;
 use crate::sbor_decoder::SborEvent;
 
-pub struct InstructionPrinter {
+pub struct InstructionPrinter<'a> {
     active_instruction: Option<InstructionInfo>,
     instruction_printer: Option<&'static dyn ParameterPrinter>,
-    state: ParameterPrinterState,
-    display: &'static dyn DisplayIO,
+    state: ParameterPrinterState<'a>
 }
 
-impl InstructionHandler for InstructionPrinter {
+impl InstructionHandler for InstructionPrinter<'_> {
     fn handle(&mut self, event: ExtractorEvent) {
         match event {
             ExtractorEvent::InstructionStart(info) => self.start_instruction(info),
-            ExtractorEvent::ParameterStart(_type_kind, ordinal) => self.parameter_start(ordinal),
+            ExtractorEvent::ParameterStart(event, ordinal, ..) => self.parameter_start(event, ordinal),
             ExtractorEvent::ParameterData(data) => self.parameter_data(data),
-            ExtractorEvent::ParameterEnd(_) => self.parameter_end(),
+            ExtractorEvent::ParameterEnd(event, ..) => self.parameter_end(event),
             ExtractorEvent::InstructionEnd => self.instruction_end(),
             // TODO: decide what to do with these cases
             ExtractorEvent::WrongParameterCount(_, _) => {}
@@ -38,13 +37,12 @@ impl InstructionHandler for InstructionPrinter {
     }
 }
 
-impl InstructionPrinter {
-    pub fn new(display: &'static dyn DisplayIO, network_id: NetworkId) -> Self {
+impl <'a> InstructionPrinter<'a> {
+    pub fn new(tty: &'a mut dyn TTY, network_id: NetworkId) -> Self {
         Self {
             active_instruction: None,
             instruction_printer: None,
-            state: ParameterPrinterState::new(network_id),
-            display: display,
+            state: ParameterPrinterState::new(network_id, tty)
         }
     }
 
@@ -54,48 +52,57 @@ impl InstructionPrinter {
 
     pub fn start_instruction(&mut self, info: InstructionInfo) {
         self.active_instruction = Some(info);
-        self.display.scroll(info.name);
+        self.state.tty.start();
+        self.state.tty.print_text(info.name);
     }
 
     pub fn instruction_end(&mut self) {
         if let Some(..) = self.active_instruction {
-            //TODO: replace with something usable in device
-            self.display.scroll("End\n".as_bytes());
+            self.state.tty.end();
         }
 
         self.active_instruction = None;
         self.instruction_printer = None;
     }
 
-    pub fn parameter_start(&mut self, ordinal: u32) {
-        self.state.reset();
+    pub fn parameter_start(&mut self, event: SborEvent, ordinal: u32) {
         self.instruction_printer = self
             .active_instruction
             .filter(|info| (info.params.len() as u32) > ordinal)
             .map(|info| info.params[ordinal as usize])
             .map(|param_type| get_printer_for_type(param_type));
+
+        self.parameter_data(event);
     }
 
     pub fn parameter_data(&mut self, source_event: SborEvent) {
         match source_event {
             SborEvent::Start {
-                type_id: _,
+                type_id,
                 nesting_level,
                 ..
-            }
-            | SborEvent::End {
-                type_id: _,
+            } => {
+                self.state.nesting_level = nesting_level;
+                self.state.stack.push(ValueState::new(type_id));
+                self.get_printer().start(&mut self.state);
+            },
+            SborEvent::End {
+                type_id,
                 nesting_level,
-            } => self.state.nesting_level = nesting_level,
-            _ => {}
+            } => {
+                self.get_printer().end(&mut self.state);
+                self.state.nesting_level = nesting_level;
+                self.state.stack.pop().expect("Stack can't be empty");
+            },
+            _ => {
+                self.get_printer()
+                    .handle_data(&mut self.state, source_event);
+            }
         }
-
-        self.get_printer()
-            .handle_data_event(&mut self.state, source_event, self.display);
     }
 
-    pub fn parameter_end(&mut self) {
-        self.get_printer().display(&self.state, self.display);
+    pub fn parameter_end(&mut self, event: SborEvent) {
+        self.parameter_data(event);
         self.state.reset();
     }
 
@@ -130,62 +137,66 @@ fn get_printer_for_type(param_type: ParameterType) -> &'static dyn ParameterPrin
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use core::cmp::min;
-    use core::str::from_utf8;
 
     use crate::bech32::network::NetworkId;
-    use crate::display_io::DisplayIO;
     use crate::instruction::Instruction;
     use crate::instruction_extractor::*;
+    use crate::print::tty::TTY;
     use crate::sbor_decoder::*;
     use crate::tx_intent_test_data::tests::*;
 
     use super::*;
 
-    static PRINTER: TestPrinter = TestPrinter {};
-
+    #[derive(Copy, Clone)]
     struct TestPrinter {}
 
-    impl DisplayIO for TestPrinter {
-        fn scroll(&self, message: &[u8]) {
-            print!("{} ", from_utf8(message).unwrap());
+    impl TTY for TestPrinter {
+        fn print_byte(&mut self, byte: u8) {
+            print!("{}", char::from(byte));
         }
 
-        fn ask(&self, _question: &str) -> bool {
-            true
+        fn end(&mut self) {
+            println!();
         }
     }
 
-    struct InstructionProcessor {
-        extractor: InstructionExtractor,
-        handler: InstructionFormatter,
-    }
-
-    struct InstructionFormatter {
-        instruction_count: usize,
-        instructions: [Instruction; Self::SIZE],
-        printer: InstructionPrinter,
-    }
-
-    impl InstructionProcessor {
+    impl TestPrinter {
         pub fn new() -> Self {
+            Self {}
+        }
+    }
+
+    struct InstructionProcessor<'a> {
+        extractor: InstructionExtractor,
+        handler: InstructionFormatter<'a>,
+    }
+
+    const SIZE: usize = 20;
+
+    struct InstructionFormatter<'a> {
+        instruction_count: usize,
+        instructions: [Instruction; SIZE],
+        printer: InstructionPrinter<'a>,
+    }
+
+    impl<'a> InstructionProcessor<'a> {
+        pub fn new(tty: &'a mut dyn TTY) -> Self {
             Self {
                 extractor: InstructionExtractor::new(),
-                handler: InstructionFormatter::new(),
+                handler: InstructionFormatter::new(tty),
             }
         }
     }
 
-    impl InstructionFormatter {
-        pub const SIZE: usize = 20;
-        pub fn new() -> Self {
+    impl<'a> InstructionFormatter<'a> {
+        pub fn new(tty: &'a mut dyn TTY) -> Self {
             Self {
                 instruction_count: 0,
-                instructions: [Instruction::TakeFromWorktop; Self::SIZE],
-                printer: InstructionPrinter::new(&PRINTER, NetworkId::Simulator),
+                instructions: [Instruction::TakeFromWorktop; SIZE],
+                printer: InstructionPrinter::new(tty, NetworkId::Simulator),
             }
         }
 
@@ -203,13 +214,13 @@ mod tests {
         }
     }
 
-    impl SborEventHandler for InstructionProcessor {
+    impl<'a> SborEventHandler for InstructionProcessor<'a> {
         fn handle(&mut self, evt: SborEvent) {
             self.extractor.handle_event(&mut self.handler, evt);
         }
     }
 
-    impl InstructionHandler for InstructionFormatter {
+    impl InstructionHandler for InstructionFormatter<'_> {
         fn handle(&mut self, event: ExtractorEvent) {
             if let ExtractorEvent::InstructionStart(info) = event {
                 self.instructions[self.instruction_count] = info.instruction;
@@ -226,8 +237,9 @@ mod tests {
     const CHUNK_SIZE: usize = 255;
 
     fn check_partial_decoding(input: &[u8], expected_instructions: &[Instruction]) {
+        let mut tty = TestPrinter {};
         let mut decoder = SborDecoder::new(true);
-        let mut handler = InstructionProcessor::new();
+        let mut handler = InstructionProcessor::new(&mut tty);
 
         let mut start = 0;
         let mut end = min(input.len(), CHUNK_SIZE);
@@ -258,22 +270,6 @@ mod tests {
         //println!("Total {} instructions", handler.handler.instruction_count);
         handler.handler.verify(expected_instructions);
         println!();
-    }
-
-    #[test]
-    pub fn test_push_byte_for_string() {
-        let mut state = ParameterPrinterState::new(NetworkId::LocalNet);
-        for i in 0..ParameterPrinterState::PARAMETER_AREA_SIZE {
-            if state.data.len() != (i as u8) {
-                assert_eq!(
-                    state.data.len(),
-                    ParameterPrinterState::PARAMETER_AREA_SIZE
-                );
-                return;
-            }
-            state.push_byte_for_string(b'a');
-        }
-        assert!(false, "Should not reach here!")
     }
 
     #[test]

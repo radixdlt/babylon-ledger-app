@@ -1,4 +1,4 @@
-use crate::display_io::DisplayIO;
+use crate::print::tty::TTY;
 use crate::print::parameter_printer::ParameterPrinter;
 use crate::print::state::ParameterPrinterState;
 use crate::sbor_decoder::SborEvent;
@@ -9,11 +9,10 @@ pub struct AccessRuleParameterPrinter {}
 pub const ACCESS_RULE_PARAMETER_PRINTER: AccessRuleParameterPrinter = AccessRuleParameterPrinter {};
 
 impl ParameterPrinter for AccessRuleParameterPrinter {
-    fn handle_data_event(
+    fn handle_data(
         &self,
         state: &mut ParameterPrinterState,
-        event: SborEvent,
-        _display: &'static dyn DisplayIO,
+        event: SborEvent
     ) {
         if let SborEvent::Discriminator(byte) = event {
             if state.data.len() > 0 {
@@ -23,8 +22,9 @@ impl ParameterPrinter for AccessRuleParameterPrinter {
             state.push_byte(byte);
         }
     }
-
-    fn display(&self, state: &ParameterPrinterState, display: &'static dyn DisplayIO) {
+}
+impl AccessRuleParameterPrinter {
+    pub fn tty(&self, state: &mut ParameterPrinterState) {
         let message: &[u8] = match (state.data.len(), state.data[0]) {
             (1, 0) => b"Access(AllowAll)",
             (1, 1) => b"Access(DenyAll)",
@@ -33,7 +33,7 @@ impl ParameterPrinter for AccessRuleParameterPrinter {
             (_, _) => b"Access(<decoding failure>)",
         };
 
-        display.scroll(message);
+        state.tty.print_text(message);
     }
 }
 

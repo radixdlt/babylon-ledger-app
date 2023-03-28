@@ -1,4 +1,4 @@
-use crate::display_io::DisplayIO;
+use crate::print::tty::TTY;
 use crate::print::address::*;
 use crate::print::array::*;
 use crate::print::decimals::*;
@@ -51,39 +51,36 @@ pub fn get_printer_for_discriminator(discriminator: u8) -> &'static dyn Paramete
 }
 
 impl ParameterPrinter for ManifestValueParameterPrinter {
-    fn handle_data_event(
+    fn handle_data(
         &self,
         state: &mut ParameterPrinterState,
-        event: SborEvent,
-        display: &'static dyn DisplayIO,
+        event: SborEvent
     ) {
-        if state.nesting_level < 5 {
-            return;
-        }
-        if state.nesting_level == 5 {
-            match event {
-                SborEvent::Start { type_id, .. } => {
-                    state.reset();
-                    state.manifest_discriminator = type_id;
+        // if state.nesting_level < 5 {
+        //     return;
+        // }
+        // if state.nesting_level == 5 {
+        //     match event {
+        //         SborEvent::Start { type_id, .. } => {
+        //             state.reset();
+        //             state.manifest_discriminator = type_id;
+        //
+        //         },
+        //         SborEvent::End { .. } => {
+        //             //get_printer_for_discriminator(state.manifest_discriminator).tty(state, tty);
+        //         },
+        //         _ => {}
+        //     };
+        // }
 
-                },
-                SborEvent::End { .. } => {
-                    get_printer_for_discriminator(state.manifest_discriminator).display(state, display);
-                },
-                _ => {}
-            };
-        }
+        // let printer = get_printer_for_discriminator(state.manifest_discriminator);
 
-        let printer = get_printer_for_discriminator(state.manifest_discriminator);
-
-        if !printer.is_value_printer() {
-            printer.handle_data_event(state, event, display);
-        }
+        // if !printer.is_value_printer() {
+        //     printer.handle_data(state, event, tty);
+        // }
     }
-
-    fn display(&self, _state: &ParameterPrinterState, _display: &'static dyn DisplayIO) {}
-
-    fn is_value_printer(&self) -> bool {
-        true
-    }
+    //
+    // fn is_value_printer(&self) -> bool {
+    //     true
+    // }
 }

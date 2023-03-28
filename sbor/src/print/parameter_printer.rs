@@ -1,17 +1,11 @@
-use crate::display_io::DisplayIO;
 use crate::print::state::ParameterPrinterState;
+use crate::print::tty::TTY;
 use crate::sbor_decoder::SborEvent;
 
 pub trait ParameterPrinter {
-    fn handle_data_event(
-        &self,
-        state: &mut ParameterPrinterState,
-        event: SborEvent,
-        display: &'static dyn DisplayIO,
-    );
-    fn display(&self, state: &ParameterPrinterState, display: &'static dyn DisplayIO); // TODO: can we break flow in the mid of instruction?
+    fn handle_data(&self, state: &mut ParameterPrinterState, event: SborEvent);
 
-    fn is_value_printer(&self) -> bool {
-        false
-    }
+    fn start(&self, _state: &mut ParameterPrinterState) {}
+
+    fn end(&self, _state: &mut ParameterPrinterState) {}
 }

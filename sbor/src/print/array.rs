@@ -1,6 +1,6 @@
 use staticvec::StaticVec;
 
-use crate::display_io::DisplayIO;
+use crate::print::tty::TTY;
 use crate::print::hex::HEX_PARAMETER_PRINTER;
 use crate::print::manifest_value::{get_printer_for_discriminator};
 use crate::print::parameter_printer::ParameterPrinter;
@@ -18,58 +18,58 @@ impl ArrayParameterPrinter {
 }
 
 impl ParameterPrinter for ArrayParameterPrinter {
-    fn handle_data_event(
+    fn handle_data(
         &self,
         state: &mut ParameterPrinterState,
-        event: SborEvent,
-        display: &'static dyn DisplayIO,
+        event: SborEvent
     ) {
-        if let SborEvent::ElementType { kind: _, type_id } = event {
-            state.discriminator = type_id;
+        // if let SborEvent::ElementType { kind: _, type_id } = event {
+        //     state.discriminator = type_id;
+        //
+        //     if state.discriminator != TYPE_U8 {
+        //         state.tty.print_text(b"Array<");
+        //     }
+        //     return;
+        // }
+        //
+        // if state.discriminator == TYPE_U8 {
+        //     if let SborEvent::Data(byte) = event {
+        //         state.push_byte(byte);
+        //     }
+        //     return;
+        // }
 
-            if state.discriminator != TYPE_U8 {
-                display.scroll(b"Array<");
-            }
-            return;
-        }
-
-        if state.discriminator == TYPE_U8 {
-            if let SborEvent::Data(byte) = event {
-                state.push_byte(byte);
-            }
-            return;
-        }
-
-        if SIMPLE_TYPES.contains(&state.discriminator) {
-            match event {
-                SborEvent::Start { type_id, .. } if type_id == state.discriminator => {
-                        state.reset();
-                        state.discriminator = type_id;
-                }
-                SborEvent::End { type_id, .. }  if type_id == state.discriminator => {
-                    get_printer_for_discriminator(state.discriminator).display(state, display);
-                }
-                _ => {
-                    get_printer_for_discriminator(state.discriminator).handle_data_event(state, event, display);
-                }
-            };
-        }
+        // if SIMPLE_TYPES.contains(&state.discriminator) {
+        //     match event {
+        //         SborEvent::Start { type_id, .. } if type_id == state.discriminator => {
+        //             state.reset();
+        //             state.discriminator = type_id;
+        //         }
+        //         SborEvent::End { type_id, .. }  if type_id == state.discriminator => {
+        //             //get_printer_for_discriminator(state.discriminator).tty(state, tty);
+        //         }
+        //         _ => {
+        //             get_printer_for_discriminator(state.discriminator).handle_data(state, event, tty);
+        //         }
+        //     };
+        // }
     }
-
-    fn display(&self, state: &ParameterPrinterState, display: &'static dyn DisplayIO) {
-        if state.discriminator == TYPE_U8 {
-            HEX_PARAMETER_PRINTER.display(state, display);
-            return;
-        }
+}
+impl ArrayParameterPrinter {
+    pub fn tty(&self, state: &mut ParameterPrinterState) {
+        // if state.discriminator == TYPE_U8 {
+        //     HEX_PARAMETER_PRINTER.tty(state, tty);
+        //     return;
+        // }
 
         let mut message = StaticVec::<u8, { ArrayParameterPrinter::PRINTABLE_SIZE }>::new();
-        if !SIMPLE_TYPES.contains(&state.discriminator) {
-            match to_type_info(state.discriminator) {
-                None => message.extend_from_slice(b"(unknown)"),
-                Some(info) => message.extend_from_slice(to_kind_name(info.type_kind)),
-            };
-        }
+        // if !SIMPLE_TYPES.contains(&state.discriminator) {
+        //     match to_type_info(state.discriminator) {
+        //         None => message.extend_from_slice(b"(unknown)"),
+        //         Some(info) => message.extend_from_slice(to_kind_name(info.type_kind)),
+        //     };
+        // }
         message.push(b'>');
-        display.scroll(message.as_slice());
+        state.tty.print_text(message.as_slice());
     }
 }

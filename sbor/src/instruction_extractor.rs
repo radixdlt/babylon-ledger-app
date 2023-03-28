@@ -2,7 +2,9 @@
 
 use crate::instruction::{to_instruction, InstructionInfo};
 use crate::sbor_decoder::SborEvent;
-use crate::type_info::{to_type_info, TypeKind, TYPE_ARRAY, TYPE_ENUM, TYPE_NONE, TYPE_TUPLE};
+use crate::type_info::{
+    to_type_info, TypeInfo, TYPE_ARRAY, TYPE_ENUM, TYPE_NONE, TYPE_TUPLE,
+};
 
 #[repr(u8)]
 #[derive(Copy, Clone, Debug)]
@@ -29,9 +31,9 @@ pub enum InstructionPhase {
 #[derive(Copy, Clone, Debug)]
 pub enum ExtractorEvent {
     InstructionStart(InstructionInfo),
-    ParameterStart(TypeKind, u32),
+    ParameterStart(SborEvent, u32, TypeInfo),
     ParameterData(SborEvent),
-    ParameterEnd(u32),
+    ParameterEnd(SborEvent, u32),
     InstructionEnd,
     WrongParameterCount(InstructionInfo, u32),
     UnknownInstruction(u8),
@@ -111,7 +113,7 @@ impl InstructionExtractor {
             ExtractorPhase::InstructionParameter => {
                 if Self::is_end(event, TYPE_NONE, 4) {
                     self.phase = ExtractorPhase::Instruction;
-                    handler.handle(ExtractorEvent::ParameterEnd(self.parameter_count));
+                    handler.handle(ExtractorEvent::ParameterEnd(event, self.parameter_count));
                     self.parameter_count += 1;
 
                     if self.parameter_count == self.parameters_total {
@@ -130,8 +132,9 @@ impl InstructionExtractor {
             match to_type_info(type_id) {
                 Some(type_info) => {
                     handler.handle(ExtractorEvent::ParameterStart(
-                        type_info.type_kind,
+                        event,
                         self.parameter_count,
+                        type_info,
                     ));
                 }
 

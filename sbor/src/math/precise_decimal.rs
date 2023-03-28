@@ -87,7 +87,6 @@ impl fmt::Display for PreciseDecimal {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crypto_bigint::Encoding;
 
     #[test]
     pub fn test_format_decimal() {

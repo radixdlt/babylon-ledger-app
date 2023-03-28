@@ -21,6 +21,7 @@ dependencies = [
  "nanos_sdk",
  "nanos_ui",
  "sbor",
+ "staticvec",
 ]
 
 [[package]]

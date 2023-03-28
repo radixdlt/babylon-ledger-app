@@ -6,13 +6,13 @@ use crate::crypto::hash::{Digest, HashType, Hasher};
 use crate::crypto::secp256k1::{KeyPairSecp256k1, SECP256K1_SIGNATURE_LEN};
 use core::cmp::max;
 
-use crate::ledger_display_io::LedgerDisplayIO;
 use nanos_sdk::io::Comm;
 use nanos_ui::ui;
 use sbor::bech32::network::NetworkId;
 use sbor::decoder_error::DecoderError;
 use sbor::instruction_extractor::InstructionExtractor;
 use sbor::print::instruction_printer::InstructionPrinter;
+use sbor::print::tty::TTY;
 use sbor::sbor_decoder::*;
 
 #[repr(u8)]
@@ -162,13 +162,13 @@ pub enum SignOutcome {
     },
 }
 
-struct InstructionProcessor {
+struct InstructionProcessor<'a> {
     state: SignFlowState,
     extractor: InstructionExtractor,
-    printer: InstructionPrinter,
+    printer: InstructionPrinter<'a>,
 }
 
-impl InstructionProcessor {
+impl<'a> InstructionProcessor<'a> {
     pub fn sign_tx(&self, tx_type: SignTxType, digest: Digest) -> Result<SignOutcome, AppError> {
         self.state.sign_tx(tx_type, digest)
     }
@@ -199,21 +199,19 @@ impl InstructionProcessor {
     }
 }
 
-pub struct TxSignState {
+pub struct TxSignState<'a> {
     decoder: SborDecoder,
-    processor: InstructionProcessor,
+    processor: InstructionProcessor<'a>,
 }
 
-impl SborEventHandler for InstructionProcessor {
+impl SborEventHandler for InstructionProcessor<'_> {
     fn handle(&mut self, evt: SborEvent) {
         self.extractor.handle_event(&mut self.printer, evt);
     }
 }
 
-const LEDGER_DISPLAY: LedgerDisplayIO = LedgerDisplayIO {};
-
-impl TxSignState {
-    pub fn new() -> Self {
+impl<'a> TxSignState<'a> {
+    pub fn new(tty: &'a mut dyn TTY) -> Self {
         Self {
             decoder: SborDecoder::new(true),
             processor: InstructionProcessor {
@@ -225,7 +223,7 @@ impl TxSignState {
                     hasher: Hasher::new(),
                 },
                 extractor: InstructionExtractor::new(),
-                printer: InstructionPrinter::new(&LEDGER_DISPLAY, NetworkId::LocalNet),
+                printer: InstructionPrinter::new(tty, NetworkId::LocalNet),
             },
         }
     }

@@ -11,6 +11,7 @@ use nanos_ui::ui::SingleMessage;
 use handler::dispatcher;
 
 use crate::app_error::AppError;
+use crate::ledger_display_io::LedgerTTY;
 use crate::tx_sign_state::TxSignState;
 
 mod app_error;
@@ -29,8 +30,9 @@ const APPLICATION: &str = env!("CARGO_PKG_DESCRIPTION");
 
 #[no_mangle]
 extern "C" fn sample_main() {
+    let mut tty = LedgerTTY::new();
     let mut comm = Comm::new();
-    let mut state = TxSignState::new();
+    let mut state = TxSignState::new(&mut tty);
 
     loop {
         SingleMessage::new(APPLICATION).show();

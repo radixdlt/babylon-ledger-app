@@ -2,9 +2,9 @@ use core::str::from_utf8;
 
 use arrform::{arrform, ArrForm};
 
-use crate::display_io::DisplayIO;
 use crate::print::parameter_printer::ParameterPrinter;
 use crate::print::state::ParameterPrinterState;
+use crate::print::tty::TTY;
 use crate::sbor_decoder::SborEvent;
 use crate::type_info::*;
 
@@ -57,57 +57,57 @@ fn module_id_to_name(byte: u8) -> &'static str {
 }
 
 impl ParameterPrinter for MethodKeyParameterPrinter {
-    fn handle_data_event(
+    fn handle_data(
         &self,
         state: &mut ParameterPrinterState,
-        event: SborEvent,
-        _display: &'static dyn DisplayIO,
+        event: SborEvent
     ) {
-        let phase: MethodKeyPhase = state.phase.into();
-
-        match phase {
-            MethodKeyPhase::Init => {
-                if let SborEvent::Start {
-                    type_id: TYPE_ENUM, ..
-                } = event
-                {
-                    state.phase = MethodKeyPhase::ModuleIdDiscrimitor.into();
-                }
-            }
-            MethodKeyPhase::ModuleIdDiscrimitor => {
-                if let SborEvent::Discriminator(byte) = event {
-                    state.discriminator = byte;
-                }
-                if let SborEvent::Start {
-                    type_id: TYPE_STRING,
-                    ..
-                } = event
-                {
-                    state.phase = MethodKeyPhase::Ident.into();
-                }
-            }
-            MethodKeyPhase::Ident => {
-                if let SborEvent::Data(byte) = event {
-                    state.push_byte_for_string(byte);
-                }
-            }
-        };
+        // let phase: MethodKeyPhase = state.phase.into();
+        //
+        // match phase {
+        //     MethodKeyPhase::Init => {
+        //         if let SborEvent::Start {
+        //             type_id: TYPE_ENUM, ..
+        //         } = event
+        //         {
+        //             state.phase = MethodKeyPhase::ModuleIdDiscrimitor.into();
+        //         }
+        //     }
+        //     MethodKeyPhase::ModuleIdDiscrimitor => {
+        //         if let SborEvent::Discriminator(byte) = event {
+        //             state.discriminator = byte;
+        //         }
+        //         if let SborEvent::Start {
+        //             type_id: TYPE_STRING,
+        //             ..
+        //         } = event
+        //         {
+        //             state.phase = MethodKeyPhase::Ident.into();
+        //         }
+        //     }
+        //     MethodKeyPhase::Ident => {
+        //         if let SborEvent::Data(byte) = event {
+        //             //state.push_byte_for_string(byte);
+        //         }
+        //     }
+        // };
     }
+}
 
-    fn display(&self, state: &ParameterPrinterState, display: &'static dyn DisplayIO) {
+impl MethodKeyParameterPrinter {
+    pub fn tty(&self, state: &mut ParameterPrinterState) {
         let text = match from_utf8(state.data.as_slice()) {
             Ok(text) => text,
             Err(_) => "<invalid string>",
         };
 
-        let message = arrform!(
-            { ParameterPrinterState::PARAMETER_AREA_SIZE + 32 },
-            "Key({} {})",
-            module_id_to_name(state.discriminator),
-            text
-        );
-
-        display.scroll(message.as_bytes());
+        // let message = arrform!(
+        //     { ParameterPrinterState::PARAMETER_AREA_SIZE + 32 },
+        //     "Key({} {})",
+        //     module_id_to_name(state.discriminator),
+        //     text
+        // );
+        //
+        // state.tty.print_text(message.as_bytes());
     }
 }
-

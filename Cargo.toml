@@ -9,6 +9,7 @@ description = "Radix Babylon"
 nanos_sdk = { git = "https://github.com/LedgerHQ/ledger-nanos-sdk.git" }
 nanos_ui = { git = "https://github.com/LedgerHQ/ledger-nanos-ui.git" }
 sbor = { path = "./sbor", default-features = false }
+staticvec = { version = "0.11.9", default-features = false }
 
 [profile.dev]
 opt-level = "z"

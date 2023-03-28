@@ -1,38 +1,46 @@
-use staticvec::StaticVec;
 use crate::bech32::hrp::*;
 use crate::bech32::network::*;
+use staticvec::StaticVec;
+use crate::print::tty::TTY;
 
-pub struct ParameterPrinterState {
-    // pub data: [u8; Self::PARAMETER_AREA_SIZE],
-    // pub data_counter: u8,
-    pub data: StaticVec<u8, {Self::PARAMETER_AREA_SIZE}>,
-    pub discriminator: u8,
-    pub inner_discriminator: u8,
+#[derive(Copy, Clone, Debug)]
+pub struct ValueState {
+    pub main_type_id: u8,    // Outer type ID at current nesting level
+    pub key_type_id: u8,     // Map key type ID; Resource ID for HRP
+    pub element_type_id: u8, // Map value type ID; Array/Tuple/Enum - element type ID
     pub flip_flop: bool,
-    pub network_id: NetworkId,
-    pub resource_id: HrpType,
-    pub phase: u8,
-    pub expected_len: u32,
-    pub nesting_level: u8,
-    pub manifest_discriminator: u8,
 }
 
-impl ParameterPrinterState {
-    pub const PARAMETER_AREA_SIZE: usize = 128;
+impl ValueState {
+    pub fn new(main_type_id: u8) -> Self {
+        Self {
+            main_type_id,
+            key_type_id: 0,
+            element_type_id: 0,
+            flip_flop: false,
+        }
+    }
+}
 
-    pub fn new(network_id: NetworkId) -> Self {
+pub const PARAMETER_AREA_SIZE: usize = 128;
+const STACK_SIZE: usize = 32;
+
+pub struct ParameterPrinterState<'a> {
+    pub data: StaticVec<u8, { PARAMETER_AREA_SIZE }>,
+    pub stack: StaticVec<ValueState, { STACK_SIZE }>,
+    pub nesting_level: u8,
+    pub network_id: NetworkId,
+    pub tty: &'a mut dyn TTY,
+}
+
+impl<'a> ParameterPrinterState<'a> {
+    pub fn new(network_id: NetworkId, tty: &'a mut dyn TTY) -> Self {
         Self {
             data: StaticVec::new(),
-            //data_counter: 0,
-            discriminator: 0,
-            inner_discriminator: 0,
-            flip_flop: false,
-            network_id,
-            resource_id: HrpType::Autodetect,
-            phase: 0,
-            expected_len: 0,
+            stack: StaticVec::new(),
             nesting_level: 0,
-            manifest_discriminator: 0,
+            network_id,
+            tty,
         }
     }
 
@@ -42,28 +50,10 @@ impl ParameterPrinterState {
 
     pub fn reset(&mut self) {
         self.data.clear();
-        self.discriminator = 0;
-        self.inner_discriminator = 0;
-        self.flip_flop = false;
-        self.resource_id = HrpType::Autodetect;
-        self.phase = 0;
-        self.expected_len = 0;
-        // Nesting level and manifest_discriminator is preserved
+        self.stack.clear();
     }
 
     pub fn push_byte(&mut self, byte: u8) {
         self.data.push(byte);
-    }
-
-    pub fn push_byte_for_string(&mut self, byte: u8) {
-        self.push_byte(byte);
-
-        // Add '...' at the end of truncated string.
-        if self.data.len() == ParameterPrinterState::PARAMETER_AREA_SIZE - 2 {
-            self.data.pop();
-            self.push_byte(b'.');
-            self.push_byte(b'.');
-            self.push_byte(b'.');
-        }
     }
 }

@@ -1,8 +1,8 @@
 use staticvec::StaticVec;
 
-use crate::display_io::DisplayIO;
+use crate::print::tty::TTY;
 use crate::print::parameter_printer::ParameterPrinter;
-use crate::print::state::ParameterPrinterState;
+use crate::print::state::{ParameterPrinterState, PARAMETER_AREA_SIZE};
 use crate::sbor_decoder::SborEvent;
 
 // Printer for various parameters formatted as hex string
@@ -20,8 +20,7 @@ pub const HEX_PARAMETER_PRINTER: HexParameterPrinter = HexParameterPrinter { fix
 
 impl HexParameterPrinter {
     const USER_INFO_SPACE_LEN: usize = 20; // "###/###" - show part of part
-    const PRINTABLE_SIZE: usize =
-        ParameterPrinterState::PARAMETER_AREA_SIZE * 2 + HexParameterPrinter::USER_INFO_SPACE_LEN;
+    const PRINTABLE_SIZE: usize = PARAMETER_AREA_SIZE * 2 + HexParameterPrinter::USER_INFO_SPACE_LEN;
 }
 
 pub fn to_hex<const N: usize>(data: &[u8], message: &mut StaticVec<u8, N>) {
@@ -34,42 +33,43 @@ pub fn to_hex<const N: usize>(data: &[u8], message: &mut StaticVec<u8, N>) {
 const HEX_DIGITS: [u8; 16] = *b"0123456789abcdef";
 
 impl ParameterPrinter for HexParameterPrinter {
-    fn handle_data_event(
+    fn handle_data(
         &self,
         state: &mut ParameterPrinterState,
-        event: SborEvent,
-        display: &'static dyn DisplayIO,
+        event: SborEvent
     ) {
         // TODO: show to user that this is 'piece # of ##'
-        if let SborEvent::Len(len) = event {
-            if self.fixed_len > 0 && self.fixed_len != len {
-                display.scroll(b"<payload size mismatch>");
-                state.flip_flop = true;
-            }
-            state.expected_len = len;
-        }
+        // if let SborEvent::Len(len) = event {
+        //     if self.fixed_len > 0 && self.fixed_len != len {
+        //         state.tty.print_text(b"<payload size mismatch>");
+        //         //state.flip_flop = true;
+        //     }
+        //     state.expected_len = len;
+        // }
 
         // If error is triggered, ignore remaining data
-        if state.flip_flop {
-            return;
-        }
+        // if state.flip_flop {
+        //     return;
+        // }
 
         if let SborEvent::Data(byte) = event {
             state.push_byte(byte);
         }
     }
+}
 
-    fn display(&self, state: &ParameterPrinterState, display: &'static dyn DisplayIO) {
-        if state.flip_flop {
-            return;
-        }
+impl HexParameterPrinter {
+    pub fn tty(&self, state: &mut ParameterPrinterState) {
+        // if state.flip_flop {
+        //     return;
+        // }
 
-        let mut message = StaticVec::<u8, { HexParameterPrinter::PRINTABLE_SIZE }>::new();
+        let mut message = StaticVec::<u8, { Self::PRINTABLE_SIZE }>::new();
 
         message.extend_from_slice(b"Bytes(");
         to_hex(state.data.as_slice(), &mut message);
         message.push(b')');
 
-        display.scroll(message.as_slice());
+        state.tty.print_text(message.as_slice());
     }
 }

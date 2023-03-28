@@ -1,4 +1,5 @@
 pub mod instruction_printer;
+pub mod tty;
 
 mod access_rule;
 mod array;

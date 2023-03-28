@@ -3,11 +3,23 @@ use crate::bech32::network::NetworkId;
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum HrpType {
+    Autodetect,
     Package,
     FungibleResource,
     NonFungibleResource,
     Component,
-    Autodetect,
+}
+
+impl From<u8> for HrpType {
+    fn from(value: u8) -> Self {
+        match value {
+            1 => HrpType::Package,
+            2 => HrpType::FungibleResource,
+            3 => HrpType::NonFungibleResource,
+            4 => HrpType::Component,
+            _ => HrpType::Autodetect,
+        }
+    }
 }
 
 pub fn hrp_suffix(net_id: NetworkId) -> &'static str {

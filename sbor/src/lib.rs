@@ -63,7 +63,6 @@ pub mod instruction;
 pub mod instruction_extractor;
 pub mod sbor_decoder;
 pub mod type_info;
-pub mod display_io;
 pub mod bech32;
 pub mod math;
 pub mod print;

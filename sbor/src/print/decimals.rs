@@ -1,9 +1,9 @@
 use arrform::{arrform, ArrForm};
 
-use crate::display_io::DisplayIO;
 use crate::math::{Decimal, PreciseDecimal};
 use crate::print::parameter_printer::ParameterPrinter;
 use crate::print::state::ParameterPrinterState;
+use crate::print::tty::TTY;
 use crate::sbor_decoder::SborEvent;
 
 // Decimal parameter printer
@@ -18,28 +18,28 @@ impl DecimalParameterPrinter {
 }
 
 impl ParameterPrinter for DecimalParameterPrinter {
-    fn handle_data_event(
+    fn handle_data(
         &self,
         state: &mut ParameterPrinterState,
-        event: SborEvent,
-        _display: &'static dyn DisplayIO,
+        event: SborEvent
     ) {
         if let SborEvent::Data(byte) = event {
             state.push_byte(byte);
         }
     }
-
-    fn display(&self, state: &ParameterPrinterState, display: &'static dyn DisplayIO) {
+}
+impl DecimalParameterPrinter {
+    pub fn tty(&self, state: &mut ParameterPrinterState) {
         match Decimal::try_from(state.data.as_slice()) {
-            Ok(value) => display.scroll(
+            Ok(value) => state.tty.print_text(
                 arrform!(
                     { DecimalParameterPrinter::MAX_DISPLAY_LEN },
                     "Dec({})",
                     value
                 )
-                    .as_bytes(),
+                .as_bytes(),
             ),
-            Err(_) => display.scroll(b"Dec(<invalid value>)"),
+            Err(_) => state.tty.print_text(b"Dec(<invalid value>)"),
         }
     }
 }
@@ -57,29 +57,29 @@ impl PreciseDecimalParameterPrinter {
 }
 
 impl ParameterPrinter for PreciseDecimalParameterPrinter {
-    fn handle_data_event(
+    fn handle_data(
         &self,
         state: &mut ParameterPrinterState,
-        event: SborEvent,
-        _display: &'static dyn DisplayIO,
+        event: SborEvent
     ) {
         if let SborEvent::Data(byte) = event {
             state.push_byte(byte);
         }
     }
+}
 
-    fn display(&self, state: &ParameterPrinterState, display: &'static dyn DisplayIO) {
+impl PreciseDecimalParameterPrinter {
+    pub fn tty(&self, state: &mut ParameterPrinterState) {
         match PreciseDecimal::try_from(state.data.as_slice()) {
-            Ok(value) => display.scroll(
+            Ok(value) => state.tty.print_text(
                 arrform!(
                     { PreciseDecimalParameterPrinter::MAX_DISPLAY_LEN },
                     "PDec({})",
                     value
                 )
-                    .as_bytes(),
+                .as_bytes(),
             ),
-            Err(_) => display.scroll(b"Dec(<invalid value>)"),
+            Err(_) => state.tty.print_text(b"Dec(<invalid value>)"),
         }
     }
 }
-
