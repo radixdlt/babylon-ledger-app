@@ -2,9 +2,7 @@
 
 use crate::instruction::{to_instruction, InstructionInfo};
 use crate::sbor_decoder::SborEvent;
-use crate::type_info::{
-    to_type_info, TypeInfo, TYPE_ARRAY, TYPE_ENUM, TYPE_NONE, TYPE_TUPLE,
-};
+use crate::type_info::{to_type_info, TypeInfo, TYPE_ARRAY, TYPE_ENUM, TYPE_NONE, TYPE_TUPLE};
 
 #[repr(u8)]
 #[derive(Copy, Clone, Debug)]

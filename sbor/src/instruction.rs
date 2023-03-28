@@ -38,14 +38,13 @@ const ASSERT_ACCESS_RULE: u8 = 32;
 const CALL_FUNCTION: u8 = 33;
 const CALL_METHOD: u8 = 34;
 
-
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Instruction {
-    TakeFromWorktop, //{ resource_address: ResourceAddress, },
-    TakeFromWorktopByAmount, // { amount: Decimal, resource_address: ResourceAddress, },
+    TakeFromWorktop,               //{ resource_address: ResourceAddress, },
+    TakeFromWorktopByAmount,       // { amount: Decimal, resource_address: ResourceAddress, },
     TakeFromWorktopByIds, // { ids: BTreeSet<NonFungibleLocalId>, resource_address: ResourceAddress, },
-    ReturnToWorktop, // { bucket_id: ManifestBucket, },
+    ReturnToWorktop,      // { bucket_id: ManifestBucket, },
     AssertWorktopContains, // { resource_address: ResourceAddress, },
     AssertWorktopContainsByAmount, // { amount: Decimal, resource_address: ResourceAddress, },
     AssertWorktopContainsByIds, // { ids: BTreeSet<NonFungibleLocalId>, resource_address: ResourceAddress, },
@@ -55,28 +54,28 @@ pub enum Instruction {
     CreateProofFromAuthZone, // { resource_address: ResourceAddress, },
     CreateProofFromAuthZoneByAmount, // { amount: Decimal, resource_address: ResourceAddress, },
     CreateProofFromAuthZoneByIds, // { ids: BTreeSet<NonFungibleLocalId>, resource_address: ResourceAddress, },
-    CreateProofFromBucket, // { bucket_id: ManifestBucket, },
-    CloneProof, // { proof_id: ManifestProof, },
-    DropProof, // { proof_id: ManifestProof, },
+    CreateProofFromBucket,        // { bucket_id: ManifestBucket, },
+    CloneProof,                   // { proof_id: ManifestProof, },
+    DropProof,                    // { proof_id: ManifestProof, },
     DropAllProofs,
     ClearSignatureProofs,
     PublishPackage, // { code: ManifestBlobRef, schema: ManifestBlobRef, royalty_config: BTreeMap<String, RoyaltyConfig>, metadata: BTreeMap<String, String>, },
     PublishPackageAdvanced, // { code: ManifestBlobRef, schema: ManifestBlobRef, royalty_config: BTreeMap<String, RoyaltyConfig>, metadata: BTreeMap<String, String>, access_rules: AccessRulesConfig, },
-    BurnResource, // { bucket_id: ManifestBucket, },
-    RecallResource, // { vault_id: ObjectId, amount: Decimal, },
-    SetMetadata, // { entity_address: ManifestAddress, key: String, value: String, },
-    RemoveMetadata, // { entity_address: ManifestAddress, key: String, },
+    BurnResource,           // { bucket_id: ManifestBucket, },
+    RecallResource,         // { vault_id: ObjectId, amount: Decimal, },
+    SetMetadata,            // { entity_address: ManifestAddress, key: String, value: String, },
+    RemoveMetadata,         // { entity_address: ManifestAddress, key: String, },
     SetPackageRoyaltyConfig, // { package_address: PackageAddress, royalty_config: BTreeMap<String, RoyaltyConfig>, },
     SetComponentRoyaltyConfig, // { component_address: ComponentAddress, royalty_config: RoyaltyConfig, },
-    ClaimPackageRoyalty, // { package_address: PackageAddress, },
-    ClaimComponentRoyalty, // { component_address: ComponentAddress, },
+    ClaimPackageRoyalty,       // { package_address: PackageAddress, },
+    ClaimComponentRoyalty,     // { component_address: ComponentAddress, },
     SetMethodAccessRule, // { entity_address: ManifestAddress, key: MethodKey, rule: AccessRule, },
-    MintFungible, // { resource_address: ResourceAddress, amount: Decimal, },
-    MintNonFungible, // { resource_address: ResourceAddress, args: ManifestValue, },
+    MintFungible,        // { resource_address: ResourceAddress, amount: Decimal, },
+    MintNonFungible,     // { resource_address: ResourceAddress, args: ManifestValue, },
     MintUuidNonFungible, // { resource_address: ResourceAddress, args: ManifestValue, },
-    AssertAccessRule, // { access_rule: AccessRule, },
+    AssertAccessRule,    // { access_rule: AccessRule, },
     CallFunction, // { package_address: PackageAddress, blueprint_name: String, function_name: String, args: ManifestValue, },
-    CallMethod,   // { component_address: ComponentAddress, method_name: String, args: ManifestValue, },
+    CallMethod, // { component_address: ComponentAddress, method_name: String, args: ManifestValue, },
 }
 
 #[repr(u8)]
@@ -86,7 +85,7 @@ pub enum ParameterType {
     AccessRule,
     AccessRulesConfig,
     BTreeMapByStringToRoyaltyConfig, // Royalty config
-    BTreeMapByStringToString, // Metadata
+    BTreeMapByStringToString,        // Metadata
     BTreeSetOfNonFungibleLocalId,
     ComponentAddress,
     Decimal,
@@ -219,7 +218,7 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
                 ParameterType::ManifestBlobRef,
                 ParameterType::ManifestBlobRef,
                 ParameterType::BTreeMapByStringToRoyaltyConfig,
-                ParameterType::BTreeMapByStringToString
+                ParameterType::BTreeMapByStringToString,
             ],
         }),
         PUBLISH_PACKAGE_ADVANCED => Some(InstructionInfo {
@@ -255,10 +254,7 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
         REMOVE_METADATA => Some(InstructionInfo {
             instruction: Instruction::RemoveMetadata,
             name: b"RemoveMetadata",
-            params: &[
-                ParameterType::ManifestAddress,
-                ParameterType::String,
-            ],
+            params: &[ParameterType::ManifestAddress, ParameterType::String],
         }),
         SET_PACKAGE_ROYALTY_CONFIG => Some(InstructionInfo {
             instruction: Instruction::SetPackageRoyaltyConfig,
@@ -303,10 +299,7 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
         MINT_NON_FUNGIBLE => Some(InstructionInfo {
             instruction: Instruction::MintNonFungible,
             name: b"MintNonFungible",
-            params: &[
-                ParameterType::ResourceAddress,
-                ParameterType::ManifestValue,
-            ],
+            params: &[ParameterType::ResourceAddress, ParameterType::ManifestValue],
         }),
         MINT_UUID_NON_FUNGIBLE => Some(InstructionInfo {
             instruction: Instruction::MintUuidNonFungible,

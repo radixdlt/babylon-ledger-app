@@ -4,7 +4,6 @@ use arrform::{arrform, ArrForm};
 
 use crate::print::parameter_printer::ParameterPrinter;
 use crate::print::state::ParameterPrinterState;
-use crate::print::tty::TTY;
 use crate::sbor_decoder::SborEvent;
 use core::{concat, stringify};
 use paste::paste;
@@ -15,16 +14,9 @@ pub struct IgnoredParameter {}
 pub const IGNORED_PARAMETER_PRINTER: IgnoredParameter = IgnoredParameter {};
 
 impl ParameterPrinter for IgnoredParameter {
-    fn handle_data(
-        &self,
-        _state: &mut ParameterPrinterState,
-        _event: SborEvent
-    ) {
-    }
-}
+    fn handle_data(&self, _state: &mut ParameterPrinterState, _event: SborEvent) {}
 
-impl IgnoredParameter {
-    pub fn tty(&self, state: &mut ParameterPrinterState) {
+    fn end(&self, state: &mut ParameterPrinterState) {
         state.tty.print_text("<not decoded>".as_bytes())
     }
 }
@@ -34,19 +26,13 @@ pub struct BoolParameterPrinter {}
 pub const BOOL_PARAMETER_PRINTER: BoolParameterPrinter = BoolParameterPrinter {};
 
 impl ParameterPrinter for BoolParameterPrinter {
-    fn handle_data(
-        &self,
-        state: &mut ParameterPrinterState,
-        event: SborEvent
-    ) {
+    fn handle_data(&self, state: &mut ParameterPrinterState, event: SborEvent) {
         if let SborEvent::Data(byte) = event {
             state.push_byte(byte);
         }
     }
-}
 
-impl BoolParameterPrinter {
-    pub fn tty(&self, state: &mut ParameterPrinterState) {
+    fn end(&self, state: &mut ParameterPrinterState) {
         if state.data.len() != 1 {
             state.tty.print_text(b"<Invalid bool encoding>");
             return;
@@ -114,11 +100,7 @@ pub struct StringParameterPrinter {}
 pub const STRING_PARAMETER_PRINTER: StringParameterPrinter = StringParameterPrinter {};
 
 impl ParameterPrinter for StringParameterPrinter {
-    fn handle_data(
-        &self,
-        state: &mut ParameterPrinterState,
-        event: SborEvent
-    ) {
+    fn handle_data(&self, state: &mut ParameterPrinterState, event: SborEvent) {
         if let SborEvent::Data(byte) = event {
             //TODO: split longer strings into chunks; keep in mind utf8 boundaries
             state.push_byte(byte);
@@ -127,7 +109,11 @@ impl ParameterPrinter for StringParameterPrinter {
 
     fn end(&self, state: &mut ParameterPrinterState) {
         match from_utf8(state.data.as_slice()) {
-            Ok(message) => state.tty.print_text(message.as_bytes()),
+            Ok(message) => {
+                state.tty.print_byte(b'"');
+                state.tty.print_text(message.as_bytes());
+                state.tty.print_byte(b'"');
+            }
             Err(_) => state.tty.print_text(b"<String decoding error>"),
         }
     }

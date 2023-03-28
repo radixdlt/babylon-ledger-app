@@ -46,11 +46,11 @@ pub fn hrp_prefix(entity_id: HrpType, discriminator: u8) -> Option<&'static str>
         HrpType::FungibleResource | HrpType::NonFungibleResource => Some("resource_"),
         HrpType::Component => match discriminator {
             // NOTE: this part depends on Scrypto entity ID's
-            0x03 => Some("component_"), // Normal
-            0x05 => Some("epochmanager_"),      // EpochManager
-            0x06 => Some("validator_"),         // Validator
-            0x07 => Some("clock_"),             // Clock
-            0x0d => Some("accesscontroller_"), // AccessController
+            0x03 => Some("component_"),              // Normal
+            0x05 => Some("epochmanager_"),           // EpochManager
+            0x06 => Some("validator_"),              // Validator
+            0x07 => Some("clock_"),                  // Clock
+            0x0d => Some("accesscontroller_"),       // AccessController
             0x04 | 0x08 | 0x09 => Some("account_"), // Account, EcdsaSecp256k1VirtualAccount, EddsaEd25519VirtualAccount
             0x0a | 0x0b | 0x0c => Some("identity_"), // Identity, EcdsaSecp256k1VirtualIdentity, EddsaEd25519VirtualIdentity
             _ => None,

@@ -7,7 +7,7 @@ use core::option::Option::{None, Some};
 use core::result::Result;
 use core::result::Result::{Err, Ok};
 
-pub const STACK_DEPTH: u8 = 48;
+pub const STACK_DEPTH: u8 = 32;
 pub const SBOR_LEADING_BYTE: u8 = 77; // MANIFEST_SBOR_V1_PAYLOAD_PREFIX
 
 #[derive(Copy, Clone, Debug)]

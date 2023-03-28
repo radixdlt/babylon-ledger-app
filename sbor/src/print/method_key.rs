@@ -4,9 +4,7 @@ use arrform::{arrform, ArrForm};
 
 use crate::print::parameter_printer::ParameterPrinter;
 use crate::print::state::ParameterPrinterState;
-use crate::print::tty::TTY;
 use crate::sbor_decoder::SborEvent;
-use crate::type_info::*;
 
 // MethodKey parameter printer
 pub struct MethodKeyParameterPrinter {}
@@ -57,11 +55,7 @@ fn module_id_to_name(byte: u8) -> &'static str {
 }
 
 impl ParameterPrinter for MethodKeyParameterPrinter {
-    fn handle_data(
-        &self,
-        state: &mut ParameterPrinterState,
-        event: SborEvent
-    ) {
+    fn handle_data(&self, state: &mut ParameterPrinterState, event: SborEvent) {
         // let phase: MethodKeyPhase = state.phase.into();
         //
         // match phase {
@@ -92,10 +86,8 @@ impl ParameterPrinter for MethodKeyParameterPrinter {
         //     }
         // };
     }
-}
 
-impl MethodKeyParameterPrinter {
-    pub fn tty(&self, state: &mut ParameterPrinterState) {
+    fn end(&self, state: &mut ParameterPrinterState) {
         let text = match from_utf8(state.data.as_slice()) {
             Ok(text) => text,
             Err(_) => "<invalid string>",

@@ -1,14 +1,13 @@
-use crate::bech32::hrp::*;
 use crate::bech32::network::*;
-use staticvec::StaticVec;
 use crate::print::tty::TTY;
+use crate::sbor_decoder::STACK_DEPTH;
+use staticvec::StaticVec;
 
 #[derive(Copy, Clone, Debug)]
 pub struct ValueState {
     pub main_type_id: u8,    // Outer type ID at current nesting level
-    pub key_type_id: u8,     // Map key type ID; Resource ID for HRP
+    pub key_type_id: u8,     // Map key type ID; Resource ID for HRP; Discriminator for enums
     pub element_type_id: u8, // Map value type ID; Array/Tuple/Enum - element type ID
-    pub flip_flop: bool,
 }
 
 impl ValueState {
@@ -17,17 +16,15 @@ impl ValueState {
             main_type_id,
             key_type_id: 0,
             element_type_id: 0,
-            flip_flop: false,
         }
     }
 }
 
 pub const PARAMETER_AREA_SIZE: usize = 128;
-const STACK_SIZE: usize = 32;
 
 pub struct ParameterPrinterState<'a> {
     pub data: StaticVec<u8, { PARAMETER_AREA_SIZE }>,
-    pub stack: StaticVec<ValueState, { STACK_SIZE }>,
+    pub stack: StaticVec<ValueState, { STACK_DEPTH as usize }>,
     pub nesting_level: u8,
     pub network_id: NetworkId,
     pub tty: &'a mut dyn TTY,
@@ -55,5 +52,9 @@ impl<'a> ParameterPrinterState<'a> {
 
     pub fn push_byte(&mut self, byte: u8) {
         self.data.push(byte);
+    }
+
+    pub fn active_state(&mut self) -> &mut ValueState {
+        self.stack.last_mut().expect("Stack can't be empty")
     }
 }

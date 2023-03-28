@@ -331,6 +331,12 @@ pub fn to_type_info(byte: u8) -> Option<TypeInfo> {
     }
 }
 
+pub fn to_type_name(type_id: u8) -> &'static [u8] {
+    to_type_info(type_id)
+        .map(|info| to_kind_name(info.type_kind))
+        .unwrap_or(b"(unknown)")
+}
+
 pub fn to_kind_name(kind: TypeKind) -> &'static [u8] {
     match kind {
         TypeKind::None => b"None",

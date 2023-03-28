@@ -1,30 +1,37 @@
 use crate::bech32::network::*;
 use crate::instruction::{InstructionInfo, ParameterType};
 use crate::instruction_extractor::{ExtractorEvent, InstructionHandler};
-use crate::print::access_rule::*;
+use crate::print::access_rule::ACCESS_RULE_PARAMETER_PRINTER;
 use crate::print::address::*;
-use crate::print::array::ARRAY_PARAMETER_PRINTER;
+use crate::print::array::*;
+use crate::print::custom_types::*;
 use crate::print::decimals::*;
-use crate::print::hex::*;
+use crate::print::enums::*;
 use crate::print::manifest_value::*;
+use crate::print::map::MAP_PARAMETER_PRINTER;
 use crate::print::method_key::*;
+use crate::print::non_fungible::*;
 use crate::print::parameter_printer::ParameterPrinter;
 use crate::print::primitives::*;
 use crate::print::state::{ParameterPrinterState, ValueState};
 use crate::print::tty::TTY;
-use crate::sbor_decoder::SborEvent;
+use crate::print::tuple::TUPLE_PARAMETER_PRINTER;
+use crate::sbor_decoder::{SborEvent, SubTypeKind};
+use crate::type_info::*;
 
 pub struct InstructionPrinter<'a> {
     active_instruction: Option<InstructionInfo>,
     instruction_printer: Option<&'static dyn ParameterPrinter>,
-    state: ParameterPrinterState<'a>
+    state: ParameterPrinterState<'a>,
 }
 
 impl InstructionHandler for InstructionPrinter<'_> {
     fn handle(&mut self, event: ExtractorEvent) {
         match event {
             ExtractorEvent::InstructionStart(info) => self.start_instruction(info),
-            ExtractorEvent::ParameterStart(event, ordinal, ..) => self.parameter_start(event, ordinal),
+            ExtractorEvent::ParameterStart(event, ordinal, ..) => {
+                self.parameter_start(event, ordinal)
+            }
             ExtractorEvent::ParameterData(data) => self.parameter_data(data),
             ExtractorEvent::ParameterEnd(event, ..) => self.parameter_end(event),
             ExtractorEvent::InstructionEnd => self.instruction_end(),
@@ -37,12 +44,12 @@ impl InstructionHandler for InstructionPrinter<'_> {
     }
 }
 
-impl <'a> InstructionPrinter<'a> {
+impl<'a> InstructionPrinter<'a> {
     pub fn new(tty: &'a mut dyn TTY, network_id: NetworkId) -> Self {
         Self {
             active_instruction: None,
             instruction_printer: None,
-            state: ParameterPrinterState::new(network_id, tty)
+            state: ParameterPrinterState::new(network_id, tty),
         }
     }
 
@@ -54,6 +61,7 @@ impl <'a> InstructionPrinter<'a> {
         self.active_instruction = Some(info);
         self.state.tty.start();
         self.state.tty.print_text(info.name);
+        self.state.tty.print_space();
     }
 
     pub fn instruction_end(&mut self) {
@@ -82,10 +90,28 @@ impl <'a> InstructionPrinter<'a> {
                 nesting_level,
                 ..
             } => {
+                if self.state.stack.is_not_empty() {
+                    self.get_printer().subcomponent_start(&mut self.state);
+                }
+
                 self.state.nesting_level = nesting_level;
                 self.state.stack.push(ValueState::new(type_id));
                 self.get_printer().start(&mut self.state);
-            },
+            }
+            SborEvent::ElementType { kind, type_id } => {
+                match kind {
+                    SubTypeKind::Key => self.active_value_state().key_type_id = type_id,
+                    SubTypeKind::Value => self.active_value_state().element_type_id = type_id,
+                    SubTypeKind::Element => self.active_value_state().element_type_id = type_id,
+                }
+                self.get_printer()
+                    .handle_data(&mut self.state, source_event);
+            }
+            SborEvent::Discriminator(discriminator) => {
+                self.active_value_state().key_type_id = discriminator;
+                self.get_printer()
+                    .handle_data(&mut self.state, source_event);
+            }
             SborEvent::End {
                 type_id,
                 nesting_level,
@@ -93,7 +119,15 @@ impl <'a> InstructionPrinter<'a> {
                 self.get_printer().end(&mut self.state);
                 self.state.nesting_level = nesting_level;
                 self.state.stack.pop().expect("Stack can't be empty");
-            },
+
+                if self.state.stack.is_not_empty() {
+                    self.get_printer().subcomponent_end(&mut self.state);
+                } else {
+                    self.state.tty.print_space();
+                }
+
+                self.state.data.clear();
+            }
             _ => {
                 self.get_printer()
                     .handle_data(&mut self.state, source_event);
@@ -101,17 +135,54 @@ impl <'a> InstructionPrinter<'a> {
         }
     }
 
+    fn active_value_state(&mut self) -> &mut ValueState {
+        self.state.active_state()
+    }
+
     pub fn parameter_end(&mut self, event: SborEvent) {
         self.parameter_data(event);
+        self.state.tty.print_space();
         self.state.reset();
     }
 
-    fn get_printer(&self) -> &'static dyn ParameterPrinter {
-        self.instruction_printer
-            .unwrap_or(&IGNORED_PARAMETER_PRINTER)
+    fn get_printer(&mut self) -> &'static dyn ParameterPrinter {
+        get_printer_for_discriminator(self.active_value_state().main_type_id)
     }
 }
 
+pub fn get_printer_for_discriminator(discriminator: u8) -> &'static dyn ParameterPrinter {
+    match discriminator {
+        // Generic types
+        TYPE_BOOL => &BOOL_PARAMETER_PRINTER,
+        TYPE_I8 => &I8_PARAMETER_PRINTER,
+        TYPE_I16 => &I16_PARAMETER_PRINTER,
+        TYPE_I32 => &I32_PARAMETER_PRINTER,
+        TYPE_I64 => &I64_PARAMETER_PRINTER,
+        TYPE_I128 => &I128_PARAMETER_PRINTER,
+        TYPE_U8 => &U8_PARAMETER_PRINTER,
+        TYPE_U16 => &U16_PARAMETER_PRINTER,
+        TYPE_U32 => &U32_PARAMETER_PRINTER,
+        TYPE_U64 => &U64_PARAMETER_PRINTER,
+        TYPE_U128 => &U128_PARAMETER_PRINTER,
+        TYPE_STRING => &STRING_PARAMETER_PRINTER,
+        TYPE_ARRAY => &ARRAY_PARAMETER_PRINTER,
+        TYPE_TUPLE => &TUPLE_PARAMETER_PRINTER,
+        TYPE_ENUM => &ENUM_PARAMETER_PRINTER,
+        TYPE_MAP => &MAP_PARAMETER_PRINTER,
+        // Custom types
+        TYPE_ADDRESS => &ADDRESS_PARAMETER_PRINTER,
+        TYPE_BUCKET => &BUCKET_PARAMETER_PRINTER,
+        TYPE_PROOF => &PROOF_PARAMETER_PRINTER,
+        TYPE_EXPRESSION => &EXPRESSION_PARAMETER_PRINTER,
+        TYPE_BLOB => &BLOB_PARAMETER_PRINTER,
+        TYPE_DECIMAL => &DECIMAL_PARAMETER_PRINTER,
+        TYPE_PRECISE_DECIMAL => &PRECISE_DECIMAL_PARAMETER_PRINTER,
+        TYPE_NON_FUNGIBLE_LOCAL_ID => &NON_FUNGIBLE_LOCAL_ID_PARAMETER_PRINTER,
+        _ => &IGNORED_PARAMETER_PRINTER,
+    }
+}
+
+//TODO: get rid of this method???
 fn get_printer_for_type(param_type: ParameterType) -> &'static dyn ParameterPrinter {
     match param_type {
         ParameterType::Ignored => &IGNORED_PARAMETER_PRINTER,
@@ -121,15 +192,15 @@ fn get_printer_for_type(param_type: ParameterType) -> &'static dyn ParameterPrin
         ParameterType::BTreeMapByStringToRoyaltyConfig => &IGNORED_PARAMETER_PRINTER,
         ParameterType::BTreeMapByStringToString => &IGNORED_PARAMETER_PRINTER,
         ParameterType::BTreeSetOfNonFungibleLocalId => &ARRAY_PARAMETER_PRINTER,
-        ParameterType::ComponentAddress => &COMPONENT_ADDRESS_PARAMETER_PRINTER,
+        ParameterType::ComponentAddress => &ADDRESS_PARAMETER_PRINTER,
         ParameterType::Decimal => &DECIMAL_PARAMETER_PRINTER,
-        ParameterType::ManifestAddress => &MANIFEST_ADDRESS_PARAMETER_PRINTER,
-        ParameterType::ManifestBlobRef => &MANIFEST_BLOB_REF_PARAMETER_PRINTER,
+        ParameterType::ManifestAddress => &ADDRESS_PARAMETER_PRINTER,
+        ParameterType::ManifestBlobRef => &BLOB_PARAMETER_PRINTER,
         ParameterType::ManifestBucket => &U32_PARAMETER_PRINTER,
         ParameterType::ManifestProof => &U32_PARAMETER_PRINTER,
         ParameterType::ManifestValue => &MANIFEST_VALUE_PARAMETER_PRINTER,
-        ParameterType::PackageAddress => &PACKAGE_ADDRESS_PARAMETER_PRINTER,
-        ParameterType::ResourceAddress => &RESOURCE_ADDRESS_PARAMETER_PRINTER,
+        ParameterType::PackageAddress => &ADDRESS_PARAMETER_PRINTER,
+        ParameterType::ResourceAddress => &ADDRESS_PARAMETER_PRINTER,
         ParameterType::RoyaltyConfig => &IGNORED_PARAMETER_PRINTER,
         ParameterType::String => &STRING_PARAMETER_PRINTER,
         ParameterType::ObjectId => &OBJECT_ID_PARAMETER_PRINTER,
@@ -160,12 +231,6 @@ mod tests {
 
         fn end(&mut self) {
             println!();
-        }
-    }
-
-    impl TestPrinter {
-        pub fn new() -> Self {
-            Self {}
         }
     }
 

@@ -14,4 +14,3 @@ pub enum NetworkId {
     IntegrationTestNet = 241, //, "inttestnet", "test"),
     Simulator = 242,          //, "simulator", "sim");
 }
-

@@ -58,14 +58,14 @@
 #![feature(prelude_2024)]
 #![feature(core_intrinsics)]
 #![cfg_attr(not(test), no_std)]
+pub mod bech32;
 pub mod decoder_error;
 pub mod instruction;
 pub mod instruction_extractor;
-pub mod sbor_decoder;
-pub mod type_info;
-pub mod bech32;
 pub mod math;
 pub mod print;
+pub mod sbor_decoder;
+pub mod type_info;
 
 #[cfg(test)]
 pub mod tx_intent_test_data;

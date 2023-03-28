@@ -1,5 +1,4 @@
 use crate::print::state::ParameterPrinterState;
-use crate::print::tty::TTY;
 use crate::sbor_decoder::SborEvent;
 
 pub trait ParameterPrinter {
@@ -8,4 +7,8 @@ pub trait ParameterPrinter {
     fn start(&self, _state: &mut ParameterPrinterState) {}
 
     fn end(&self, _state: &mut ParameterPrinterState) {}
+
+    fn subcomponent_start(&self, _state: &mut ParameterPrinterState) {}
+
+    fn subcomponent_end(&self, _state: &mut ParameterPrinterState) {}
 }
