@@ -31,9 +31,8 @@ pub enum ExtractorEvent {
     InstructionStart(InstructionInfo),
     ParameterStart(SborEvent, u32, TypeInfo),
     ParameterData(SborEvent),
-    ParameterEnd(SborEvent, u32),
+    ParameterEnd(SborEvent),
     InstructionEnd,
-    WrongParameterCount(InstructionInfo, u32),
     UnknownInstruction(u8),
     InvalidEventSequence,
     UnknownParameterType(u8),
@@ -111,7 +110,7 @@ impl InstructionExtractor {
             ExtractorPhase::InstructionParameter => {
                 if Self::is_end(event, TYPE_NONE, 4) {
                     self.phase = ExtractorPhase::Instruction;
-                    handler.handle(ExtractorEvent::ParameterEnd(event, self.parameter_count));
+                    handler.handle(ExtractorEvent::ParameterEnd(event));
                     self.parameter_count += 1;
 
                     if self.parameter_count == self.parameters_total {
@@ -167,12 +166,6 @@ impl InstructionExtractor {
             (InstructionPhase::WaitForParameterCount, SborEvent::Len(len)) => {
                 match to_instruction(self.discriminator) {
                     Some(info) => {
-                        if len != info.params.len() as u32 {
-                            handler.handle(ExtractorEvent::WrongParameterCount(info, len));
-                            self.phase = ExtractorPhase::Done;
-                            return false;
-                        }
-
                         handler.handle(ExtractorEvent::InstructionStart(info));
                         self.parameters_total = len;
                         self.instruction_phase = InstructionPhase::Done;

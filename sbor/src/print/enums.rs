@@ -1,10 +1,8 @@
 use arrform::{arrform, ArrForm};
-use staticvec::StaticVec;
 
 use crate::print::parameter_printer::ParameterPrinter;
 use crate::print::state::ParameterPrinterState;
 use crate::sbor_decoder::SborEvent;
-use crate::type_info::{to_kind_name, to_type_info};
 
 pub struct EnumParameterPrinter {}
 

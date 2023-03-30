@@ -29,10 +29,22 @@ impl ParameterPrinter for MapParameterPrinter {
     }
 
     fn end(&self, state: &mut ParameterPrinterState) {
-        state.tty.print_text(b") ");
+        state.tty.print_text(b")");
+    }
+
+    fn subcomponent_start(&self, state: &mut ParameterPrinterState) {
+        state.active_state().flip_flop = !state.active_state().flip_flop;
+
+        if state.active_state().flip_flop {
+            state.tty.print_byte(b'{');
+        }
     }
 
     fn subcomponent_end(&self, state: &mut ParameterPrinterState) {
-        state.tty.print_text(b", ");
+        if !state.active_state().flip_flop {
+            state.tty.print_text(b"}, ");
+        } else {
+            state.tty.print_text(b", ");
+        }
     }
 }

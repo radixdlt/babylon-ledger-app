@@ -1,11 +1,8 @@
-use staticvec::StaticVec;
-
 use crate::print::parameter_printer::ParameterPrinter;
 use crate::print::state::ParameterPrinterState;
 use crate::sbor_decoder::SborEvent;
 use crate::type_info::{to_type_name, TYPE_U8};
 
-// Printer for various arrays
 pub struct ArrayParameterPrinter {}
 
 pub const ARRAY_PARAMETER_PRINTER: ArrayParameterPrinter = ArrayParameterPrinter {};

@@ -1,15 +1,12 @@
 use crate::bech32::network::*;
-use crate::instruction::{InstructionInfo, ParameterType};
+use crate::instruction::InstructionInfo;
 use crate::instruction_extractor::{ExtractorEvent, InstructionHandler};
-use crate::print::access_rule::ACCESS_RULE_PARAMETER_PRINTER;
 use crate::print::address::*;
 use crate::print::array::*;
 use crate::print::custom_types::*;
 use crate::print::decimals::*;
 use crate::print::enums::*;
-use crate::print::manifest_value::*;
 use crate::print::map::MAP_PARAMETER_PRINTER;
-use crate::print::method_key::*;
 use crate::print::non_fungible::*;
 use crate::print::parameter_printer::ParameterPrinter;
 use crate::print::primitives::*;
@@ -21,7 +18,6 @@ use crate::type_info::*;
 
 pub struct InstructionPrinter<'a> {
     active_instruction: Option<InstructionInfo>,
-    instruction_printer: Option<&'static dyn ParameterPrinter>,
     state: ParameterPrinterState<'a>,
 }
 
@@ -29,17 +25,16 @@ impl InstructionHandler for InstructionPrinter<'_> {
     fn handle(&mut self, event: ExtractorEvent) {
         match event {
             ExtractorEvent::InstructionStart(info) => self.start_instruction(info),
-            ExtractorEvent::ParameterStart(event, ordinal, ..) => {
-                self.parameter_start(event, ordinal)
+            ExtractorEvent::ParameterStart(event, ..) => {
+                self.parameter_start(event)
             }
             ExtractorEvent::ParameterData(data) => self.parameter_data(data),
             ExtractorEvent::ParameterEnd(event, ..) => self.parameter_end(event),
             ExtractorEvent::InstructionEnd => self.instruction_end(),
-            // TODO: decide what to do with these cases
-            ExtractorEvent::WrongParameterCount(_, _) => {}
-            ExtractorEvent::UnknownInstruction(_) => {}
-            ExtractorEvent::InvalidEventSequence => {}
-            ExtractorEvent::UnknownParameterType(_) => {}
+            // Error conditions
+            ExtractorEvent::UnknownInstruction(..)
+            | ExtractorEvent::InvalidEventSequence
+            | ExtractorEvent::UnknownParameterType(..) => self.handle_error(),
         }
     }
 }
@@ -48,13 +43,18 @@ impl<'a> InstructionPrinter<'a> {
     pub fn new(tty: &'a mut dyn TTY, network_id: NetworkId) -> Self {
         Self {
             active_instruction: None,
-            instruction_printer: None,
             state: ParameterPrinterState::new(network_id, tty),
         }
     }
 
     pub fn set_network(&mut self, network_id: NetworkId) {
         self.state.set_network(network_id);
+    }
+
+    pub fn handle_error(&mut self) {
+        self.state.tty.start();
+        self.state.tty.print_text(b"Unable to decode transaction intent. Either, input is invalid or application is outdated.");
+        self.state.tty.end();
     }
 
     pub fn start_instruction(&mut self, info: InstructionInfo) {
@@ -70,16 +70,9 @@ impl<'a> InstructionPrinter<'a> {
         }
 
         self.active_instruction = None;
-        self.instruction_printer = None;
     }
 
-    pub fn parameter_start(&mut self, event: SborEvent, ordinal: u32) {
-        self.instruction_printer = self
-            .active_instruction
-            .filter(|info| (info.params.len() as u32) > ordinal)
-            .map(|info| info.params[ordinal as usize])
-            .map(|param_type| get_printer_for_type(param_type));
-
+    pub fn parameter_start(&mut self, event: SborEvent) {
         self.parameter_data(event);
     }
 
@@ -113,7 +106,7 @@ impl<'a> InstructionPrinter<'a> {
                     .handle_data(&mut self.state, source_event);
             }
             SborEvent::End {
-                type_id,
+                type_id: _,
                 nesting_level,
             } => {
                 self.get_printer().end(&mut self.state);
@@ -141,7 +134,6 @@ impl<'a> InstructionPrinter<'a> {
 
     pub fn parameter_end(&mut self, event: SborEvent) {
         self.parameter_data(event);
-        self.state.tty.print_space();
         self.state.reset();
     }
 
@@ -182,32 +174,6 @@ pub fn get_printer_for_discriminator(discriminator: u8) -> &'static dyn Paramete
     }
 }
 
-//TODO: get rid of this method???
-fn get_printer_for_type(param_type: ParameterType) -> &'static dyn ParameterPrinter {
-    match param_type {
-        ParameterType::Ignored => &IGNORED_PARAMETER_PRINTER,
-        ParameterType::AccessRule => &ACCESS_RULE_PARAMETER_PRINTER,
-        ParameterType::AccessRulesConfig => &IGNORED_PARAMETER_PRINTER,
-        ParameterType::MethodKey => &METHOD_KEY_PARAMETER_PRINTER,
-        ParameterType::BTreeMapByStringToRoyaltyConfig => &IGNORED_PARAMETER_PRINTER,
-        ParameterType::BTreeMapByStringToString => &IGNORED_PARAMETER_PRINTER,
-        ParameterType::BTreeSetOfNonFungibleLocalId => &ARRAY_PARAMETER_PRINTER,
-        ParameterType::ComponentAddress => &ADDRESS_PARAMETER_PRINTER,
-        ParameterType::Decimal => &DECIMAL_PARAMETER_PRINTER,
-        ParameterType::ManifestAddress => &ADDRESS_PARAMETER_PRINTER,
-        ParameterType::ManifestBlobRef => &BLOB_PARAMETER_PRINTER,
-        ParameterType::ManifestBucket => &U32_PARAMETER_PRINTER,
-        ParameterType::ManifestProof => &U32_PARAMETER_PRINTER,
-        ParameterType::ManifestValue => &MANIFEST_VALUE_PARAMETER_PRINTER,
-        ParameterType::PackageAddress => &ADDRESS_PARAMETER_PRINTER,
-        ParameterType::ResourceAddress => &ADDRESS_PARAMETER_PRINTER,
-        ParameterType::RoyaltyConfig => &IGNORED_PARAMETER_PRINTER,
-        ParameterType::String => &STRING_PARAMETER_PRINTER,
-        ParameterType::ObjectId => &OBJECT_ID_PARAMETER_PRINTER,
-        ParameterType::U8 => &U8_PARAMETER_PRINTER,
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use core::cmp::min;
@@ -227,6 +193,9 @@ mod tests {
     impl TTY for TestPrinter {
         fn print_byte(&mut self, byte: u8) {
             print!("{}", char::from(byte));
+        }
+
+        fn start(&mut self) {
         }
 
         fn end(&mut self) {

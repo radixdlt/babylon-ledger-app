@@ -1,9 +1,9 @@
 const HEX_DIGITS: [u8; 16] = *b"0123456789abcdef";
 
 pub trait TTY {
-    fn start(&mut self) {} //Begin new line
-    fn end(&mut self) {} //End of line
-    fn print_byte(&mut self, byte: u8) {}
+    fn start(&mut self);                //Begin new line
+    fn end(&mut self);                  //End of line
+    fn print_byte(&mut self, byte: u8);
 
     fn print_space(&mut self) {
         self.print_byte(b' ');

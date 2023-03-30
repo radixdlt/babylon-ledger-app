@@ -59,6 +59,6 @@ fn format_address(state: &mut ParameterPrinterState, hrp_prefix: &str) {
             state.tty.print_text(encoder.encoded());
             state.tty.print_byte(b')');
         }
-        Err(err) => state.tty.print_text(b"Address(bech32 error)"),
+        Err(..) => state.tty.print_text(b"Address(<bech32 error>)"),
     }
 }

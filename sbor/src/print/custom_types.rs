@@ -12,17 +12,9 @@ pub struct UintParameterPrinter {
     name: &'static [u8],
 }
 
-pub const OBJECT_ID_PARAMETER_PRINTER: HexParameterPrinter =
-    HexParameterPrinter { name: b"ObjectId" };
-
 pub const BLOB_PARAMETER_PRINTER: HexParameterPrinter = HexParameterPrinter { name: b"Blob" };
-
-pub const EXPRESSION_PARAMETER_PRINTER: HexParameterPrinter = HexParameterPrinter {
-    name: b"Expression",
-};
-
+pub const EXPRESSION_PARAMETER_PRINTER: HexParameterPrinter = HexParameterPrinter { name: b"Expression" };
 pub const BUCKET_PARAMETER_PRINTER: UintParameterPrinter = UintParameterPrinter { name: b"Bucket" };
-
 pub const PROOF_PARAMETER_PRINTER: UintParameterPrinter = UintParameterPrinter { name: b"Proof" };
 
 impl ParameterPrinter for HexParameterPrinter {
@@ -36,6 +28,7 @@ impl ParameterPrinter for HexParameterPrinter {
         state.tty.print_text(self.name);
         state.tty.print_byte(b'(');
     }
+
     fn end(&self, state: &mut ParameterPrinterState) {
         state.tty.print_byte(b')');
     }

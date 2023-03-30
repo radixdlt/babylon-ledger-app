@@ -78,36 +78,10 @@ pub enum Instruction {
     CallMethod, // { component_address: ComponentAddress, method_name: String, args: ManifestValue, },
 }
 
-#[repr(u8)]
-#[derive(Copy, Clone, Debug)]
-pub enum ParameterType {
-    Ignored,
-    AccessRule,
-    AccessRulesConfig,
-    BTreeMapByStringToRoyaltyConfig, // Royalty config
-    BTreeMapByStringToString,        // Metadata
-    BTreeSetOfNonFungibleLocalId,
-    ComponentAddress,
-    Decimal,
-    ManifestAddress,
-    ManifestBlobRef,
-    ManifestBucket,
-    ManifestProof,
-    ManifestValue,
-    MethodKey,
-    PackageAddress,
-    ResourceAddress,
-    RoyaltyConfig,
-    String,
-    ObjectId,
-    U8,
-}
-
 #[derive(Copy, Clone, Debug)]
 pub struct InstructionInfo {
     pub instruction: Instruction,
     pub name: &'static [u8],
-    pub params: &'static [ParameterType],
 }
 
 pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
@@ -115,220 +89,142 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
         TAKE_FROM_WORKTOP => Some(InstructionInfo {
             instruction: Instruction::TakeFromWorktop,
             name: b"TakeFromWorktop",
-            params: &[ParameterType::ResourceAddress],
         }),
         TAKE_FROM_WORKTOP_BY_AMOUNT => Some(InstructionInfo {
             instruction: Instruction::TakeFromWorktopByAmount,
             name: b"TakeFromWorktopByAmount",
-            params: &[ParameterType::Decimal, ParameterType::ResourceAddress],
         }),
         TAKE_FROM_WORKTOP_BY_IDS => Some(InstructionInfo {
             instruction: Instruction::TakeFromWorktopByIds,
             name: b"TakeFromWorktopByIds",
-            params: &[
-                ParameterType::BTreeSetOfNonFungibleLocalId,
-                ParameterType::ResourceAddress,
-            ],
         }),
         RETURN_TO_WORKTOP => Some(InstructionInfo {
             instruction: Instruction::ReturnToWorktop,
             name: b"ReturnToWorktop",
-            params: &[ParameterType::ManifestBucket],
         }),
         ASSERT_WORKTOP_CONTAINS => Some(InstructionInfo {
             instruction: Instruction::AssertWorktopContains,
             name: b"AssertWorktopContains",
-            params: &[ParameterType::ResourceAddress],
         }),
         ASSERT_WORKTOP_CONTAINS_BY_AMOUNT => Some(InstructionInfo {
             instruction: Instruction::AssertWorktopContainsByAmount,
             name: b"AssertWorktopContainsByAmount",
-            params: &[ParameterType::Decimal, ParameterType::ResourceAddress],
         }),
         ASSERT_WORKTOP_CONTAINS_BY_IDS => Some(InstructionInfo {
             instruction: Instruction::AssertWorktopContainsByIds,
             name: b"AssertWorktopContainsByIds",
-            params: &[
-                ParameterType::BTreeSetOfNonFungibleLocalId,
-                ParameterType::ResourceAddress,
-            ],
         }),
         POP_FROM_AUTH_ZONE => Some(InstructionInfo {
             instruction: Instruction::PopFromAuthZone,
             name: b"PopFromAuthZone",
-            params: &[],
         }),
         PUSH_TO_AUTH_ZONE => Some(InstructionInfo {
             instruction: Instruction::PushToAuthZone,
             name: b"PushToAuthZone",
-            params: &[ParameterType::ManifestProof],
         }),
         CLEAR_AUTH_ZONE => Some(InstructionInfo {
             instruction: Instruction::ClearAuthZone,
             name: b"ClearAuthZone",
-            params: &[],
         }),
         CREATE_PROOF_FROM_AUTH_ZONE => Some(InstructionInfo {
             instruction: Instruction::CreateProofFromAuthZone,
             name: b"CreateProofFromAuthZone",
-            params: &[ParameterType::ResourceAddress],
         }),
         CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT => Some(InstructionInfo {
             instruction: Instruction::CreateProofFromAuthZoneByAmount,
             name: b"CreateProofFromAuthZoneByAmount",
-            params: &[ParameterType::Decimal, ParameterType::ResourceAddress],
         }),
         CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS => Some(InstructionInfo {
             instruction: Instruction::CreateProofFromAuthZoneByIds,
             name: b"CreateProofFromAuthZoneByIds",
-            params: &[
-                ParameterType::BTreeSetOfNonFungibleLocalId,
-                ParameterType::ResourceAddress,
-            ],
         }),
         CREATE_PROOF_FROM_BUCKET => Some(InstructionInfo {
             instruction: Instruction::CreateProofFromBucket,
             name: b"CreateProofFromBucket",
-            params: &[ParameterType::ManifestBucket],
         }),
         CLONE_PROOF => Some(InstructionInfo {
             instruction: Instruction::CloneProof,
             name: b"CloneProof",
-            params: &[ParameterType::ManifestProof],
         }),
         DROP_PROOF => Some(InstructionInfo {
             instruction: Instruction::DropProof,
             name: b"DropProof",
-            params: &[ParameterType::ManifestProof],
         }),
         DROP_ALL_PROOFS => Some(InstructionInfo {
             instruction: Instruction::DropAllProofs,
             name: b"DropAllProofs",
-            params: &[],
         }),
         CLEAR_SIGNATURE_PROOFS => Some(InstructionInfo {
             instruction: Instruction::ClearSignatureProofs,
             name: b"ClearSignatureProofs",
-            params: &[],
         }),
         PUBLISH_PACKAGE => Some(InstructionInfo {
             instruction: Instruction::PublishPackage,
             name: b"PublishPackage",
-            params: &[
-                ParameterType::ManifestBlobRef,
-                ParameterType::ManifestBlobRef,
-                ParameterType::BTreeMapByStringToRoyaltyConfig,
-                ParameterType::BTreeMapByStringToString,
-            ],
         }),
         PUBLISH_PACKAGE_ADVANCED => Some(InstructionInfo {
             instruction: Instruction::PublishPackage,
             name: b"PublishPackage",
-            params: &[
-                ParameterType::ManifestBlobRef,
-                ParameterType::ManifestBlobRef,
-                ParameterType::BTreeMapByStringToRoyaltyConfig,
-                ParameterType::BTreeMapByStringToString,
-                ParameterType::AccessRulesConfig,
-            ],
         }),
         BURN_RESOURCE => Some(InstructionInfo {
             instruction: Instruction::BurnResource,
             name: b"BurnResource",
-            params: &[ParameterType::ManifestBucket],
         }),
         RECALL_RESOURCE => Some(InstructionInfo {
             instruction: Instruction::RecallResource,
             name: b"RecallResource",
-            params: &[ParameterType::ObjectId, ParameterType::Decimal],
         }),
         SET_METADATA => Some(InstructionInfo {
             instruction: Instruction::SetMetadata,
             name: b"SetMetadata",
-            params: &[
-                ParameterType::ManifestAddress,
-                ParameterType::String,
-                ParameterType::String,
-            ],
         }),
         REMOVE_METADATA => Some(InstructionInfo {
             instruction: Instruction::RemoveMetadata,
             name: b"RemoveMetadata",
-            params: &[ParameterType::ManifestAddress, ParameterType::String],
         }),
         SET_PACKAGE_ROYALTY_CONFIG => Some(InstructionInfo {
             instruction: Instruction::SetPackageRoyaltyConfig,
             name: b"SetPackageRoyaltyConfig",
-            params: &[
-                ParameterType::PackageAddress,
-                ParameterType::BTreeMapByStringToRoyaltyConfig,
-            ],
         }),
         SET_COMPONENT_ROYALTY_CONFIG => Some(InstructionInfo {
             instruction: Instruction::SetComponentRoyaltyConfig,
             name: b"SetComponentRoyaltyConfig",
-            params: &[
-                ParameterType::ComponentAddress,
-                ParameterType::RoyaltyConfig,
-            ],
         }),
         CLAIM_PACKAGE_ROYALTY => Some(InstructionInfo {
             instruction: Instruction::ClaimPackageRoyalty,
             name: b"ClaimPackageRoyalty",
-            params: &[ParameterType::PackageAddress],
         }),
         CLAIM_COMPONENT_ROYALTY => Some(InstructionInfo {
             instruction: Instruction::ClaimComponentRoyalty,
             name: b"ClaimComponentRoyalty",
-            params: &[ParameterType::ComponentAddress],
         }),
         SET_METHOD_ACCESS_RULE => Some(InstructionInfo {
             instruction: Instruction::SetMethodAccessRule,
             name: b"SetMethodAccessRule",
-            params: &[
-                ParameterType::ManifestAddress,
-                ParameterType::MethodKey,
-                ParameterType::AccessRule,
-            ],
         }),
         MINT_FUNGIBLE => Some(InstructionInfo {
             instruction: Instruction::MintFungible,
             name: b"MintFungible",
-            params: &[ParameterType::ResourceAddress, ParameterType::Decimal],
         }),
         MINT_NON_FUNGIBLE => Some(InstructionInfo {
             instruction: Instruction::MintNonFungible,
             name: b"MintNonFungible",
-            params: &[ParameterType::ResourceAddress, ParameterType::ManifestValue],
         }),
         MINT_UUID_NON_FUNGIBLE => Some(InstructionInfo {
             instruction: Instruction::MintUuidNonFungible,
             name: b"MintUuidNonFungible",
-            params: &[ParameterType::ResourceAddress, ParameterType::ManifestValue],
         }),
         ASSERT_ACCESS_RULE => Some(InstructionInfo {
             instruction: Instruction::AssertAccessRule,
             name: b"CreateIdentity",
-            params: &[ParameterType::AccessRule],
         }),
         CALL_FUNCTION => Some(InstructionInfo {
             instruction: Instruction::CallFunction,
             name: b"CallFunction",
-            params: &[
-                ParameterType::PackageAddress,
-                ParameterType::String,
-                ParameterType::String,
-                ParameterType::ManifestValue,
-            ],
         }),
         CALL_METHOD => Some(InstructionInfo {
             instruction: Instruction::CallMethod,
             name: b"CallMethod",
-            params: &[
-                ParameterType::ComponentAddress,
-                ParameterType::String,
-                ParameterType::ManifestValue,
-            ],
         }),
         _ => None,
     }

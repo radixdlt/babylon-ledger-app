@@ -8,6 +8,7 @@ pub struct ValueState {
     pub main_type_id: u8,    // Outer type ID at current nesting level
     pub key_type_id: u8,     // Map key type ID; Resource ID for HRP; Discriminator for enums
     pub element_type_id: u8, // Map value type ID; Array/Tuple/Enum - element type ID
+    pub flip_flop: bool,     // Used for printing map keys and values
 }
 
 impl ValueState {
@@ -16,6 +17,7 @@ impl ValueState {
             main_type_id,
             key_type_id: 0,
             element_type_id: 0,
+            flip_flop: false,
         }
     }
 }

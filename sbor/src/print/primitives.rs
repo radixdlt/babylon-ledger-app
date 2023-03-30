@@ -17,9 +17,10 @@ impl ParameterPrinter for IgnoredParameter {
     fn handle_data(&self, _state: &mut ParameterPrinterState, _event: SborEvent) {}
 
     fn end(&self, state: &mut ParameterPrinterState) {
-        state.tty.print_text("<not decoded>".as_bytes())
+        state.tty.print_text("<UNKNOWN TYPE>".as_bytes())
     }
 }
+
 // BOOL parameter printer
 pub struct BoolParameterPrinter {}
 
@@ -48,6 +49,32 @@ impl ParameterPrinter for BoolParameterPrinter {
     }
 }
 
+// String parameter printer
+pub struct StringParameterPrinter {}
+
+pub const STRING_PARAMETER_PRINTER: StringParameterPrinter = StringParameterPrinter {};
+
+impl ParameterPrinter for StringParameterPrinter {
+    fn handle_data(&self, state: &mut ParameterPrinterState, event: SborEvent) {
+        if let SborEvent::Data(byte) = event {
+            //TODO: split longer strings into chunks; keep in mind utf8 boundaries
+            state.push_byte(byte);
+        }
+    }
+
+    fn end(&self, state: &mut ParameterPrinterState) {
+        match from_utf8(state.data.as_slice()) {
+            Ok(message) => {
+                state.tty.print_byte(b'"');
+                state.tty.print_text(message.as_bytes());
+                state.tty.print_byte(b'"');
+            }
+            Err(_) => state.tty.print_text(b"<String decoding error>"),
+        }
+    }
+}
+
+// Integers, signed and unsigned
 macro_rules! printer_for_type {
     ($type:ty) => {
         paste! {
@@ -93,28 +120,3 @@ printer_for_type!(i16);
 printer_for_type!(i32);
 printer_for_type!(i64);
 printer_for_type!(i128);
-
-// String parameter printer
-pub struct StringParameterPrinter {}
-
-pub const STRING_PARAMETER_PRINTER: StringParameterPrinter = StringParameterPrinter {};
-
-impl ParameterPrinter for StringParameterPrinter {
-    fn handle_data(&self, state: &mut ParameterPrinterState, event: SborEvent) {
-        if let SborEvent::Data(byte) = event {
-            //TODO: split longer strings into chunks; keep in mind utf8 boundaries
-            state.push_byte(byte);
-        }
-    }
-
-    fn end(&self, state: &mut ParameterPrinterState) {
-        match from_utf8(state.data.as_slice()) {
-            Ok(message) => {
-                state.tty.print_byte(b'"');
-                state.tty.print_text(message.as_bytes());
-                state.tty.print_byte(b'"');
-            }
-            Err(_) => state.tty.print_text(b"<String decoding error>"),
-        }
-    }
-}
