@@ -40,15 +40,22 @@ impl SignFlowState {
     ) -> Result<(), AppError> {
         self.validate(class, tx_type)?;
 
-        if class == CommandClass::Regular {
-            let path = Bip32Path::read(comm).and_then(|path| path.validate())?;
-            self.start(tx_type, path);
+        match class {
+            CommandClass::Regular => {
+                let path = Bip32Path::read(comm).and_then(|path| path.validate())?;
+                self.start(tx_type, path);
+            }
+
+            CommandClass::Continuation | CommandClass::LastData => {
+                let data = comm.get_data()?;
+                self.update_counters(data.len());
+                self.hasher.update(data)?;
+            }
+
+            CommandClass::Unknown => {
+                return Err(AppError::BadTxSignSequence);
+            }
         }
-
-        let data = comm.get_data()?;
-        self.update_counters(data.len());
-        self.hasher.update(data)?;
-
         Ok(())
     }
 
@@ -291,17 +298,21 @@ impl<'a> TxSignState<'a> {
         class: CommandClass,
         outcome: DecodingOutcome,
     ) -> Result<(), AppError> {
-        match outcome {
-            DecodingOutcome::Done(size)
-                if size == self.processor.tx_size() && class == CommandClass::LastData =>
+        match (outcome, class) {
+            // Decoding done and it was last data packet
+            (DecodingOutcome::Done(size), CommandClass::LastData)
+                if size == self.processor.tx_size() =>
             {
                 Ok(())
             }
-            DecodingOutcome::NeedMoreData(size)
-                if size == self.processor.tx_size() && class == CommandClass::Continuation =>
+            // Decoding is incomplete and it was first packet or continuation packet
+            (DecodingOutcome::NeedMoreData(size), CommandClass::Regular)
+            | (DecodingOutcome::NeedMoreData(size), CommandClass::Continuation)
+                if size == self.processor.tx_size() =>
             {
                 Ok(())
             }
+            // All other combinations are invalid
             _ => Err(AppError::BadTxSignLen),
         }
     }

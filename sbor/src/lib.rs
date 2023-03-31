@@ -69,3 +69,4 @@ pub mod type_info;
 
 #[cfg(test)]
 pub mod tx_intent_test_data;
+pub mod tx_intent_test_data_gen;

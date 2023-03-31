@@ -177,6 +177,7 @@ pub fn get_printer_for_discriminator(discriminator: u8) -> &'static dyn Paramete
 #[cfg(test)]
 mod tests {
     use core::cmp::min;
+    use staticvec::StaticVec;
 
     use crate::bech32::network::NetworkId;
     use crate::instruction::Instruction;
@@ -187,8 +188,20 @@ mod tests {
 
     use super::*;
 
-    #[derive(Copy, Clone)]
-    struct TestPrinter {}
+    const OUTPUT_SIZE: usize = 400;
+
+    #[derive(Clone)]
+    struct TestPrinter {
+        content: StaticVec<u8, OUTPUT_SIZE>,
+    }
+
+    impl TestPrinter {
+        pub fn new() -> Self {
+            Self {
+                content: StaticVec::new(),
+            }
+        }
+    }
 
     impl TTY for TestPrinter {
         fn print_byte(&mut self, byte: u8) {
@@ -271,7 +284,7 @@ mod tests {
     const CHUNK_SIZE: usize = 255;
 
     fn check_partial_decoding(input: &[u8], expected_instructions: &[Instruction]) {
-        let mut tty = TestPrinter {};
+        let mut tty = TestPrinter::new();
         let mut decoder = SborDecoder::new(true);
         let mut handler = InstructionProcessor::new(&mut tty);
 

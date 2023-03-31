@@ -51,8 +51,10 @@ pub fn dispatcher(comm: &mut Comm, ins: Command, state: &mut TxSignState) -> Res
         Command::GetPrivKeyEd25519 => get_private_key_ed25519::handle(comm)?,
         Command::GetPubKeySecp256k1 => get_public_key_secp256k1::handle(comm)?,
         Command::GetPrivKeySecp256k1 => get_private_key_secp256k1::handle(comm)?,
-        Command::SignTxEd25519 => sign_tx_ed25519::handle(comm, class, state)?,
-        Command::SignTxSecp256k1 => sign_tx_secp256k1::handle(comm, class, state)?,
+        // TODO: temporarily handled by the same function as the non-smart version
+        Command::SignTxEd25519 | Command::SignTxEd25519Smart=> sign_tx_ed25519::handle(comm, class, state)?,
+        // TODO: temporarily handled by the same function as the non-smart version
+        Command::SignTxSecp256k1 | Command::SignTxSecp256k1Smart => sign_tx_secp256k1::handle(comm, class, state)?,
         Command::BadCommand => Err(AppError::NotImplemented)?,
         Command::Exit => nanos_sdk::exit_app(0),
     }
