@@ -25,7 +25,6 @@ def encodeBip32(path):
 def call_and_check(path, expected_pub_key):
     data = encodeBip32(path)
     data_length = int(len(data) / 2).to_bytes(1, 'little').hex()
-
     response = dongle.exchange(bytes.fromhex(instructionClass + instructionCode + p1 + p2 + data_length + data))
     pk = response.hex()
     assert pk == expected_pub_key, "Invalid public key\nExpected: " + expected_pub_key + "\nReceived: " + pk

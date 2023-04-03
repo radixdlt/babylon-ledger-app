@@ -18,7 +18,7 @@ p1 = "00"
 p2 = "00"
 dataLength = "00"
 
-print("Testing", "SignTx", instructionCode, end=" ")
+print("Testing", "SignTx", instructionCode)
 
 
 def list_files():
@@ -31,7 +31,8 @@ def list_files():
 
 
 def read_file(file):
-    with open(file, "r") as f:
+    print("Reading ", file)
+    with open(file, "rb") as f:
         return f.read()
 
 
@@ -46,32 +47,32 @@ def encode_bip32(path):
 
 
 def send_tx_intent(txn):
-    num_chunks = len(txn) // 255
+    num_chunks = len(txn) // 255 + 1
+    print("Sending txn (", len(txn), " bytes, ", num_chunks, " chunk(s))")
     for i in range(num_chunks):
         chunk = txn[i * 255:(i + 1) * 255]
-
         cls = "AC" if i == num_chunks - 1 else "AB"
+        data_length = len(chunk).to_bytes(1, 'little').hex()
 
-        rc = dongle.exchange(bytes.fromhex(cls + instructionCode + p1 + p2 + "{:02x}".format(len(chunk) // 2) + chunk))
+        print("Chunk:", i, "data:", chunk.hex(), "len:", data_length, "cls:", cls)
 
-        return rc
+        dongle.exchange(bytes.fromhex(cls + instructionCode + p1 + p2 + data_length + chunk.hex()))
+    return "9000"
 
 
 def send_derivation_path(bip_path):
     path_data = encode_bip32(bip_path)
-    data_length = int(len(data) / 2).to_bytes(1, 'little').hex()
+    data_length = int(len(path_data) / 2).to_bytes(1, 'little').hex()
+    print("Sending derivation path: ", bip_path, ", data_len = ", data_length)
 
-    rc = dongle.exchange(bytes.fromhex(instructionClass + instructionCode + p1 + p2 + data_length + path_data))
-
-    if rc.hex() != "9000":
-        raise Exception("Unexpected response code: " + rc.hex())
+    return dongle.exchange(bytes.fromhex(instructionClass + instructionCode + p1 + p2 + data_length + path_data))
 
 
 for file_name in list_files():
-    if not file_name.endswith(".txn"):
+    if not file_name.endswith("call_method.txn"):
         continue
     data = read_file(file_name)
     send_derivation_path("m/44H/1022H/10H/525H/0H/1238H")
-    send_tx_intent(data)
+    rc = send_tx_intent(data)
 
 print("Success")

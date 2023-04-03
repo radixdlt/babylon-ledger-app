@@ -38,15 +38,15 @@ impl SignFlowState {
         class: CommandClass,
         tx_type: SignTxType,
     ) -> Result<(), AppError> {
-        self.validate(class, tx_type)?;
-
         match class {
             CommandClass::Regular => {
                 let path = Bip32Path::read(comm).and_then(|path| path.validate())?;
                 self.start(tx_type, path);
+                self.update_counters(0); // First packet contains no data
             }
 
             CommandClass::Continuation | CommandClass::LastData => {
+                self.validate(class, tx_type)?;
                 let data = comm.get_data()?;
                 self.update_counters(data.len());
                 self.hasher.update(data)?;
@@ -95,7 +95,7 @@ impl SignFlowState {
         sign_type: SignTxType,
     ) -> Result<(), AppError> {
         if self.sign_type != sign_type {
-            return Err(AppError::BadTxSignState);
+            return Err(AppError::BadTxSignType);
         }
 
         match class {
@@ -106,7 +106,7 @@ impl SignFlowState {
 
     fn validate_initial(&self, class: CommandClass) -> Result<(), AppError> {
         if self.sign_type != SignTxType::None {
-            return Err(AppError::BadTxSignState);
+            return Err(AppError::BadTxSignInitialState);
         }
 
         if class != CommandClass::Regular {
@@ -120,7 +120,7 @@ impl SignFlowState {
         self.validate_digest(tx_type, digest)?;
 
         match tx_type {
-            SignTxType::None => return Err(AppError::BadTxSignState),
+            SignTxType::None => return Err(AppError::BadTxSignStart),
             SignTxType::Ed25519 => KeyPair25519::derive(&self.path)
                 .and_then(|keypair| keypair.sign(digest.as_bytes()))
                 .map(|signature| {
@@ -151,7 +151,7 @@ impl SignFlowState {
         match (tx_type, digest.hash_type()) {
             (SignTxType::Ed25519, HashType::SHA512) => Ok(()),
             (SignTxType::Secp256k1, HashType::DoubleSHA256) => Ok(()),
-            _ => Err(AppError::BadTxSignState),
+            _ => Err(AppError::BadTxSignDigestState),
         }
     }
 }
@@ -263,7 +263,10 @@ impl<'a> TxSignState<'a> {
         tx_type: SignTxType,
     ) -> Result<SignOutcome, AppError> {
         self.processor.process_data(comm, class, tx_type)?;
-        self.decode_tx_intent(comm.get_data()?, class)?;
+
+        if class != CommandClass::Regular {
+            self.decode_tx_intent(comm.get_data()?, class)?;
+        }
 
         if class == CommandClass::LastData {
             self.finalize_sign_tx(tx_type)
