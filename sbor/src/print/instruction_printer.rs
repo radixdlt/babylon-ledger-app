@@ -1,6 +1,5 @@
 use core::str::from_utf8;
 use crate::bech32::network::*;
-use crate::debug::{debug_print, debug_print_byte};
 use crate::instruction::InstructionInfo;
 use crate::instruction_extractor::{ExtractorEvent, InstructionHandler};
 use crate::print::address::*;
@@ -25,7 +24,6 @@ pub struct InstructionPrinter<'a> {
 
 impl InstructionHandler for InstructionPrinter<'_> {
     fn handle(&mut self, event: ExtractorEvent) {
-        debug_print("InstructionPrinter::handle start\n");
         match event {
             ExtractorEvent::InstructionStart(info) => self.start_instruction(info),
             ExtractorEvent::ParameterStart(event, ..) => {
@@ -39,7 +37,6 @@ impl InstructionHandler for InstructionPrinter<'_> {
             | ExtractorEvent::InvalidEventSequence
             | ExtractorEvent::UnknownParameterType(..) => self.handle_error(),
         };
-        debug_print("InstructionPrinter::handle end\n");
     }
 }
 
@@ -81,9 +78,7 @@ impl<'a> InstructionPrinter<'a> {
     }
 
     pub fn parameter_start(&mut self, event: SborEvent) {
-        debug_print("InstructionPrinter::parameter_start start\n");
         self.parameter_data(event);
-        debug_print("InstructionPrinter::parameter_start end\n");
     }
 
     pub fn parameter_data(&mut self, source_event: SborEvent) {
@@ -93,64 +88,44 @@ impl<'a> InstructionPrinter<'a> {
                 nesting_level,
                 ..
             } => {
-                debug_print("InstructionPrinter::parameter_data start::Start\n");
                 if self.state.stack.is_not_empty() {
-                    debug_print("InstructionPrinter::parameter_data start::Start::subcomponent_start\n");
-                    self.get_printer().subcomponent_start(&mut self.state);
-                    debug_print("InstructionPrinter::parameter_data start::Start::subcomponent_start::end\n");
-                } else {
-                    debug_print("InstructionPrinter::parameter_data start::Start::stack is empty\n");
+                    Dispatcher::subcomponent_start(&mut self.state);
                 }
 
-                debug_print("InstructionPrinter::parameter_data start::Start::start\n");
-
                 self.state.nesting_level = nesting_level;
-                debug_print("InstructionPrinter::parameter_data start::Start::push\n");
                 self.state.stack.push(ValueState::new(type_id));
-                debug_print("InstructionPrinter::parameter_data start::Start::push::end\n");
-                self.get_printer().start(&mut self.state);
-                debug_print("InstructionPrinter::parameter_data start::Start::end\n");
+                Dispatcher::start(&mut self.state);
             }
             SborEvent::ElementType { kind, type_id } => {
-                debug_print("InstructionPrinter::parameter_data start::ElementType\n");
                 match kind {
                     SubTypeKind::Key => self.active_value_state().key_type_id = type_id,
                     SubTypeKind::Value => self.active_value_state().element_type_id = type_id,
                     SubTypeKind::Element => self.active_value_state().element_type_id = type_id,
                 }
-                self.get_printer()
-                    .handle_data(&mut self.state, source_event);
-                debug_print("InstructionPrinter::parameter_data start::ElementType::end\n");
+                Dispatcher::handle_data(&mut self.state, source_event);
             }
             SborEvent::Discriminator(discriminator) => {
-                debug_print("InstructionPrinter::parameter_data start::Discriminator\n");
                 self.active_value_state().key_type_id = discriminator;
-                self.get_printer()
-                    .handle_data(&mut self.state, source_event);
-                debug_print("InstructionPrinter::parameter_data start::Discriminator::end\n");
+                Dispatcher::handle_data(&mut self.state, source_event);
             }
             SborEvent::End {
                 type_id: _,
                 nesting_level,
             } => {
-                debug_print("InstructionPrinter::parameter_data start::End\n");
-                self.get_printer().end(&mut self.state);
+                Dispatcher::end(&mut self.state);
                 self.state.nesting_level = nesting_level;
                 self.state.stack.pop().expect("Stack can't be empty");
 
                 if self.state.stack.is_not_empty() {
-                    self.get_printer().subcomponent_end(&mut self.state);
+                    Dispatcher::subcomponent_end(&mut self.state);
                 } else {
                     self.state.print_space();
                 }
 
                 self.state.data.clear();
-                debug_print("InstructionPrinter::parameter_data start::End::end\n");
             }
             _ => {
-                debug_print("InstructionPrinter::parameter_data start::default\n");
-                self.get_printer()
-                    .handle_data(&mut self.state, source_event);
+                Dispatcher::handle_data(&mut self.state, source_event);
             }
         }
     }
@@ -163,41 +138,165 @@ impl<'a> InstructionPrinter<'a> {
         self.parameter_data(event);
         self.state.reset();
     }
-
-    fn get_printer(&mut self) -> &'static dyn ParameterPrinter {
-        get_printer_for_discriminator(self.active_value_state().main_type_id)
-    }
 }
 
-pub fn get_printer_for_discriminator(discriminator: u8) -> &'static dyn ParameterPrinter {
-    match discriminator {
-        // Generic types
-        TYPE_BOOL => &BOOL_PARAMETER_PRINTER,
-        TYPE_I8 => &I8_PARAMETER_PRINTER,
-        TYPE_I16 => &I16_PARAMETER_PRINTER,
-        TYPE_I32 => &I32_PARAMETER_PRINTER,
-        TYPE_I64 => &I64_PARAMETER_PRINTER,
-        TYPE_I128 => &I128_PARAMETER_PRINTER,
-        TYPE_U8 => &U8_PARAMETER_PRINTER,
-        TYPE_U16 => &U16_PARAMETER_PRINTER,
-        TYPE_U32 => &U32_PARAMETER_PRINTER,
-        TYPE_U64 => &U64_PARAMETER_PRINTER,
-        TYPE_U128 => &U128_PARAMETER_PRINTER,
-        TYPE_STRING => &STRING_PARAMETER_PRINTER,
-        TYPE_ARRAY => &ARRAY_PARAMETER_PRINTER,
-        TYPE_TUPLE => &TUPLE_PARAMETER_PRINTER,
-        TYPE_ENUM => &ENUM_PARAMETER_PRINTER,
-        TYPE_MAP => &MAP_PARAMETER_PRINTER,
-        // Custom types
-        TYPE_ADDRESS => &ADDRESS_PARAMETER_PRINTER,
-        TYPE_BUCKET => &BUCKET_PARAMETER_PRINTER,
-        TYPE_PROOF => &PROOF_PARAMETER_PRINTER,
-        TYPE_EXPRESSION => &EXPRESSION_PARAMETER_PRINTER,
-        TYPE_BLOB => &BLOB_PARAMETER_PRINTER,
-        TYPE_DECIMAL => &DECIMAL_PARAMETER_PRINTER,
-        TYPE_PRECISE_DECIMAL => &PRECISE_DECIMAL_PARAMETER_PRINTER,
-        TYPE_NON_FUNGIBLE_LOCAL_ID => &NON_FUNGIBLE_LOCAL_ID_PARAMETER_PRINTER,
-        _ => &IGNORED_PARAMETER_PRINTER,
+struct Dispatcher;
+
+// Workaround for not working vtables
+impl Dispatcher {
+    pub fn handle_data(state: &mut ParameterPrinterState, event: SborEvent) {
+        let discriminator = state.active_state().main_type_id;
+        match discriminator {
+            TYPE_BOOL => BOOL_PARAMETER_PRINTER.handle_data(state, event),
+            TYPE_I8 => I8_PARAMETER_PRINTER.handle_data(state, event),
+            TYPE_I16 => I16_PARAMETER_PRINTER.handle_data(state, event),
+            TYPE_I32 => I32_PARAMETER_PRINTER.handle_data(state, event),
+            TYPE_I64 => I64_PARAMETER_PRINTER.handle_data(state, event),
+            TYPE_I128 => I128_PARAMETER_PRINTER.handle_data(state, event),
+            TYPE_U8 => U8_PARAMETER_PRINTER.handle_data(state, event),
+            TYPE_U16 => U16_PARAMETER_PRINTER.handle_data(state, event),
+            TYPE_U32 => U32_PARAMETER_PRINTER.handle_data(state, event),
+            TYPE_U64 => U64_PARAMETER_PRINTER.handle_data(state, event),
+            TYPE_U128 => U128_PARAMETER_PRINTER.handle_data(state, event),
+            TYPE_STRING => STRING_PARAMETER_PRINTER.handle_data(state, event),
+            TYPE_ARRAY => ARRAY_PARAMETER_PRINTER.handle_data(state, event),
+            TYPE_TUPLE => TUPLE_PARAMETER_PRINTER.handle_data(state, event),
+            TYPE_ENUM => ENUM_PARAMETER_PRINTER.handle_data(state, event),
+            TYPE_MAP => MAP_PARAMETER_PRINTER.handle_data(state, event),
+            TYPE_ADDRESS => ADDRESS_PARAMETER_PRINTER.handle_data(state, event),
+            TYPE_BUCKET => BUCKET_PARAMETER_PRINTER.handle_data(state, event),
+            TYPE_PROOF => PROOF_PARAMETER_PRINTER.handle_data(state, event),
+            TYPE_EXPRESSION => EXPRESSION_PARAMETER_PRINTER.handle_data(state, event),
+            TYPE_BLOB => BLOB_PARAMETER_PRINTER.handle_data(state, event),
+            TYPE_DECIMAL => DECIMAL_PARAMETER_PRINTER.handle_data(state, event),
+            TYPE_PRECISE_DECIMAL => PRECISE_DECIMAL_PARAMETER_PRINTER.handle_data(state, event),
+            TYPE_NON_FUNGIBLE_LOCAL_ID => NON_FUNGIBLE_LOCAL_ID_PARAMETER_PRINTER.handle_data(state, event),
+            _ => IGNORED_PARAMETER_PRINTER.handle_data(state, event),
+        };
+    }
+
+    pub fn start(state: &mut ParameterPrinterState) {
+        let discriminator = state.active_state().main_type_id;
+        match discriminator {
+            TYPE_BOOL => BOOL_PARAMETER_PRINTER.start(state),
+            TYPE_I8 => I8_PARAMETER_PRINTER.start(state),
+            TYPE_I16 => I16_PARAMETER_PRINTER.start(state),
+            TYPE_I32 => I32_PARAMETER_PRINTER.start(state),
+            TYPE_I64 => I64_PARAMETER_PRINTER.start(state),
+            TYPE_I128 => I128_PARAMETER_PRINTER.start(state),
+            TYPE_U8 => U8_PARAMETER_PRINTER.start(state),
+            TYPE_U16 => U16_PARAMETER_PRINTER.start(state),
+            TYPE_U32 => U32_PARAMETER_PRINTER.start(state),
+            TYPE_U64 => U64_PARAMETER_PRINTER.start(state),
+            TYPE_U128 => U128_PARAMETER_PRINTER.start(state),
+            TYPE_STRING => STRING_PARAMETER_PRINTER.start(state),
+            TYPE_ARRAY => ARRAY_PARAMETER_PRINTER.start(state),
+            TYPE_TUPLE => TUPLE_PARAMETER_PRINTER.start(state),
+            TYPE_ENUM => ENUM_PARAMETER_PRINTER.start(state),
+            TYPE_MAP => MAP_PARAMETER_PRINTER.start(state),
+            TYPE_ADDRESS => ADDRESS_PARAMETER_PRINTER.start(state),
+            TYPE_BUCKET => BUCKET_PARAMETER_PRINTER.start(state),
+            TYPE_PROOF => PROOF_PARAMETER_PRINTER.start(state),
+            TYPE_EXPRESSION => EXPRESSION_PARAMETER_PRINTER.start(state),
+            TYPE_BLOB => BLOB_PARAMETER_PRINTER.start(state),
+            TYPE_DECIMAL => DECIMAL_PARAMETER_PRINTER.start(state),
+            TYPE_PRECISE_DECIMAL => PRECISE_DECIMAL_PARAMETER_PRINTER.start(state),
+            TYPE_NON_FUNGIBLE_LOCAL_ID => NON_FUNGIBLE_LOCAL_ID_PARAMETER_PRINTER.start(state),
+            _ => IGNORED_PARAMETER_PRINTER.start(state),
+        };
+    }
+
+    pub fn end(state: &mut ParameterPrinterState) {
+        let discriminator = state.active_state().main_type_id;
+        match discriminator {
+            TYPE_BOOL => BOOL_PARAMETER_PRINTER.end(state),
+            TYPE_I8 => I8_PARAMETER_PRINTER.end(state),
+            TYPE_I16 => I16_PARAMETER_PRINTER.end(state),
+            TYPE_I32 => I32_PARAMETER_PRINTER.end(state),
+            TYPE_I64 => I64_PARAMETER_PRINTER.end(state),
+            TYPE_I128 => I128_PARAMETER_PRINTER.end(state),
+            TYPE_U8 => U8_PARAMETER_PRINTER.end(state),
+            TYPE_U16 => U16_PARAMETER_PRINTER.end(state),
+            TYPE_U32 => U32_PARAMETER_PRINTER.end(state),
+            TYPE_U64 => U64_PARAMETER_PRINTER.end(state),
+            TYPE_U128 => U128_PARAMETER_PRINTER.end(state),
+            TYPE_STRING => STRING_PARAMETER_PRINTER.end(state),
+            TYPE_ARRAY => ARRAY_PARAMETER_PRINTER.end(state),
+            TYPE_TUPLE => TUPLE_PARAMETER_PRINTER.end(state),
+            TYPE_ENUM => ENUM_PARAMETER_PRINTER.end(state),
+            TYPE_MAP => MAP_PARAMETER_PRINTER.end(state),
+            TYPE_ADDRESS => ADDRESS_PARAMETER_PRINTER.end(state),
+            TYPE_BUCKET => BUCKET_PARAMETER_PRINTER.end(state),
+            TYPE_PROOF => PROOF_PARAMETER_PRINTER.end(state),
+            TYPE_EXPRESSION => EXPRESSION_PARAMETER_PRINTER.end(state),
+            TYPE_BLOB => BLOB_PARAMETER_PRINTER.end(state),
+            TYPE_DECIMAL => DECIMAL_PARAMETER_PRINTER.end(state),
+            TYPE_PRECISE_DECIMAL => PRECISE_DECIMAL_PARAMETER_PRINTER.end(state),
+            TYPE_NON_FUNGIBLE_LOCAL_ID => NON_FUNGIBLE_LOCAL_ID_PARAMETER_PRINTER.end(state),
+            _ => IGNORED_PARAMETER_PRINTER.end(state),
+        };
+    }
+
+    pub fn subcomponent_start(state: &mut ParameterPrinterState) {
+        let discriminator = state.active_state().main_type_id;
+        match discriminator {
+            TYPE_BOOL => BOOL_PARAMETER_PRINTER.subcomponent_start(state),
+            TYPE_I8 => I8_PARAMETER_PRINTER.subcomponent_start(state),
+            TYPE_I16 => I16_PARAMETER_PRINTER.subcomponent_start(state),
+            TYPE_I32 => I32_PARAMETER_PRINTER.subcomponent_start(state),
+            TYPE_I64 => I64_PARAMETER_PRINTER.subcomponent_start(state),
+            TYPE_I128 => I128_PARAMETER_PRINTER.subcomponent_start(state),
+            TYPE_U8 => U8_PARAMETER_PRINTER.subcomponent_start(state),
+            TYPE_U16 => U16_PARAMETER_PRINTER.subcomponent_start(state),
+            TYPE_U32 => U32_PARAMETER_PRINTER.subcomponent_start(state),
+            TYPE_U64 => U64_PARAMETER_PRINTER.subcomponent_start(state),
+            TYPE_U128 => U128_PARAMETER_PRINTER.subcomponent_start(state),
+            TYPE_STRING => STRING_PARAMETER_PRINTER.subcomponent_start(state),
+            TYPE_ARRAY => ARRAY_PARAMETER_PRINTER.subcomponent_start(state),
+            TYPE_TUPLE => TUPLE_PARAMETER_PRINTER.subcomponent_start(state),
+            TYPE_ENUM => ENUM_PARAMETER_PRINTER.subcomponent_start(state),
+            TYPE_MAP => MAP_PARAMETER_PRINTER.subcomponent_start(state),
+            TYPE_ADDRESS => ADDRESS_PARAMETER_PRINTER.subcomponent_start(state),
+            TYPE_BUCKET => BUCKET_PARAMETER_PRINTER.subcomponent_start(state),
+            TYPE_PROOF => PROOF_PARAMETER_PRINTER.subcomponent_start(state),
+            TYPE_EXPRESSION => EXPRESSION_PARAMETER_PRINTER.subcomponent_start(state),
+            TYPE_BLOB => BLOB_PARAMETER_PRINTER.subcomponent_start(state),
+            TYPE_DECIMAL => DECIMAL_PARAMETER_PRINTER.subcomponent_start(state),
+            TYPE_PRECISE_DECIMAL => PRECISE_DECIMAL_PARAMETER_PRINTER.subcomponent_start(state),
+            TYPE_NON_FUNGIBLE_LOCAL_ID => NON_FUNGIBLE_LOCAL_ID_PARAMETER_PRINTER.subcomponent_start(state),
+            _ => IGNORED_PARAMETER_PRINTER.subcomponent_start(state),
+        };
+    }
+
+    pub fn subcomponent_end(state: &mut ParameterPrinterState) {
+        let discriminator = state.active_state().main_type_id;
+        match discriminator {
+            TYPE_BOOL => BOOL_PARAMETER_PRINTER.subcomponent_end(state),
+            TYPE_I8 => I8_PARAMETER_PRINTER.subcomponent_end(state),
+            TYPE_I16 => I16_PARAMETER_PRINTER.subcomponent_end(state),
+            TYPE_I32 => I32_PARAMETER_PRINTER.subcomponent_end(state),
+            TYPE_I64 => I64_PARAMETER_PRINTER.subcomponent_end(state),
+            TYPE_I128 => I128_PARAMETER_PRINTER.subcomponent_end(state),
+            TYPE_U8 => U8_PARAMETER_PRINTER.subcomponent_end(state),
+            TYPE_U16 => U16_PARAMETER_PRINTER.subcomponent_end(state),
+            TYPE_U32 => U32_PARAMETER_PRINTER.subcomponent_end(state),
+            TYPE_U64 => U64_PARAMETER_PRINTER.subcomponent_end(state),
+            TYPE_U128 => U128_PARAMETER_PRINTER.subcomponent_end(state),
+            TYPE_STRING => STRING_PARAMETER_PRINTER.subcomponent_end(state),
+            TYPE_ARRAY => ARRAY_PARAMETER_PRINTER.subcomponent_end(state),
+            TYPE_TUPLE => TUPLE_PARAMETER_PRINTER.subcomponent_end(state),
+            TYPE_ENUM => ENUM_PARAMETER_PRINTER.subcomponent_end(state),
+            TYPE_MAP => MAP_PARAMETER_PRINTER.subcomponent_end(state),
+            TYPE_ADDRESS => ADDRESS_PARAMETER_PRINTER.subcomponent_end(state),
+            TYPE_BUCKET => BUCKET_PARAMETER_PRINTER.subcomponent_end(state),
+            TYPE_PROOF => PROOF_PARAMETER_PRINTER.subcomponent_end(state),
+            TYPE_EXPRESSION => EXPRESSION_PARAMETER_PRINTER.subcomponent_end(state),
+            TYPE_BLOB => BLOB_PARAMETER_PRINTER.subcomponent_end(state),
+            TYPE_DECIMAL => DECIMAL_PARAMETER_PRINTER.subcomponent_end(state),
+            TYPE_PRECISE_DECIMAL => PRECISE_DECIMAL_PARAMETER_PRINTER.subcomponent_end(state),
+            TYPE_NON_FUNGIBLE_LOCAL_ID => NON_FUNGIBLE_LOCAL_ID_PARAMETER_PRINTER.subcomponent_end(state),
+            _ => IGNORED_PARAMETER_PRINTER.subcomponent_end(state),
+        };
     }
 }
 
@@ -267,11 +366,13 @@ mod tests {
 
     impl<'a> InstructionFormatter<'a> {
         pub fn new(tty: &'a mut dyn TTY) -> Self {
-            Self {
+            let mut instance = Self {
                 instruction_count: 0,
                 instructions: [Instruction::TakeFromWorktop; SIZE],
-                printer: InstructionPrinter::new(tty, NetworkId::Simulator),
-            }
+                printer: InstructionPrinter::new(NetworkId::Simulator),
+            };
+            instance.printer.set_tty(tty);
+            instance
         }
 
         pub fn verify(&self, expected: &[Instruction]) {

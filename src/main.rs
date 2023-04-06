@@ -6,20 +6,14 @@
 #![feature(asm_const)]
 #![feature(cfg_version)]
 
-use alloc::GlobalAlloc;
-use core::alloc;
-use core::mem::MaybeUninit;
-
 use nanos_sdk::buttons::ButtonEvent;
 use nanos_sdk::io::{Comm, Event};
 use nanos_ui::ui::SingleMessage;
-use sbor::print::tty::TTY;
 
 use handler::dispatcher;
 
 use crate::app_error::AppError;
 use crate::ledger_display_io::LedgerTTY;
-use crate::tx_sign_state::InstructionProcessor;
 use crate::tx_sign_state::TxSignState;
 
 mod app_error;

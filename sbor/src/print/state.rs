@@ -24,7 +24,7 @@ impl ValueState {
     }
 }
 
-pub const PARAMETER_AREA_SIZE: usize = 65;
+pub const PARAMETER_AREA_SIZE: usize = 128;
 
 pub struct ParameterPrinterState<'a> {
     pub data: StaticVec<u8, { PARAMETER_AREA_SIZE }>,
@@ -36,28 +36,23 @@ pub struct ParameterPrinterState<'a> {
 
 impl TTY for ParameterPrinterState<'_> {
     fn start(&mut self) {
-        debug_print("print_text: tty start\n");
-        match self.tty {
-            Some(_) => debug_print("print_text: tty present"),
-            None => debug_print("print_text: tty not present"),
-        };
-
+        debug_print("tty start\n");
 //        self.tty.as_mut().expect("TTY not set").start();
     }
 
     fn end(&mut self) {
-        debug_print("print_text: tty end\n");
+        debug_print("tty end\n");
         //self.tty.as_mut().expect("TTY not set").end();
     }
 
     fn print_byte(&mut self, byte: u8) {
-        debug_print("print_text: tty print_byte\n");
+        debug_print("tty print_byte: ");
         debug_print_byte(byte.clone());
         //self.tty.as_mut().expect("TTY not set").print_byte(byte);
     }
 
     fn print_text(&mut self, text: &[u8]) {
-        debug_print("print_text: tty print_text\n");
+        debug_print("tty print_text: ");
         debug_prepared_message(text);
         //self.tty.as_mut().expect("TTY not set").print_text(text);
     }
@@ -96,18 +91,23 @@ impl<'a> ParameterPrinterState<'a> {
     }
 
     pub fn print_data_as_text(&mut self) {
-        self.tty.as_mut().expect("TTY not set").print_text(self.data.as_slice());
+        debug_print("print_data_as_text: ");
+        debug_prepared_message(self.data.as_slice());
+        debug_print("\n");
+        //self.tty.as_mut().expect("TTY not set").print_text(self.data.as_slice());
     }
 
     pub fn print_data_as_hex(&mut self) {
-        for &byte in self.data.as_slice() {
-            self.tty.as_mut().expect("TTY not set").print_hex_byte(byte);
-        }
+        debug_print("print_data_as_hex\n");
+        // for &byte in self.data.as_slice() {
+        //     self.tty.as_mut().expect("TTY not set").print_hex_byte(byte);
+        // }
     }
 
     pub fn print_data_as_hex_slice(&mut self, range: Range<usize>) {
-        for &byte in &self.data.as_slice()[range] {
-            self.tty.as_mut().expect("TTY not set").print_hex_byte(byte);
-        }
+        debug_print("print_data_as_hex_slice\n");
+        // for &byte in &self.data.as_slice()[range] {
+        //     self.tty.as_mut().expect("TTY not set").print_hex_byte(byte);
+        // }
     }
 }

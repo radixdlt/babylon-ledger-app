@@ -1,6 +1,4 @@
 use crate::math::MathError;
-use core::fmt;
-use core::fmt::Write;
 use crypto_bigint::{NonZero, Zero, U512};
 use staticvec::StaticVec;
 
@@ -37,29 +35,14 @@ impl PreciseDecimal {
 
         vec
     }
-}
 
-impl TryFrom<&[u8]> for PreciseDecimal {
-    type Error = MathError;
-    fn try_from(value: &[u8]) -> Result<Self, MathError> {
-        if value.len() != U512::BYTES {
-            Err(MathError::InvalidSliceLen)
-        } else {
-            Ok(Self(U512::from_le_slice(value)))
-        }
-    }
-}
-
-impl fmt::Display for PreciseDecimal {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+    pub fn format(&self) -> StaticVec<u8, {Self::MAX_PRINT_LEN}> {
         let divisor = NonZero::new(PreciseDecimal::ONE.0).unwrap();
         let (quotent, remainder) = self.0.div_rem(&divisor);
         let whole = PreciseDecimal::fmt_uint(quotent);
         let no_decimals: bool = remainder.is_zero().into();
 
-        for byte in whole {
-            f.write_char(byte as char)?;
-        }
+        let mut output = StaticVec::<u8, { Self::MAX_PRINT_LEN }>::new_from_slice(whole.as_slice());
 
         if !no_decimals {
             let mut decimals = PreciseDecimal::fmt_uint(remainder);
@@ -74,19 +57,39 @@ impl fmt::Display for PreciseDecimal {
                 decimals.remove(decimals.len() - 1);
             }
 
-            f.write_char('.')?;
-
-            for byte in decimals {
-                f.write_char(byte as char)?;
-            }
+            output.push(b'.');
+            output.extend_from_slice(decimals.as_slice());
         }
-        Ok(())
+        output
+    }
+}
+
+impl TryFrom<&[u8]> for PreciseDecimal {
+    type Error = MathError;
+    fn try_from(value: &[u8]) -> Result<Self, MathError> {
+        if value.len() != U512::BYTES {
+            Err(MathError::InvalidSliceLen)
+        } else {
+            Ok(Self(U512::from_le_slice(value)))
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use core::fmt;
+    use core::fmt::Write;
+
+    impl fmt::Display for PreciseDecimal {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+            let formatted = self.format();
+            for byte in formatted {
+                f.write_char(byte as char)?;
+            }
+            Ok(())
+        }
+    }
 
     #[test]
     pub fn test_format_decimal() {
