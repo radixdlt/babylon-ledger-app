@@ -1,8 +1,8 @@
 use nanos_sdk::bindings::{
     CX_CARRY, CX_EC_INFINITE_POINT, CX_EC_INVALID_CURVE, CX_EC_INVALID_POINT, CX_INTERNAL_ERROR,
     CX_INVALID_PARAMETER, CX_INVALID_PARAMETER_SIZE, CX_INVALID_PARAMETER_VALUE, CX_LOCKED,
-    CX_MEMORY_FULL, CX_NOT_INVERTIBLE, CX_NOT_LOCKED, CX_NOT_UNLOCKED, CX_NO_RESIDUE, CX_OVERFLOW,
-    CX_UNLOCKED,
+    CX_MEMORY_FULL, CX_NOT_INVERTIBLE, CX_NOT_LOCKED, CX_NOT_UNLOCKED, CX_NO_RESIDUE, CX_OK,
+    CX_OVERFLOW, CX_UNLOCKED,
 };
 use nanos_sdk::io::{Reply, StatusWords};
 use sbor::decoder_error::DecoderError;
@@ -32,6 +32,7 @@ pub enum AppError {
     BadTxSignStart = 0x6e34,
     BadTxSignType = 0x6e35,
     BadTxSignDigestState = 0x6e36,
+    BadTxSignRequestedState = 0x6e37,
 
     BadTxSignDecoderErrorInvalidInput = 0x6e41,
     BadTxSignDecoderErrorInvalidLen = 0x6e42,
@@ -122,5 +123,13 @@ impl From<u32> for AppError {
             CX_UNLOCKED => AppError::CxErrorUnlocked,
             _ => AppError::Unknown,
         }
+    }
+}
+
+pub fn to_result(rc: u32) -> Result<(), AppError> {
+    if rc == CX_OK {
+        Ok(())
+    } else {
+        Err(rc.into())
     }
 }

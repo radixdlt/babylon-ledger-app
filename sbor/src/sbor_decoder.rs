@@ -2,12 +2,11 @@
 
 use crate::decoder_error::DecoderError;
 use crate::type_info::*;
-use core::default::Default;
 use core::option::Option::{None, Some};
 use core::result::Result;
 use core::result::Result::{Err, Ok};
 
-pub const STACK_DEPTH: u8 = 32;
+pub const STACK_DEPTH: u8 = 24;
 pub const SBOR_LEADING_BYTE: u8 = 77; // MANIFEST_SBOR_V1_PAYLOAD_PREFIX
 
 #[derive(Copy, Clone, Debug)]
@@ -67,8 +66,8 @@ enum FlipFlopState {
     Value,
 }
 
-impl Default for State {
-    fn default() -> Self {
+impl State {
+    const fn new() -> Self {
         Self {
             phase: DecoderPhase::ReadingTypeId,
             phase_ptr: 0,
@@ -98,9 +97,9 @@ pub struct SborDecoder {
 }
 
 impl SborDecoder {
-    pub fn new(expect_leading_byte: bool) -> Self {
+    pub const fn new(expect_leading_byte: bool) -> Self {
         Self {
-            stack: [State::default(); STACK_DEPTH as usize],
+            stack: [State::new(); STACK_DEPTH as usize],
             byte_count: 0,
             head: 0,
             expect_leading_byte: expect_leading_byte,
@@ -123,7 +122,7 @@ impl SborDecoder {
             return Err(DecoderError::StackOverflow(byte_count));
         }
         self.head += 1;
-        self.stack[self.head as usize] = State::default();
+        self.stack[self.head as usize] = State::new();
 
         Ok(())
     }

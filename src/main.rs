@@ -3,15 +3,23 @@
 #![allow(dead_code)]
 #![feature(result_option_inspect)]
 #![feature(const_cmp)]
+#![feature(asm_const)]
+#![feature(cfg_version)]
+
+use alloc::GlobalAlloc;
+use core::alloc;
+use core::mem::MaybeUninit;
 
 use nanos_sdk::buttons::ButtonEvent;
 use nanos_sdk::io::{Comm, Event};
 use nanos_ui::ui::SingleMessage;
+use sbor::print::tty::TTY;
 
 use handler::dispatcher;
 
 use crate::app_error::AppError;
 use crate::ledger_display_io::LedgerTTY;
+use crate::tx_sign_state::InstructionProcessor;
 use crate::tx_sign_state::TxSignState;
 
 mod app_error;
@@ -32,7 +40,9 @@ const APPLICATION: &str = env!("CARGO_PKG_DESCRIPTION");
 extern "C" fn sample_main() {
     let mut tty = LedgerTTY::new();
     let mut comm = Comm::new();
-    let mut state = TxSignState::new(&mut tty);
+    let mut state = TxSignState::new();
+
+    state.set_tty(&mut tty);
 
     loop {
         SingleMessage::new(APPLICATION).show();

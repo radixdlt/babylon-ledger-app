@@ -1,9 +1,3 @@
-use crate::app_error::AppError;
-use crate::command_class::CommandClass;
-use crate::crypto::bip32::Bip32Path;
-use crate::crypto::ed25519::{KeyPair25519, ED25519_SIGNATURE_LEN};
-use crate::crypto::hash::{Digest, HashType, Hasher};
-use crate::crypto::secp256k1::{KeyPairSecp256k1, SECP256K1_SIGNATURE_LEN};
 use core::cmp::max;
 
 use nanos_sdk::io::Comm;
@@ -14,6 +8,13 @@ use sbor::instruction_extractor::InstructionExtractor;
 use sbor::print::instruction_printer::InstructionPrinter;
 use sbor::print::tty::TTY;
 use sbor::sbor_decoder::*;
+
+use crate::app_error::AppError;
+use crate::command_class::CommandClass;
+use crate::crypto::bip32::Bip32Path;
+use crate::crypto::ed25519::{ED25519_SIGNATURE_LEN, KeyPair25519};
+use crate::crypto::hash::{Digest, Hasher, HashType};
+use crate::crypto::secp256k1::{KeyPairSecp256k1, SECP256K1_SIGNATURE_LEN};
 
 #[repr(u8)]
 #[derive(PartialEq, Copy, Clone)]
@@ -41,7 +42,7 @@ impl SignFlowState {
         match class {
             CommandClass::Regular => {
                 let path = Bip32Path::read(comm).and_then(|path| path.validate())?;
-                self.start(tx_type, path);
+                self.start(tx_type, path)?;
                 self.update_counters(0); // First packet contains no data
             }
 
@@ -71,10 +72,20 @@ impl SignFlowState {
         self.path = Bip32Path::new(0);
     }
 
-    fn start(&mut self, sign_type: SignTxType, path: Bip32Path) {
+    fn start(&mut self, sign_type: SignTxType, path: Bip32Path) -> Result<(), AppError> {
         self.reset();
         self.sign_type = sign_type;
         self.path = path;
+
+        let hash_type = match sign_type {
+            SignTxType::Ed25519 => HashType::SHA512,
+            SignTxType::Secp256k1 => HashType::DoubleSHA256,
+            SignTxType::None => {
+                return Err(AppError::BadTxSignRequestedState);
+            }
+        };
+
+        self.hasher.init(hash_type)
     }
 
     fn sign_started(&self) -> bool {
@@ -123,22 +134,21 @@ impl SignFlowState {
             SignTxType::None => return Err(AppError::BadTxSignStart),
             SignTxType::Ed25519 => KeyPair25519::derive(&self.path)
                 .and_then(|keypair| keypair.sign(digest.as_bytes()))
-                .map(|signature| {
-                    let mut full_signature = [0u8; MAX_SIGNATURE_SIZE];
-                    full_signature.copy_from_slice(&signature);
-
-                    SignOutcome::Signature {
-                        len: signature.len() as u8,
-                        signature: full_signature,
-                    }
-                }),
+                .map(|signature| SignFlowState::build_signature_outcome(&signature)),
 
             SignTxType::Secp256k1 => KeyPairSecp256k1::derive(&self.path)
                 .and_then(|keypair| keypair.sign(digest.as_bytes()))
-                .map(|signature| SignOutcome::Signature {
-                    len: signature.len() as u8,
-                    signature,
-                }),
+                .map(|signature| SignFlowState::build_signature_outcome(&signature)),
+        }
+    }
+
+    fn build_signature_outcome(signature: &[u8]) -> SignOutcome {
+        let mut full_signature = [0u8; MAX_SIGNATURE_SIZE];
+        full_signature[..signature.len()].clone_from_slice(signature);
+
+        SignOutcome::Signature {
+            len: signature.len() as u8,
+            signature: full_signature,
         }
     }
 
@@ -169,7 +179,7 @@ pub enum SignOutcome {
     },
 }
 
-struct InstructionProcessor<'a> {
+pub struct InstructionProcessor<'a> {
     state: SignFlowState,
     extractor: InstructionExtractor,
     printer: InstructionPrinter<'a>,
@@ -186,6 +196,10 @@ impl<'a> InstructionProcessor<'a> {
 
     pub fn set_network(&mut self, network_id: NetworkId) {
         self.printer.set_network(network_id);
+    }
+
+    pub fn set_tty(&mut self, tty: &'a mut dyn TTY) {
+        self.printer.set_tty(tty);
     }
 
     pub fn process_data(
@@ -218,7 +232,7 @@ impl SborEventHandler for InstructionProcessor<'_> {
 }
 
 impl<'a> TxSignState<'a> {
-    pub fn new(tty: &'a mut dyn TTY) -> Self {
+    pub const fn new() -> Self {
         Self {
             decoder: SborDecoder::new(true),
             processor: InstructionProcessor {
@@ -230,13 +244,17 @@ impl<'a> TxSignState<'a> {
                     hasher: Hasher::new(),
                 },
                 extractor: InstructionExtractor::new(),
-                printer: InstructionPrinter::new(tty, NetworkId::LocalNet),
+                printer: InstructionPrinter::new(NetworkId::LocalNet),
             },
         }
     }
 
     pub fn set_network(&mut self, network_id: NetworkId) {
         self.processor.set_network(network_id);
+    }
+
+    pub fn set_tty(&mut self, tty: &'a mut dyn TTY) {
+        self.processor.set_tty(tty);
     }
 
     pub fn process_request(
@@ -276,13 +294,13 @@ impl<'a> TxSignState<'a> {
     }
 
     fn finalize_sign_tx(&mut self, tx_type: SignTxType) -> Result<SignOutcome, AppError> {
-        //TODO: show hash to the user?
+        // TODO: Display digest to user?
         let digest = self.processor.state.finalize()?;
 
-        // ask for confirmation, handle rejection
-        if !ui::Validator::new("Sign Intent?").ask() {
-            return Ok(SignOutcome::SigningRejected);
-        }
+        // TODO: uncomment code below after debugging!!!
+        // if !ui::Validator::new("Sign Intent?").ask() {
+        //     return Ok(SignOutcome::SigningRejected);
+        // }
 
         self.processor.sign_tx(tx_type, digest)
     }

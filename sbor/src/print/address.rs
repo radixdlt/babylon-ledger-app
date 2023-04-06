@@ -2,10 +2,12 @@ use arrform::{arrform, ArrForm};
 
 use crate::bech32::encoder::*;
 use crate::bech32::hrp::*;
+use crate::debug::debug_print;
 use crate::print::parameter_printer::ParameterPrinter;
 use crate::print::state::ParameterPrinterState;
 use crate::sbor_decoder::SborEvent;
 use crate::type_info::*;
+use crate::print::tty::TTY;
 
 pub struct AddressParameterPrinter {}
 
@@ -13,32 +15,34 @@ pub const ADDRESS_PARAMETER_PRINTER: AddressParameterPrinter = AddressParameterP
 
 impl ParameterPrinter for AddressParameterPrinter {
     fn handle_data(&self, state: &mut ParameterPrinterState, event: SborEvent) {
-        if let SborEvent::Data(byte) = event {
-            state.push_byte(byte);
-        }
+        debug_print("AddressParameterPrinter::handle_data\n");
+        // if let SborEvent::Data(byte) = event {
+        //     state.push_byte(byte);
+        // }
     }
 
     fn end(&self, state: &mut ParameterPrinterState) {
-        if state.data.len() != (ADDRESS_LEN as usize) {
-            state.tty.print_text(b"Invalid address format");
-            return;
-        }
-
-        let resource_id = match state.data[0] {
-            0x00 => HrpType::Package,
-            0x01 => HrpType::FungibleResource,
-            0x02 => HrpType::NonFungibleResource,
-            0x03..=0x0d => HrpType::Component,
-            _ => HrpType::Autodetect,
-        };
-
-        match hrp_prefix(resource_id, state.data[0]) {
-            None => {
-                state.tty.print_text(b"Address(unknown type)");
-                return;
-            }
-            Some(hrp_prefix) => format_address(state, hrp_prefix),
-        }
+        debug_print("AddressParameterPrinter::end\n");
+        // if state.data.len() != (ADDRESS_LEN as usize) {
+        //     state.print_text(b"Invalid address format");
+        //     return;
+        // }
+        //
+        // let resource_id = match state.data[0] {
+        //     0x00 => HrpType::Package,
+        //     0x01 => HrpType::FungibleResource,
+        //     0x02 => HrpType::NonFungibleResource,
+        //     0x03..=0x0d => HrpType::Component,
+        //     _ => HrpType::Autodetect,
+        // };
+        //
+        // match hrp_prefix(resource_id, state.data[0]) {
+        //     None => {
+        //         state.print_text(b"Address(unknown type)");
+        //         return;
+        //     }
+        //     Some(hrp_prefix) => format_address(state, hrp_prefix),
+        // }
     }
 }
 
@@ -55,10 +59,10 @@ fn format_address(state: &mut ParameterPrinterState, hrp_prefix: &str) {
     );
     match encodind_result {
         Ok(encoder) => {
-            state.tty.print_text(b"Address(");
-            state.tty.print_text(encoder.encoded());
-            state.tty.print_byte(b')');
+            state.print_text(b"Address(");
+            state.print_text(encoder.encoded());
+            state.print_byte(b')');
         }
-        Err(..) => state.tty.print_text(b"Address(<bech32 error>)"),
+        Err(..) => state.print_text(b"Address(<bech32 error>)"),
     }
 }

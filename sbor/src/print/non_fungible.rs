@@ -2,6 +2,7 @@ use arrform::{arrform, ArrForm};
 
 use crate::print::parameter_printer::ParameterPrinter;
 use crate::print::state::ParameterPrinterState;
+use crate::print::tty::TTY;
 use crate::sbor_decoder::SborEvent;
 
 pub struct NonFungibleLocalIdParameterPrinter {}
@@ -22,21 +23,17 @@ impl ParameterPrinter for NonFungibleLocalIdParameterPrinter {
             // String
             0 => {
                 if state.data.len() == 0 || state.data.len() > 64 {
-                    state
-                        .tty
-                        .print_text(b"<invalid non-fungible local id string>");
+                    state.print_text(b"<invalid non-fungible local id string>");
                     return;
                 }
-                state.tty.print_byte(b'<');
-                state.tty.print_text(state.data.as_slice());
-                state.tty.print_byte(b'>');
+                state.print_byte(b'<');
+                state.print_data_as_text();
+                state.print_byte(b'>');
             }
             // Integer
             1 => {
                 if state.data.len() != 8 {
-                    state
-                        .tty
-                        .print_text(b"<invalid non-fungible local id integer>");
+                    state.print_text(b"<invalid non-fungible local id integer>");
                     return;
                 }
 
@@ -45,44 +42,38 @@ impl ParameterPrinter for NonFungibleLocalIdParameterPrinter {
                 }
 
                 let value = u64::from_be_bytes(to_array(state.data.as_slice()));
-                state.tty.print_text(arrform!(20, "#{}#", value).as_bytes());
+                state.print_text(arrform!(20, "#{}#", value).as_bytes());
             }
             // Bytes
             2 => {
                 if state.data.len() == 0 || state.data.len() > 64 {
-                    state
-                        .tty
-                        .print_text(b"<invalid non-fungible local id bytes>");
+                    state.print_text(b"<invalid non-fungible local id bytes>");
                     return;
                 }
-                state.tty.print_byte(b'[');
-                state.tty.print_hex_slice(state.data.as_slice());
-                state.tty.print_byte(b']');
+                state.print_byte(b'[');
+                state.print_data_as_hex();
+                state.print_byte(b']');
             }
             // UUID
             3 => {
                 if state.data.len() != 16 {
-                    state
-                        .tty
-                        .print_text(b"<invalid non-fungible local id UUID>");
+                    state.print_text(b"<invalid non-fungible local id UUID>");
                     return;
                 }
-                state.tty.print_byte(b'{');
-                state.tty.print_hex_slice(&state.data.as_slice()[0..4]);
-                state.tty.print_byte(b'-');
-                state.tty.print_hex_slice(&state.data.as_slice()[4..6]);
-                state.tty.print_byte(b'-');
-                state.tty.print_hex_slice(&state.data.as_slice()[6..8]);
-                state.tty.print_byte(b'-');
-                state.tty.print_hex_slice(&state.data.as_slice()[8..10]);
-                state.tty.print_byte(b'-');
-                state.tty.print_hex_slice(&state.data.as_slice()[10..16]);
-                state.tty.print_byte(b'}');
+                state.print_byte(b'{');
+                state.print_data_as_hex_slice(0..4);
+                state.print_byte(b'-');
+                state.print_data_as_hex_slice(4..6);
+                state.print_byte(b'-');
+                state.print_data_as_hex_slice(6..8);
+                state.print_byte(b'-');
+                state.print_data_as_hex_slice(8..10);
+                state.print_byte(b'-');
+                state.print_data_as_hex_slice(10..16);
+                state.print_byte(b'}');
             }
             _ => {
-                state
-                    .tty
-                    .print_text(b"Id(<unknown type of non-fungible local id>)");
+                state.print_text(b"Id(<unknown type of non-fungible local id>)");
                 return;
             }
         };

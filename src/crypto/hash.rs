@@ -1,4 +1,4 @@
-use crate::app_error::AppError;
+use crate::app_error::{AppError, to_result};
 use core::ffi::c_uint;
 use core::intrinsics::write_bytes;
 use core::mem::size_of;
@@ -80,15 +80,7 @@ extern "C" {
 impl Hasher {
     const WORK_AREA_SIZE: usize = size_of::<cx_sha512_t>();
 
-    fn to_result(rc: u32) -> Result<(), AppError> {
-        if rc == CX_OK {
-            Ok(())
-        } else {
-            Err(rc.into())
-        }
-    }
-
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             work_data: [0; Self::WORK_AREA_SIZE],
             hash_type: HashType::DoubleSHA256,
@@ -119,7 +111,7 @@ impl Hasher {
             HashType::SHA512 => unsafe { cx_sha512_init_no_throw(self.work_data.as_mut_ptr()) },
         };
 
-        Self::to_result(rc)
+        to_result(rc)
     }
 
     pub fn update(&mut self, input: &[u8]) -> Result<(), AppError> {
@@ -131,7 +123,7 @@ impl Hasher {
             )
         };
 
-        Self::to_result(rc)
+        to_result(rc)
     }
 
     fn finalize_double_sha256(&mut self) -> Result<Digest, AppError> {
@@ -153,7 +145,7 @@ impl Hasher {
 
         self.reset();
 
-        Self::to_result(rc).map(|_| digest)
+        to_result(rc).map(|_| digest)
     }
 
     fn finalize_sha512(&mut self) -> Result<Digest, AppError> {
@@ -161,7 +153,7 @@ impl Hasher {
 
         let rc = unsafe { cx_hash_final(self.work_data.as_mut_ptr(), digest.as_mut()) };
 
-        Self::to_result(rc).map(|_| digest)
+        to_result(rc).map(|_| digest)
     }
 
     pub fn finalize(&mut self) -> Result<Digest, AppError> {

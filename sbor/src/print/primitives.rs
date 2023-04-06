@@ -1,9 +1,8 @@
-use core::str::from_utf8;
-
 use arrform::{arrform, ArrForm};
 
 use crate::print::parameter_printer::ParameterPrinter;
 use crate::print::state::ParameterPrinterState;
+use crate::print::tty::TTY;
 use crate::sbor_decoder::SborEvent;
 use core::{concat, stringify};
 use paste::paste;
@@ -17,7 +16,7 @@ impl ParameterPrinter for IgnoredParameter {
     fn handle_data(&self, _state: &mut ParameterPrinterState, _event: SborEvent) {}
 
     fn end(&self, state: &mut ParameterPrinterState) {
-        state.tty.print_text("<UNKNOWN TYPE>".as_bytes())
+        state.print_text("<UNKNOWN TYPE>".as_bytes())
     }
 }
 
@@ -35,7 +34,7 @@ impl ParameterPrinter for BoolParameterPrinter {
 
     fn end(&self, state: &mut ParameterPrinterState) {
         if state.data.len() != 1 {
-            state.tty.print_text(b"<Invalid bool encoding>");
+            state.print_text(b"<Invalid bool encoding>");
             return;
         }
 
@@ -45,7 +44,7 @@ impl ParameterPrinter for BoolParameterPrinter {
             _ => b"(invalid bool)",
         };
 
-        state.tty.print_text(message);
+        state.print_text(message);
     }
 }
 
@@ -57,20 +56,14 @@ pub const STRING_PARAMETER_PRINTER: StringParameterPrinter = StringParameterPrin
 impl ParameterPrinter for StringParameterPrinter {
     fn handle_data(&self, state: &mut ParameterPrinterState, event: SborEvent) {
         if let SborEvent::Data(byte) = event {
-            //TODO: split longer strings into chunks; keep in mind utf8 boundaries
             state.push_byte(byte);
         }
     }
 
     fn end(&self, state: &mut ParameterPrinterState) {
-        match from_utf8(state.data.as_slice()) {
-            Ok(message) => {
-                state.tty.print_byte(b'"');
-                state.tty.print_text(message.as_bytes());
-                state.tty.print_byte(b'"');
-            }
-            Err(_) => state.tty.print_text(b"<String decoding error>"),
-        }
+        state.print_byte(b'"');
+        state.print_data_as_text();
+        state.print_byte(b'"');
     }
 }
 
@@ -94,7 +87,7 @@ macro_rules! printer_for_type {
 
                 fn end(&self, state: &mut ParameterPrinterState) {
                     if state.data.len() != (($type::BITS / 8) as usize) {
-                        state.tty.print_text(b"<Invalid encoding>");
+                        state.print_text(b"<Invalid encoding>");
                         return;
                     }
                     fn to_array(input: &[u8]) -> [u8; ($type::BITS / 8) as usize] {
@@ -103,7 +96,7 @@ macro_rules! printer_for_type {
 
                     let value = $type::from_le_bytes(to_array(state.data.as_slice()));
 
-                    state.tty.print_text(arrform!(40, concat!("{}", stringify!($type)), value).as_bytes());
+                    state.print_text(arrform!(40, concat!("{}", stringify!($type)), value).as_bytes());
                 }
             }
         }

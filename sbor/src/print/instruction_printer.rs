@@ -1,4 +1,6 @@
+use core::str::from_utf8;
 use crate::bech32::network::*;
+use crate::debug::{debug_print, debug_print_byte};
 use crate::instruction::InstructionInfo;
 use crate::instruction_extractor::{ExtractorEvent, InstructionHandler};
 use crate::print::address::*;
@@ -23,6 +25,7 @@ pub struct InstructionPrinter<'a> {
 
 impl InstructionHandler for InstructionPrinter<'_> {
     fn handle(&mut self, event: ExtractorEvent) {
+        debug_print("InstructionPrinter::handle start\n");
         match event {
             ExtractorEvent::InstructionStart(info) => self.start_instruction(info),
             ExtractorEvent::ParameterStart(event, ..) => {
@@ -35,15 +38,16 @@ impl InstructionHandler for InstructionPrinter<'_> {
             ExtractorEvent::UnknownInstruction(..)
             | ExtractorEvent::InvalidEventSequence
             | ExtractorEvent::UnknownParameterType(..) => self.handle_error(),
-        }
+        };
+        debug_print("InstructionPrinter::handle end\n");
     }
 }
 
 impl<'a> InstructionPrinter<'a> {
-    pub fn new(tty: &'a mut dyn TTY, network_id: NetworkId) -> Self {
+    pub const fn new(network_id: NetworkId) -> Self {
         Self {
             active_instruction: None,
-            state: ParameterPrinterState::new(network_id, tty),
+            state: ParameterPrinterState::new(network_id),
         }
     }
 
@@ -51,29 +55,35 @@ impl<'a> InstructionPrinter<'a> {
         self.state.set_network(network_id);
     }
 
+    pub fn set_tty(&mut self, tty: &'a mut dyn TTY) {
+        self.state.set_tty(tty);
+    }
+
     pub fn handle_error(&mut self) {
-        self.state.tty.start();
-        self.state.tty.print_text(b"Unable to decode transaction intent. Either, input is invalid or application is outdated.");
-        self.state.tty.end();
+        self.state.start();
+        self.state.print_text(b"Unable to decode transaction intent. Either, input is invalid or application is outdated.");
+        self.state.end();
     }
 
     pub fn start_instruction(&mut self, info: InstructionInfo) {
         self.active_instruction = Some(info);
-        self.state.tty.start();
-        self.state.tty.print_text(info.name);
-        self.state.tty.print_space();
+        self.state.start();
+        self.state.print_text(info.name);
+        self.state.print_space();
     }
 
     pub fn instruction_end(&mut self) {
         if let Some(..) = self.active_instruction {
-            self.state.tty.end();
+            self.state.end();
         }
 
         self.active_instruction = None;
     }
 
     pub fn parameter_start(&mut self, event: SborEvent) {
+        debug_print("InstructionPrinter::parameter_start start\n");
         self.parameter_data(event);
+        debug_print("InstructionPrinter::parameter_start end\n");
     }
 
     pub fn parameter_data(&mut self, source_event: SborEvent) {
@@ -83,15 +93,26 @@ impl<'a> InstructionPrinter<'a> {
                 nesting_level,
                 ..
             } => {
+                debug_print("InstructionPrinter::parameter_data start::Start\n");
                 if self.state.stack.is_not_empty() {
+                    debug_print("InstructionPrinter::parameter_data start::Start::subcomponent_start\n");
                     self.get_printer().subcomponent_start(&mut self.state);
+                    debug_print("InstructionPrinter::parameter_data start::Start::subcomponent_start::end\n");
+                } else {
+                    debug_print("InstructionPrinter::parameter_data start::Start::stack is empty\n");
                 }
 
+                debug_print("InstructionPrinter::parameter_data start::Start::start\n");
+
                 self.state.nesting_level = nesting_level;
+                debug_print("InstructionPrinter::parameter_data start::Start::push\n");
                 self.state.stack.push(ValueState::new(type_id));
+                debug_print("InstructionPrinter::parameter_data start::Start::push::end\n");
                 self.get_printer().start(&mut self.state);
+                debug_print("InstructionPrinter::parameter_data start::Start::end\n");
             }
             SborEvent::ElementType { kind, type_id } => {
+                debug_print("InstructionPrinter::parameter_data start::ElementType\n");
                 match kind {
                     SubTypeKind::Key => self.active_value_state().key_type_id = type_id,
                     SubTypeKind::Value => self.active_value_state().element_type_id = type_id,
@@ -99,16 +120,20 @@ impl<'a> InstructionPrinter<'a> {
                 }
                 self.get_printer()
                     .handle_data(&mut self.state, source_event);
+                debug_print("InstructionPrinter::parameter_data start::ElementType::end\n");
             }
             SborEvent::Discriminator(discriminator) => {
+                debug_print("InstructionPrinter::parameter_data start::Discriminator\n");
                 self.active_value_state().key_type_id = discriminator;
                 self.get_printer()
                     .handle_data(&mut self.state, source_event);
+                debug_print("InstructionPrinter::parameter_data start::Discriminator::end\n");
             }
             SborEvent::End {
                 type_id: _,
                 nesting_level,
             } => {
+                debug_print("InstructionPrinter::parameter_data start::End\n");
                 self.get_printer().end(&mut self.state);
                 self.state.nesting_level = nesting_level;
                 self.state.stack.pop().expect("Stack can't be empty");
@@ -116,12 +141,14 @@ impl<'a> InstructionPrinter<'a> {
                 if self.state.stack.is_not_empty() {
                     self.get_printer().subcomponent_end(&mut self.state);
                 } else {
-                    self.state.tty.print_space();
+                    self.state.print_space();
                 }
 
                 self.state.data.clear();
+                debug_print("InstructionPrinter::parameter_data start::End::end\n");
             }
             _ => {
+                debug_print("InstructionPrinter::parameter_data start::default\n");
                 self.get_printer()
                     .handle_data(&mut self.state, source_event);
             }

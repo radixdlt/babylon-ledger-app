@@ -19,10 +19,4 @@ pub trait TTY {
         self.print_byte(HEX_DIGITS[((byte >> 4) & 0x0F) as usize]);
         self.print_byte(HEX_DIGITS[(byte & 0x0F) as usize]);
     }
-
-    fn print_hex_slice(&mut self, slice: &[u8]) {
-        for &byte in slice {
-            self.print_hex_byte(byte);
-        }
-    }
 }

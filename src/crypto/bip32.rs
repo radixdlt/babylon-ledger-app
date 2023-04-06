@@ -201,7 +201,7 @@ impl Bip32Path {
         Ok(path)
     }
 
-    pub fn new(len: u8) -> Self {
+    pub const fn new(len: u8) -> Self {
         Self {
             path: [0u32; MAX_BIP32_PATH_LEN],
             len,

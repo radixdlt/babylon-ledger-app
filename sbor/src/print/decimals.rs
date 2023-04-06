@@ -3,6 +3,7 @@ use arrform::{arrform, ArrForm};
 use crate::math::{Decimal, PreciseDecimal};
 use crate::print::parameter_printer::ParameterPrinter;
 use crate::print::state::ParameterPrinterState;
+use crate::print::tty::TTY;
 use crate::sbor_decoder::SborEvent;
 
 // Decimal parameter printer
@@ -20,10 +21,10 @@ impl ParameterPrinter for DecimalParameterPrinter {
 
     fn end(&self, state: &mut ParameterPrinterState) {
         match Decimal::try_from(state.data.as_slice()) {
-            Ok(value) => state.tty.print_text(
+            Ok(value) => state.print_text(
                 arrform!({ Decimal::MAX_PRINT_LEN + 10 }, "Decimal({})", value).as_bytes(),
             ),
-            Err(_) => state.tty.print_text(b"Decimal(<invalid value>)"),
+            Err(_) => state.print_text(b"Decimal(<invalid value>)"),
         }
     }
 }
@@ -44,7 +45,7 @@ impl ParameterPrinter for PreciseDecimalParameterPrinter {
 
     fn end(&self, state: &mut ParameterPrinterState) {
         match PreciseDecimal::try_from(state.data.as_slice()) {
-            Ok(value) => state.tty.print_text(
+            Ok(value) => state.print_text(
                 arrform!(
                     { PreciseDecimal::MAX_PRINT_LEN + 20 },
                     "PreciseDecimal({})",
@@ -52,7 +53,7 @@ impl ParameterPrinter for PreciseDecimalParameterPrinter {
                 )
                 .as_bytes(),
             ),
-            Err(_) => state.tty.print_text(b"PreciseDecimal(<invalid value>)"),
+            Err(_) => state.print_text(b"PreciseDecimal(<invalid value>)"),
         }
     }
 }

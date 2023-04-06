@@ -57,6 +57,7 @@
 
 #![feature(prelude_2024)]
 #![feature(core_intrinsics)]
+#![feature(const_mut_refs)]
 #![cfg_attr(not(test), no_std)]
 pub mod bech32;
 pub mod decoder_error;
@@ -66,6 +67,8 @@ pub mod math;
 pub mod print;
 pub mod sbor_decoder;
 pub mod type_info;
+
+pub mod debug;
 
 #[cfg(test)]
 pub mod tx_intent_test_data;
