@@ -249,6 +249,11 @@ impl<'a> TxSignState<'a> {
         }
     }
 
+    pub fn reset(&mut self) {
+        self.processor.reset();
+        self.decoder.reset();
+    }
+
     pub fn set_network(&mut self, network_id: NetworkId) {
         self.processor.set_network(network_id);
     }
@@ -266,9 +271,15 @@ impl<'a> TxSignState<'a> {
         let result = self.do_process(comm, class, tx_type);
 
         match result {
-            Ok(_) => result,
+            Ok(outcome) => match outcome {
+                SignOutcome::SendNextPacket => result,
+                _ => {
+                    self.reset(); // Ensure state is reset on error
+                    result
+                }
+            },
             Err(_) => {
-                self.processor.reset(); // Ensure state is reset on error
+                self.reset(); // Ensure state is reset on error
                 result
             }
         }

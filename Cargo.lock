@@ -3,12 +3,6 @@
 version = 3
 
 [[package]]
-name = "arrform"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e7cf566ecc5c9d82b973e81d30babf6583c9b497f86295c952d538c3254ef4e6"
-
-[[package]]
 name = "autocfg"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -126,7 +120,6 @@ checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
 name = "sbor"
 version = "0.1.0"
 dependencies = [
- "arrform",
  "crypto-bigint",
  "paste",
  "staticvec",

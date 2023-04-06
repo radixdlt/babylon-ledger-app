@@ -1,6 +1,5 @@
-use arrform::{arrform, ArrForm};
-
 use crate::print::parameter_printer::ParameterPrinter;
+use crate::print::primitives::U8ParameterPrinter;
 use crate::print::state::ParameterPrinterState;
 use crate::print::tty::TTY;
 use crate::sbor_decoder::SborEvent;
@@ -12,7 +11,7 @@ pub const ENUM_PARAMETER_PRINTER: EnumParameterPrinter = EnumParameterPrinter {}
 impl ParameterPrinter for EnumParameterPrinter {
     fn handle_data(&self, state: &mut ParameterPrinterState, event: SborEvent) {
         if let SborEvent::Discriminator(discriminator) = event {
-            state.print_text(arrform!(8, "{}u8", discriminator).as_bytes());
+            U8ParameterPrinter::print(state, discriminator);
         }
     }
 

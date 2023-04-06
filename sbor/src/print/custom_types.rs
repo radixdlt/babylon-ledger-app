@@ -1,6 +1,5 @@
-use arrform::{arrform, ArrForm};
-
 use crate::print::parameter_printer::ParameterPrinter;
+use crate::print::primitives::U32_PARAMETER_PRINTER;
 use crate::print::state::ParameterPrinterState;
 use crate::print::tty::TTY;
 use crate::sbor_decoder::SborEvent;
@@ -50,17 +49,7 @@ impl ParameterPrinter for UintParameterPrinter {
     }
 
     fn end(&self, state: &mut ParameterPrinterState) {
-        if state.data.len() != 4 {
-            state.print_text(b"<Invalid encoding>");
-            return;
-        }
-
-        fn to_array(input: &[u8]) -> [u8; 4] {
-            input.try_into().expect("<should not happen>")
-        }
-
-        let value = u32::from_le_bytes(to_array(state.data.as_slice()));
-
-        state.print_text(arrform!(20, "{})", value).as_bytes());
+        U32_PARAMETER_PRINTER.end(state);
+        state.print_byte(b')');
     }
 }

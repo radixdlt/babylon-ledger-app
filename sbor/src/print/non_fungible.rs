@@ -1,6 +1,5 @@
-use arrform::{arrform, ArrForm};
-
 use crate::print::parameter_printer::ParameterPrinter;
+use crate::print::primitives::U64ParameterPrinter;
 use crate::print::state::ParameterPrinterState;
 use crate::print::tty::TTY;
 use crate::sbor_decoder::SborEvent;
@@ -42,7 +41,9 @@ impl ParameterPrinter for NonFungibleLocalIdParameterPrinter {
                 }
 
                 let value = u64::from_be_bytes(to_array(state.data.as_slice()));
-                state.print_text(arrform!(20, "#{}#", value).as_bytes());
+                state.print_byte(b'#');
+                U64ParameterPrinter::print(state, value);
+                state.print_byte(b'#');
             }
             // Bytes
             2 => {

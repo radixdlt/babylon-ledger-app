@@ -106,6 +106,12 @@ impl SborDecoder {
         }
     }
 
+    pub fn reset(&mut self) {
+        self.byte_count = 0;
+        self.head = 0;
+        self.stack[0] = State::new();
+    }
+
     #[inline]
     fn head(&mut self) -> &mut State {
         &mut self.stack[self.head as usize]
