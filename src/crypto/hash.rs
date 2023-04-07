@@ -1,18 +1,27 @@
-use crate::app_error::{AppError, to_result};
+use crate::app_error::{to_result, AppError};
+use core::cmp::max;
 use core::ffi::c_uint;
 use core::intrinsics::write_bytes;
 use core::mem::size_of;
-use nanos_sdk::bindings::{cx_sha512_t, CX_OK};
+use nanos_sdk::bindings::{
+    cx_blake2b_t, cx_md_t, cx_sha256_t, cx_sha512_t, CX_BLAKE2B, CX_OK, CX_SHA256, CX_SHA512,
+};
 
 const SHA256_DIGEST_SIZE: usize = 32; // 256 bits
 const SHA512_DIGEST_SIZE: usize = 64; // 512 bits
-const MAX_DIGEST_SIZE: usize = SHA512_DIGEST_SIZE;
+const BLAKE2B_DIGEST_SIZE: usize = 64; // 512 bits
+
+const MAX_DIGEST_SIZE: usize = max(
+    SHA256_DIGEST_SIZE,
+    max(BLAKE2B_DIGEST_SIZE, SHA512_DIGEST_SIZE),
+);
 
 #[repr(u8)]
 #[derive(Copy, Clone, Debug)]
 pub enum HashType {
     DoubleSHA256,
     SHA512,
+    Blake2b,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -37,6 +46,7 @@ impl Digest {
         match self.hash_type {
             HashType::DoubleSHA256 => &self.container[..SHA256_DIGEST_SIZE],
             HashType::SHA512 => &self.container[..SHA512_DIGEST_SIZE],
+            HashType::Blake2b => &self.container[..BLAKE2B_DIGEST_SIZE],
         }
     }
 
@@ -59,15 +69,7 @@ impl Drop for Hasher {
 }
 
 extern "C" {
-    pub fn cx_sha256_init_no_throw(context: *mut u8) -> u32;
-}
-
-extern "C" {
-    pub fn cx_hash_sha256(in_: *const u8, len: c_uint, out: *mut u8, out_len: c_uint) -> c_uint;
-}
-
-extern "C" {
-    pub fn cx_sha512_init_no_throw(context: *mut u8) -> u32;
+    pub fn cx_hash_init(context: *mut u8, hash_type: cx_md_t) -> u32;
 }
 
 extern "C" {
@@ -78,7 +80,10 @@ extern "C" {
 }
 
 impl Hasher {
-    const WORK_AREA_SIZE: usize = size_of::<cx_sha512_t>();
+    const WORK_AREA_SIZE: usize = max(
+        size_of::<cx_sha256_t>(),
+        max(size_of::<cx_sha512_t>(), size_of::<cx_blake2b_t>()),
+    );
 
     pub const fn new() -> Self {
         Self {
@@ -104,12 +109,13 @@ impl Hasher {
         self.reset();
         self.hash_type = hash_type;
 
-        let rc = match self.hash_type {
-            HashType::DoubleSHA256 => unsafe {
-                cx_sha256_init_no_throw(self.work_data.as_mut_ptr())
-            },
-            HashType::SHA512 => unsafe { cx_sha512_init_no_throw(self.work_data.as_mut_ptr()) },
+        let hash_type = match hash_type {
+            HashType::DoubleSHA256 => CX_SHA256,
+            HashType::SHA512 => CX_SHA512,
+            HashType::Blake2b => CX_BLAKE2B,
         };
+
+        let rc = unsafe { cx_hash_init(self.work_data.as_mut_ptr(), hash_type) };
 
         to_result(rc)
     }
@@ -156,10 +162,19 @@ impl Hasher {
         to_result(rc).map(|_| digest)
     }
 
+    fn finalize_blake2b(&mut self) -> Result<Digest, AppError> {
+        let mut digest = Digest::new(HashType::Blake2b);
+
+        let rc = unsafe { cx_hash_final(self.work_data.as_mut_ptr(), digest.as_mut()) };
+
+        to_result(rc).map(|_| digest)
+    }
+
     pub fn finalize(&mut self) -> Result<Digest, AppError> {
         match self.hash_type {
             HashType::DoubleSHA256 => self.finalize_double_sha256(),
             HashType::SHA512 => self.finalize_sha512(),
+            HashType::Blake2b => self.finalize_sha512(),
         }
     }
 }

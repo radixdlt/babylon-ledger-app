@@ -1,3 +1,5 @@
+use crate::bech32::network::NetworkIdErrors::UnknownNetworkId;
+
 #[repr(u8)]
 #[derive(Copy, Clone, Debug)]
 pub enum NetworkId {
@@ -13,4 +15,32 @@ pub enum NetworkId {
     LocalNet = 240,           //, "localnet", "loc"),
     IntegrationTestNet = 241, //, "inttestnet", "test"),
     Simulator = 242,          //, "simulator", "sim");
+}
+
+#[repr(u8)]
+#[derive(Copy, Clone, Debug)]
+pub enum NetworkIdErrors {
+    UnknownNetworkId,
+}
+
+impl TryFrom<u32> for NetworkId {
+    type Error = NetworkIdErrors;
+
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
+        match value {
+            1 => Ok(NetworkId::MainNet),
+            2 => Ok(NetworkId::StokeNet),
+            10 => Ok(NetworkId::AdapaNet),
+            11 => Ok(NetworkId::NebuNet),
+            32 => Ok(NetworkId::GilgaNet),
+            33 => Ok(NetworkId::EnkiNet),
+            34 => Ok(NetworkId::HammuNet),
+            35 => Ok(NetworkId::NergalNet),
+            36 => Ok(NetworkId::MarduNet),
+            240 => Ok(NetworkId::LocalNet),
+            241 => Ok(NetworkId::IntegrationTestNet),
+            242 => Ok(NetworkId::Simulator),
+            _ => Err(NetworkIdErrors::UnknownNetworkId),
+        }
+    }
 }

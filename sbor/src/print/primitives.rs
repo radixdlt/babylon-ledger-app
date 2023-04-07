@@ -6,7 +6,6 @@ use paste::paste;
 
 use crate::print::parameter_printer::ParameterPrinter;
 use crate::print::state::ParameterPrinterState;
-use crate::print::tty::TTY;
 use crate::sbor_decoder::SborEvent;
 
 // Parameter which we just skip, without printing anything
@@ -69,7 +68,7 @@ impl ParameterPrinter for StringParameterPrinter {
     }
 }
 
-// Helper macros/functions are derived from
+// Helper macros/functions are derived from https://github.com/japaric/ufmt
 // Original copyright (MIT License):
 // Copyright (c) 2019 Jorge Aparicio
 //

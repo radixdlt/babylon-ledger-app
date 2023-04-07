@@ -34,30 +34,6 @@ pub struct ParameterPrinterState<'a> {
     tty: Option<&'a mut dyn TTY>,
 }
 
-impl TTY for ParameterPrinterState<'_> {
-    fn start(&mut self) {
-        debug_print("tty start\n");
-//        self.tty.as_mut().expect("TTY not set").start();
-    }
-
-    fn end(&mut self) {
-        debug_print("tty end\n");
-        //self.tty.as_mut().expect("TTY not set").end();
-    }
-
-    fn print_byte(&mut self, byte: u8) {
-        debug_print("tty print_byte: ");
-        debug_print_byte(byte.clone());
-        //self.tty.as_mut().expect("TTY not set").print_byte(byte);
-    }
-
-    fn print_text(&mut self, text: &[u8]) {
-        debug_print("tty print_text: ");
-        debug_prepared_message(text);
-        //self.tty.as_mut().expect("TTY not set").print_text(text);
-    }
-}
-
 impl<'a> ParameterPrinterState<'a> {
     pub const fn new(network_id: NetworkId) -> Self {
         Self {
@@ -90,6 +66,8 @@ impl<'a> ParameterPrinterState<'a> {
         self.stack.last_mut().expect("Stack can't be empty")
     }
 
+    const HEX_DIGITS: [u8; 16] = *b"0123456789abcdef";
+
     pub fn print_data_as_text(&mut self) {
         debug_print("print_data_as_text: ");
         debug_prepared_message(self.data.as_slice());
@@ -109,5 +87,36 @@ impl<'a> ParameterPrinterState<'a> {
         // for &byte in &self.data.as_slice()[range] {
         //     self.tty.as_mut().expect("TTY not set").print_hex_byte(byte);
         // }
+    }
+
+    pub fn print_space(&mut self) {
+        self.print_byte(b' ');
+    }
+
+    pub fn print_hex_byte(&mut self, byte: u8) {
+        self.print_byte(Self::HEX_DIGITS[((byte >> 4) & 0x0F) as usize]);
+        self.print_byte(Self::HEX_DIGITS[(byte & 0x0F) as usize]);
+    }
+
+    pub fn start(&mut self) {
+        debug_print("tty start\n");
+//        self.tty.as_mut().expect("TTY not set").start();
+    }
+
+    pub fn end(&mut self) {
+        debug_print("tty end\n");
+        //self.tty.as_mut().expect("TTY not set").end();
+    }
+
+    pub fn print_byte(&mut self, byte: u8) {
+        debug_print("tty print_byte: ");
+        debug_print_byte(byte.clone());
+        //self.tty.as_mut().expect("TTY not set").print_byte(byte);
+    }
+
+    pub fn print_text(&mut self, text: &[u8]) {
+        debug_print("tty print_text: ");
+        debug_prepared_message(text);
+        //self.tty.as_mut().expect("TTY not set").print_text(text);
     }
 }

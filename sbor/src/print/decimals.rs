@@ -1,7 +1,6 @@
 use crate::math::{Decimal, PreciseDecimal};
 use crate::print::parameter_printer::ParameterPrinter;
 use crate::print::state::ParameterPrinterState;
-use crate::print::tty::TTY;
 use crate::sbor_decoder::SborEvent;
 
 // Decimal parameter printer

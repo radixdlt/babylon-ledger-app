@@ -6,7 +6,6 @@ use crate::print::parameter_printer::ParameterPrinter;
 use crate::print::state::ParameterPrinterState;
 use crate::sbor_decoder::SborEvent;
 use crate::type_info::*;
-use crate::print::tty::TTY;
 
 pub struct AddressParameterPrinter {}
 

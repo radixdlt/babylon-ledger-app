@@ -1,6 +1,5 @@
 use crate::print::parameter_printer::ParameterPrinter;
 use crate::print::state::ParameterPrinterState;
-use crate::print::tty::TTY;
 use crate::sbor_decoder::SborEvent;
 use crate::type_info::{to_type_name, TYPE_U8};
 
