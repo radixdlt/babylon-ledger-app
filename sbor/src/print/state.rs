@@ -1,9 +1,8 @@
-use core::ops::Range;
 use crate::bech32::network::*;
 use crate::print::tty::TTY;
 use crate::sbor_decoder::STACK_DEPTH;
+use core::ops::Range;
 use staticvec::StaticVec;
-use crate::debug::{debug_prepared_message, debug_print, debug_print_byte};
 
 #[derive(Copy, Clone, Debug)]
 pub struct ValueState {
@@ -25,10 +24,12 @@ impl ValueState {
 }
 
 pub const PARAMETER_AREA_SIZE: usize = 128;
+pub const DISPLAY_SIZE: usize = 256;
 
 pub struct ParameterPrinterState {
     pub data: StaticVec<u8, { PARAMETER_AREA_SIZE }>,
     pub stack: StaticVec<ValueState, { STACK_DEPTH as usize }>,
+    pub display: StaticVec<u8, { DISPLAY_SIZE }>,
     pub nesting_level: u8,
     pub network_id: NetworkId,
     tty: TTY,
@@ -39,6 +40,7 @@ impl ParameterPrinterState {
         Self {
             data: StaticVec::new(),
             stack: StaticVec::new(),
+            display: StaticVec::new(),
             nesting_level: 0,
             network_id,
             tty: tty,
@@ -65,24 +67,31 @@ impl ParameterPrinterState {
     const HEX_DIGITS: [u8; 16] = *b"0123456789abcdef";
 
     pub fn print_data_as_text(&mut self) {
-        debug_print("print_data_as_text: ");
-        debug_prepared_message(self.data.as_slice());
-        debug_print("\n");
-        //self.tty.as_mut().expect("TTY not set").print_text(self.data.as_slice());
+        self.display.extend_from_slice(self.data.as_slice());
     }
 
     pub fn print_data_as_hex(&mut self) {
-        debug_print("print_data_as_hex\n");
-        // for &byte in self.data.as_slice() {
-        //     self.tty.as_mut().expect("TTY not set").print_hex_byte(byte);
-        // }
+        for &byte in self.data.as_slice() {
+            if self.display.is_not_full() {
+                self.display
+                    .push(Self::HEX_DIGITS[((byte >> 4) & 0x0F) as usize]);
+            }
+            if self.display.is_not_full() {
+                self.display.push(Self::HEX_DIGITS[(byte & 0x0F) as usize]);
+            }
+        }
     }
 
     pub fn print_data_as_hex_slice(&mut self, range: Range<usize>) {
-        debug_print("print_data_as_hex_slice\n");
-        // for &byte in &self.data.as_slice()[range] {
-        //     self.tty.as_mut().expect("TTY not set").print_hex_byte(byte);
-        // }
+        for &byte in &self.data.as_slice()[range] {
+            if self.display.is_not_full() {
+                self.display
+                    .push(Self::HEX_DIGITS[((byte >> 4) & 0x0F) as usize]);
+            }
+            if self.display.is_not_full() {
+                self.display.push(Self::HEX_DIGITS[(byte & 0x0F) as usize]);
+            }
+        }
     }
 
     pub fn print_space(&mut self) {
@@ -95,19 +104,17 @@ impl ParameterPrinterState {
     }
 
     pub fn start(&mut self) {
-        debug_print("tty start\n");
-//        self.tty.as_mut().expect("TTY not set").start();
+        self.display.clear();
     }
 
     pub fn end(&mut self) {
-        debug_print("tty end\n");
-        //self.tty.as_mut().expect("TTY not set").end();
+        (self.tty.show_message)(self.display.as_slice());
     }
 
     pub fn print_byte(&mut self, byte: u8) {
-        debug_print("tty print_byte: ");
-        debug_print_byte(byte.clone());
-        //self.tty.as_mut().expect("TTY not set").print_byte(byte);
+        if self.display.is_not_full() {
+            self.display.push(byte);
+        }
     }
 
     pub fn print_text(&mut self, text: &[u8]) {

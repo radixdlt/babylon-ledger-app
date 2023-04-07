@@ -10,8 +10,8 @@ use sbor::sbor_decoder::*;
 use crate::app_error::AppError;
 use crate::command_class::CommandClass;
 use crate::crypto::bip32::Bip32Path;
-use crate::crypto::ed25519::{KeyPair25519, ED25519_SIGNATURE_LEN};
-use crate::crypto::hash::{Digest, HashType, Hasher};
+use crate::crypto::ed25519::{ED25519_SIGNATURE_LEN, KeyPair25519};
+use crate::crypto::hash::{Digest, Hasher, HashType};
 use crate::crypto::secp256k1::{KeyPairSecp256k1, SECP256K1_SIGNATURE_LEN};
 use crate::ledger_display_io::LedgerTTY;
 
@@ -57,6 +57,10 @@ impl SignFlowState {
             }
         }
         Ok(())
+    }
+
+    pub fn network_id(&mut self) -> Result<NetworkId, AppError> {
+        self.path.network_id()
     }
 
     fn finalize(&mut self) -> Result<Digest, AppError> {
@@ -209,7 +213,13 @@ impl InstructionProcessor {
         class: CommandClass,
         tx_type: SignTxType,
     ) -> Result<(), AppError> {
-        self.state.process_data(comm, class, tx_type)
+        self.state.process_data(comm, class, tx_type)?;
+
+        if class == CommandClass::Regular {
+            //First packet
+            self.printer.set_network(self.state.network_id()?);
+        }
+        Ok(())
     }
 
     pub fn reset(&mut self) {

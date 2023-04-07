@@ -1,5 +1,3 @@
-use core::str::from_utf8;
-
 use crate::bech32::network::*;
 use crate::instruction::InstructionInfo;
 use crate::instruction_extractor::{ExtractorEvent, InstructionHandler};
@@ -304,6 +302,7 @@ impl Dispatcher {
 #[cfg(test)]
 mod tests {
     use core::cmp::min;
+    use core::str::from_utf8;
 
     use staticvec::StaticVec;
 
@@ -322,18 +321,11 @@ mod tests {
     impl TestPrinter {
         pub fn new() -> TTY {
             TTY {
-                start: Self::start,
-                end: Self::end,
-                print_byte: Self::print_byte,
+                show_message: Self::show_message,
             }
         }
-
-        fn start(_state: &mut ParameterPrinterState) {}
-        fn end(_state: &mut ParameterPrinterState) {
-            println!();
-        }
-        fn print_byte(_state: &mut ParameterPrinterState, byte: u8) {
-            print!("{}", char::from(byte));
+        fn show_message(message: &[u8]) {
+            println!("{}", from_utf8(message).unwrap());
         }
     }
 

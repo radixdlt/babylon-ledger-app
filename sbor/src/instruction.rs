@@ -164,7 +164,7 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
         }),
         PUBLISH_PACKAGE_ADVANCED => Some(InstructionInfo {
             instruction: Instruction::PublishPackage,
-            name: b"PublishPackage",
+            name: b"PublishPackageAdvanced",
         }),
         BURN_RESOURCE => Some(InstructionInfo {
             instruction: Instruction::BurnResource,
@@ -216,7 +216,7 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
         }),
         ASSERT_ACCESS_RULE => Some(InstructionInfo {
             instruction: Instruction::AssertAccessRule,
-            name: b"CreateIdentity",
+            name: b"AssertAccessRule",
         }),
         CALL_FUNCTION => Some(InstructionInfo {
             instruction: Instruction::CallFunction,

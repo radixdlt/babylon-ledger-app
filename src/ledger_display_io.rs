@@ -1,9 +1,8 @@
-use nanos_sdk::testing::debug_print;
+use core::str::from_utf8;
 use nanos_ui::ui;
-use sbor::print::state::ParameterPrinterState;
 use sbor::print::tty::TTY;
 
-use crate::utilities::debug_print_byte;
+use crate::utilities::debug_prepared_message;
 
 #[derive(Copy, Clone, Debug)]
 pub struct LedgerTTY;
@@ -11,22 +10,15 @@ pub struct LedgerTTY;
 impl LedgerTTY {
     pub const fn new() -> TTY {
         TTY {
-            start: Self::start,
-            end: Self::end,
-            print_byte: Self::print_byte,
+            show_message: Self::show_message,
         }
     }
-
-    fn start(_state: &mut ParameterPrinterState) {
-        debug_print("tty start\n");
-    }
-
-    fn end(_state: &mut ParameterPrinterState) {
-        debug_print("tty end\n");
-    }
-
-    fn print_byte(state: &mut ParameterPrinterState, byte: u8) {
-        debug_print("tty print_byte: ");
-        debug_print_byte(byte.clone());
+    fn show_message(message: &[u8]) {
+        debug_prepared_message(message);
+        match from_utf8(message) {
+            Ok(str) => {ui::MessageScroller::new(str).event_loop();}
+            // TODO: handle this error
+            Err(_) => {ui::MessageScroller::new("Invalid content").event_loop();}
+        }
     }
 }

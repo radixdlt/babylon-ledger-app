@@ -1,5 +1,3 @@
-use crate::bech32::network::NetworkIdErrors::UnknownNetworkId;
-
 #[repr(u8)]
 #[derive(Copy, Clone, Debug)]
 pub enum NetworkId {
