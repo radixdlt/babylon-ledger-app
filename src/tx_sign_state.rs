@@ -1,20 +1,19 @@
 use core::cmp::max;
 
 use nanos_sdk::io::Comm;
-use nanos_ui::ui;
 use sbor::bech32::network::NetworkId;
 use sbor::decoder_error::DecoderError;
 use sbor::instruction_extractor::InstructionExtractor;
 use sbor::print::instruction_printer::InstructionPrinter;
-use sbor::print::tty::TTY;
 use sbor::sbor_decoder::*;
 
 use crate::app_error::AppError;
 use crate::command_class::CommandClass;
 use crate::crypto::bip32::Bip32Path;
-use crate::crypto::ed25519::{ED25519_SIGNATURE_LEN, KeyPair25519};
-use crate::crypto::hash::{Digest, Hasher, HashType};
+use crate::crypto::ed25519::{KeyPair25519, ED25519_SIGNATURE_LEN};
+use crate::crypto::hash::{Digest, HashType, Hasher};
 use crate::crypto::secp256k1::{KeyPairSecp256k1, SECP256K1_SIGNATURE_LEN};
+use crate::ledger_display_io::LedgerTTY;
 
 #[repr(u8)]
 #[derive(PartialEq, Copy, Clone)]
@@ -185,13 +184,13 @@ pub enum SignOutcome {
     },
 }
 
-pub struct InstructionProcessor<'a> {
+pub struct InstructionProcessor {
     state: SignFlowState,
     extractor: InstructionExtractor,
-    printer: InstructionPrinter<'a>,
+    printer: InstructionPrinter,
 }
 
-impl<'a> InstructionProcessor<'a> {
+impl InstructionProcessor {
     pub fn sign_tx(&self, tx_type: SignTxType, digest: Digest) -> Result<SignOutcome, AppError> {
         self.state.sign_tx(tx_type, digest)
     }
@@ -202,10 +201,6 @@ impl<'a> InstructionProcessor<'a> {
 
     pub fn set_network(&mut self, network_id: NetworkId) {
         self.printer.set_network(network_id);
-    }
-
-    pub fn set_tty(&mut self, tty: &'a mut dyn TTY) {
-        self.printer.set_tty(tty);
     }
 
     pub fn process_data(
@@ -226,18 +221,18 @@ impl<'a> InstructionProcessor<'a> {
     }
 }
 
-pub struct TxSignState<'a> {
+pub struct TxSignState {
     decoder: SborDecoder,
-    processor: InstructionProcessor<'a>,
+    processor: InstructionProcessor,
 }
 
-impl SborEventHandler for InstructionProcessor<'_> {
+impl SborEventHandler for InstructionProcessor {
     fn handle(&mut self, evt: SborEvent) {
         self.extractor.handle_event(&mut self.printer, evt);
     }
 }
 
-impl<'a> TxSignState<'a> {
+impl TxSignState {
     pub const fn new() -> Self {
         Self {
             decoder: SborDecoder::new(true),
@@ -250,7 +245,7 @@ impl<'a> TxSignState<'a> {
                     hasher: Hasher::new(),
                 },
                 extractor: InstructionExtractor::new(),
-                printer: InstructionPrinter::new(NetworkId::LocalNet),
+                printer: InstructionPrinter::new(NetworkId::LocalNet, LedgerTTY::new()),
             },
         }
     }
@@ -262,10 +257,6 @@ impl<'a> TxSignState<'a> {
 
     pub fn set_network(&mut self, network_id: NetworkId) {
         self.processor.set_network(network_id);
-    }
-
-    pub fn set_tty(&mut self, tty: &'a mut dyn TTY) {
-        self.processor.set_tty(tty);
     }
 
     pub fn process_request(
@@ -280,7 +271,7 @@ impl<'a> TxSignState<'a> {
             Ok(outcome) => match outcome {
                 SignOutcome::SendNextPacket => result,
                 _ => {
-                    self.reset(); // Ensure state is reset on error
+                    self.reset(); // Ensure state is reset on error or end of processing
                     result
                 }
             },

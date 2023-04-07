@@ -1,11 +1,13 @@
-use crate::app_error::{to_result, AppError};
 use core::cmp::max;
 use core::ffi::c_uint;
 use core::intrinsics::write_bytes;
 use core::mem::size_of;
+
 use nanos_sdk::bindings::{
-    cx_blake2b_t, cx_md_t, cx_sha256_t, cx_sha512_t, CX_BLAKE2B, CX_OK, CX_SHA256, CX_SHA512,
+    CX_BLAKE2B, cx_blake2b_t, cx_md_t, CX_SHA256, cx_sha256_t, CX_SHA512, cx_sha512_t, size_t,
 };
+
+use crate::app_error::{AppError, to_result};
 
 const SHA256_DIGEST_SIZE: usize = 32; // 256 bits
 const SHA512_DIGEST_SIZE: usize = 64; // 512 bits
@@ -69,7 +71,7 @@ impl Drop for Hasher {
 }
 
 extern "C" {
-    pub fn cx_hash_init(context: *mut u8, hash_type: cx_md_t) -> u32;
+    pub fn cx_hash_init_ex(context: *mut u8, hash_type: cx_md_t, output_size: size_t) -> u32;
 }
 
 extern "C" {
@@ -109,13 +111,19 @@ impl Hasher {
         self.reset();
         self.hash_type = hash_type;
 
-        let hash_type = match hash_type {
+        let hash_id = match hash_type {
             HashType::SHA256 => CX_SHA256,
             HashType::SHA512 => CX_SHA512,
             HashType::Blake2b => CX_BLAKE2B,
         };
 
-        let rc = unsafe { cx_hash_init(self.work_data.as_mut_ptr(), hash_type) };
+        let output_size: size_t = match hash_type {
+            HashType::SHA256 => SHA256_DIGEST_SIZE as size_t,
+            HashType::SHA512 => SHA512_DIGEST_SIZE as size_t,
+            HashType::Blake2b => BLAKE2B_DIGEST_SIZE as size_t,
+        };
+
+        let rc = unsafe { cx_hash_init_ex(self.work_data.as_mut_ptr(), hash_id, output_size) };
 
         to_result(rc)
     }

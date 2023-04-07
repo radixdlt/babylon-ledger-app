@@ -1,4 +1,5 @@
 use core::str::from_utf8;
+
 use crate::bech32::network::*;
 use crate::instruction::InstructionInfo;
 use crate::instruction_extractor::{ExtractorEvent, InstructionHandler};
@@ -17,18 +18,16 @@ use crate::print::tuple::TUPLE_PARAMETER_PRINTER;
 use crate::sbor_decoder::{SborEvent, SubTypeKind};
 use crate::type_info::*;
 
-pub struct InstructionPrinter<'a> {
+pub struct InstructionPrinter {
     active_instruction: Option<InstructionInfo>,
-    state: ParameterPrinterState<'a>,
+    state: ParameterPrinterState,
 }
 
-impl InstructionHandler for InstructionPrinter<'_> {
+impl InstructionHandler for InstructionPrinter {
     fn handle(&mut self, event: ExtractorEvent) {
         match event {
             ExtractorEvent::InstructionStart(info) => self.start_instruction(info),
-            ExtractorEvent::ParameterStart(event, ..) => {
-                self.parameter_start(event)
-            }
+            ExtractorEvent::ParameterStart(event, ..) => self.parameter_start(event),
             ExtractorEvent::ParameterData(data) => self.parameter_data(data),
             ExtractorEvent::ParameterEnd(event, ..) => self.parameter_end(event),
             ExtractorEvent::InstructionEnd => self.instruction_end(),
@@ -40,20 +39,16 @@ impl InstructionHandler for InstructionPrinter<'_> {
     }
 }
 
-impl<'a> InstructionPrinter<'a> {
-    pub const fn new(network_id: NetworkId) -> Self {
+impl InstructionPrinter {
+    pub const fn new(network_id: NetworkId, tty: TTY) -> Self {
         Self {
             active_instruction: None,
-            state: ParameterPrinterState::new(network_id),
+            state: ParameterPrinterState::new(network_id, tty),
         }
     }
 
     pub fn set_network(&mut self, network_id: NetworkId) {
         self.state.set_network(network_id);
-    }
-
-    pub fn set_tty(&mut self, tty: &'a mut dyn TTY) {
-        self.state.set_tty(tty);
     }
 
     pub fn handle_error(&mut self) {
@@ -170,7 +165,9 @@ impl Dispatcher {
             TYPE_BLOB => BLOB_PARAMETER_PRINTER.handle_data(state, event),
             TYPE_DECIMAL => DECIMAL_PARAMETER_PRINTER.handle_data(state, event),
             TYPE_PRECISE_DECIMAL => PRECISE_DECIMAL_PARAMETER_PRINTER.handle_data(state, event),
-            TYPE_NON_FUNGIBLE_LOCAL_ID => NON_FUNGIBLE_LOCAL_ID_PARAMETER_PRINTER.handle_data(state, event),
+            TYPE_NON_FUNGIBLE_LOCAL_ID => {
+                NON_FUNGIBLE_LOCAL_ID_PARAMETER_PRINTER.handle_data(state, event)
+            }
             _ => IGNORED_PARAMETER_PRINTER.handle_data(state, event),
         };
     }
@@ -263,7 +260,9 @@ impl Dispatcher {
             TYPE_BLOB => BLOB_PARAMETER_PRINTER.subcomponent_start(state),
             TYPE_DECIMAL => DECIMAL_PARAMETER_PRINTER.subcomponent_start(state),
             TYPE_PRECISE_DECIMAL => PRECISE_DECIMAL_PARAMETER_PRINTER.subcomponent_start(state),
-            TYPE_NON_FUNGIBLE_LOCAL_ID => NON_FUNGIBLE_LOCAL_ID_PARAMETER_PRINTER.subcomponent_start(state),
+            TYPE_NON_FUNGIBLE_LOCAL_ID => {
+                NON_FUNGIBLE_LOCAL_ID_PARAMETER_PRINTER.subcomponent_start(state)
+            }
             _ => IGNORED_PARAMETER_PRINTER.subcomponent_start(state),
         };
     }
@@ -294,7 +293,9 @@ impl Dispatcher {
             TYPE_BLOB => BLOB_PARAMETER_PRINTER.subcomponent_end(state),
             TYPE_DECIMAL => DECIMAL_PARAMETER_PRINTER.subcomponent_end(state),
             TYPE_PRECISE_DECIMAL => PRECISE_DECIMAL_PARAMETER_PRINTER.subcomponent_end(state),
-            TYPE_NON_FUNGIBLE_LOCAL_ID => NON_FUNGIBLE_LOCAL_ID_PARAMETER_PRINTER.subcomponent_end(state),
+            TYPE_NON_FUNGIBLE_LOCAL_ID => {
+                NON_FUNGIBLE_LOCAL_ID_PARAMETER_PRINTER.subcomponent_end(state)
+            }
             _ => IGNORED_PARAMETER_PRINTER.subcomponent_end(state),
         };
     }
@@ -303,6 +304,7 @@ impl Dispatcher {
 #[cfg(test)]
 mod tests {
     use core::cmp::min;
+
     use staticvec::StaticVec;
 
     use crate::bech32::network::NetworkId;
@@ -314,49 +316,42 @@ mod tests {
 
     use super::*;
 
-    const OUTPUT_SIZE: usize = 400;
-
     #[derive(Clone)]
-    struct TestPrinter {
-        content: StaticVec<u8, OUTPUT_SIZE>,
-    }
+    struct TestPrinter {}
 
     impl TestPrinter {
-        pub fn new() -> Self {
-            Self {
-                content: StaticVec::new(),
+        pub fn new() -> TTY {
+            TTY {
+                start: Self::start,
+                end: Self::end,
+                print_byte: Self::print_byte,
             }
         }
-    }
 
-    impl TTY for TestPrinter {
-        fn print_byte(&mut self, byte: u8) {
-            print!("{}", char::from(byte));
-        }
-
-        fn start(&mut self) {
-        }
-
-        fn end(&mut self) {
+        fn start(_state: &mut ParameterPrinterState) {}
+        fn end(_state: &mut ParameterPrinterState) {
             println!();
         }
+        fn print_byte(_state: &mut ParameterPrinterState, byte: u8) {
+            print!("{}", char::from(byte));
+        }
     }
 
-    struct InstructionProcessor<'a> {
+    struct InstructionProcessor {
         extractor: InstructionExtractor,
-        handler: InstructionFormatter<'a>,
+        handler: InstructionFormatter,
     }
 
     const SIZE: usize = 20;
 
-    struct InstructionFormatter<'a> {
+    struct InstructionFormatter {
         instruction_count: usize,
         instructions: [Instruction; SIZE],
-        printer: InstructionPrinter<'a>,
+        printer: InstructionPrinter,
     }
 
-    impl<'a> InstructionProcessor<'a> {
-        pub fn new(tty: &'a mut dyn TTY) -> Self {
+    impl InstructionProcessor {
+        pub fn new(tty: TTY) -> Self {
             Self {
                 extractor: InstructionExtractor::new(),
                 handler: InstructionFormatter::new(tty),
@@ -364,15 +359,13 @@ mod tests {
         }
     }
 
-    impl<'a> InstructionFormatter<'a> {
-        pub fn new(tty: &'a mut dyn TTY) -> Self {
-            let mut instance = Self {
+    impl InstructionFormatter {
+        pub fn new(tty: TTY) -> Self {
+            Self {
                 instruction_count: 0,
                 instructions: [Instruction::TakeFromWorktop; SIZE],
-                printer: InstructionPrinter::new(NetworkId::Simulator),
-            };
-            instance.printer.set_tty(tty);
-            instance
+                printer: InstructionPrinter::new(NetworkId::Simulator, tty),
+            }
         }
 
         pub fn verify(&self, expected: &[Instruction]) {
@@ -389,13 +382,13 @@ mod tests {
         }
     }
 
-    impl<'a> SborEventHandler for InstructionProcessor<'a> {
+    impl SborEventHandler for InstructionProcessor {
         fn handle(&mut self, evt: SborEvent) {
             self.extractor.handle_event(&mut self.handler, evt);
         }
     }
 
-    impl InstructionHandler for InstructionFormatter<'_> {
+    impl InstructionHandler for InstructionFormatter {
         fn handle(&mut self, event: ExtractorEvent) {
             if let ExtractorEvent::InstructionStart(info) = event {
                 self.instructions[self.instruction_count] = info.instruction;
@@ -412,9 +405,8 @@ mod tests {
     const CHUNK_SIZE: usize = 255;
 
     fn check_partial_decoding(input: &[u8], expected_instructions: &[Instruction]) {
-        let mut tty = TestPrinter::new();
         let mut decoder = SborDecoder::new(true);
-        let mut handler = InstructionProcessor::new(&mut tty);
+        let mut handler = InstructionProcessor::new(TestPrinter::new());
 
         let mut start = 0;
         let mut end = min(input.len(), CHUNK_SIZE);

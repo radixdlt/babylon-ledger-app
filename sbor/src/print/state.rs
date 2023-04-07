@@ -26,31 +26,27 @@ impl ValueState {
 
 pub const PARAMETER_AREA_SIZE: usize = 128;
 
-pub struct ParameterPrinterState<'a> {
+pub struct ParameterPrinterState {
     pub data: StaticVec<u8, { PARAMETER_AREA_SIZE }>,
     pub stack: StaticVec<ValueState, { STACK_DEPTH as usize }>,
     pub nesting_level: u8,
     pub network_id: NetworkId,
-    tty: Option<&'a mut dyn TTY>,
+    tty: TTY,
 }
 
-impl<'a> ParameterPrinterState<'a> {
-    pub const fn new(network_id: NetworkId) -> Self {
+impl ParameterPrinterState {
+    pub const fn new(network_id: NetworkId, tty: TTY) -> Self {
         Self {
             data: StaticVec::new(),
             stack: StaticVec::new(),
             nesting_level: 0,
             network_id,
-            tty: None,
+            tty: tty,
         }
     }
 
     pub fn set_network(&mut self, network_id: NetworkId) {
         self.network_id = network_id;
-    }
-
-    pub fn set_tty(&mut self, tty: &'a mut dyn TTY) {
-        self.tty = Some(tty);
     }
 
     pub fn reset(&mut self) {
@@ -115,8 +111,8 @@ impl<'a> ParameterPrinterState<'a> {
     }
 
     pub fn print_text(&mut self, text: &[u8]) {
-        debug_print("tty print_text: ");
-        debug_prepared_message(text);
-        //self.tty.as_mut().expect("TTY not set").print_text(text);
+        for &byte in text {
+            self.print_byte(byte);
+        }
     }
 }

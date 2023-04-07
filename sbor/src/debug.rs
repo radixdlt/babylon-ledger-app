@@ -24,6 +24,8 @@ pub fn debug_print(s: &str) {
         }
     }
 }
+#[cfg(all(not(test), not(any(target_os = "nanos", target_os = "nanox", target_os = "nanosplus"))))]
+pub fn debug_print(_s: &str) {}
 
 #[cfg(not(test))]
 pub fn debug_prepared_message(message: &[u8]) {

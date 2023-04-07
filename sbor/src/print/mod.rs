@@ -1,5 +1,6 @@
 pub mod instruction_printer;
 pub mod tty;
+pub mod state;
 
 mod address;
 mod array;
@@ -10,5 +11,4 @@ mod map;
 mod non_fungible;
 mod parameter_printer;
 mod primitives;
-mod state;
 mod tuple;
