@@ -78,8 +78,8 @@ impl SignFlowState {
         self.path = path;
 
         let hash_type = match sign_type {
-            SignTxType::Ed25519 => HashType::SHA512,
-            SignTxType::Secp256k1 => HashType::DoubleSHA256,
+            SignTxType::Ed25519 => HashType::Blake2b,
+            SignTxType::Secp256k1 => HashType::SHA256,
             SignTxType::None => {
                 return Err(AppError::BadTxSignRequestedState);
             }
@@ -130,14 +130,20 @@ impl SignFlowState {
     fn sign_tx(&self, tx_type: SignTxType, digest: Digest) -> Result<SignOutcome, AppError> {
         self.validate_digest(tx_type, digest)?;
 
+        let second_pass_digest = match tx_type {
+            SignTxType::Ed25519 => Hasher::one_step(digest.as_bytes(), HashType::SHA512),
+            SignTxType::Secp256k1 => Hasher::one_step(digest.as_bytes(), HashType::SHA256),
+            _ => return Err(AppError::BadTxSignType),
+        }?;
+
         match tx_type {
             SignTxType::None => return Err(AppError::BadTxSignStart),
             SignTxType::Ed25519 => KeyPair25519::derive(&self.path)
-                .and_then(|keypair| keypair.sign(digest.as_bytes()))
+                .and_then(|keypair| keypair.sign(second_pass_digest.as_bytes()))
                 .map(|signature| SignFlowState::build_signature_outcome(&signature)),
 
             SignTxType::Secp256k1 => KeyPairSecp256k1::derive(&self.path)
-                .and_then(|keypair| keypair.sign(digest.as_bytes()))
+                .and_then(|keypair| keypair.sign(second_pass_digest.as_bytes()))
                 .map(|signature| SignFlowState::build_signature_outcome(&signature)),
         }
     }
@@ -159,8 +165,8 @@ impl SignFlowState {
 
     fn validate_digest(&self, tx_type: SignTxType, digest: Digest) -> Result<(), AppError> {
         match (tx_type, digest.hash_type()) {
-            (SignTxType::Ed25519, HashType::SHA512) => Ok(()),
-            (SignTxType::Secp256k1, HashType::DoubleSHA256) => Ok(()),
+            (SignTxType::Ed25519, HashType::Blake2b) => Ok(()),
+            (SignTxType::Secp256k1, HashType::SHA256) => Ok(()),
             _ => Err(AppError::BadTxSignDigestState),
         }
     }

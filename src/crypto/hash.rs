@@ -19,7 +19,7 @@ const MAX_DIGEST_SIZE: usize = max(
 #[repr(u8)]
 #[derive(Copy, Clone, Debug)]
 pub enum HashType {
-    DoubleSHA256,
+    SHA256,
     SHA512,
     Blake2b,
 }
@@ -44,7 +44,7 @@ impl Digest {
 
     pub fn as_bytes(&self) -> &[u8] {
         match self.hash_type {
-            HashType::DoubleSHA256 => &self.container[..SHA256_DIGEST_SIZE],
+            HashType::SHA256 => &self.container[..SHA256_DIGEST_SIZE],
             HashType::SHA512 => &self.container[..SHA512_DIGEST_SIZE],
             HashType::Blake2b => &self.container[..BLAKE2B_DIGEST_SIZE],
         }
@@ -88,13 +88,13 @@ impl Hasher {
     pub const fn new() -> Self {
         Self {
             work_data: [0; Self::WORK_AREA_SIZE],
-            hash_type: HashType::DoubleSHA256,
+            hash_type: HashType::SHA256,
         }
     }
 
-    pub fn one_step_double_sha256(input: &[u8]) -> Result<Digest, AppError> {
+    pub fn one_step(input: &[u8], hash_type: HashType) -> Result<Digest, AppError> {
         let mut hasher = Hasher::new();
-        hasher.init(HashType::DoubleSHA256)?;
+        hasher.init(hash_type)?;
         hasher.update(input)?;
         hasher.finalize()
     }
@@ -110,7 +110,7 @@ impl Hasher {
         self.hash_type = hash_type;
 
         let hash_type = match hash_type {
-            HashType::DoubleSHA256 => CX_SHA256,
+            HashType::SHA256 => CX_SHA256,
             HashType::SHA512 => CX_SHA512,
             HashType::Blake2b => CX_BLAKE2B,
         };
@@ -132,49 +132,10 @@ impl Hasher {
         to_result(rc)
     }
 
-    fn finalize_double_sha256(&mut self) -> Result<Digest, AppError> {
-        let mut first_pass_digest = [0u8; SHA256_DIGEST_SIZE];
-
-        let rc =
-            unsafe { cx_hash_final(self.work_data.as_mut_ptr(), first_pass_digest.as_mut_ptr()) };
-
-        if rc != CX_OK {
-            return Err(rc.into());
-        }
-
-        let mut digest = Digest::new(HashType::DoubleSHA256);
-
-        self.init(HashType::DoubleSHA256)?;
-        self.update(&first_pass_digest)?;
-        let rc =
-            unsafe { cx_hash_final(self.work_data.as_mut_ptr(), digest.container.as_mut_ptr()) };
-
-        self.reset();
-
-        to_result(rc).map(|_| digest)
-    }
-
-    fn finalize_sha512(&mut self) -> Result<Digest, AppError> {
-        let mut digest = Digest::new(HashType::SHA512);
-
-        let rc = unsafe { cx_hash_final(self.work_data.as_mut_ptr(), digest.as_mut()) };
-
-        to_result(rc).map(|_| digest)
-    }
-
-    fn finalize_blake2b(&mut self) -> Result<Digest, AppError> {
-        let mut digest = Digest::new(HashType::Blake2b);
-
-        let rc = unsafe { cx_hash_final(self.work_data.as_mut_ptr(), digest.as_mut()) };
-
-        to_result(rc).map(|_| digest)
-    }
-
     pub fn finalize(&mut self) -> Result<Digest, AppError> {
-        match self.hash_type {
-            HashType::DoubleSHA256 => self.finalize_double_sha256(),
-            HashType::SHA512 => self.finalize_sha512(),
-            HashType::Blake2b => self.finalize_sha512(),
-        }
+        let mut digest = Digest::new(self.hash_type);
+        let rc = unsafe { cx_hash_final(self.work_data.as_mut_ptr(), digest.as_mut()) };
+
+        to_result(rc).map(|_| digest)
     }
 }
