@@ -151,9 +151,8 @@ The process takes some time (few minutes) to finish. Once process finishes, devi
 
 ### Testing
 
-#### Testing of "Get API Version" call
+For testing there are a number of test scripts provided in `test` directory. To run tests, use following command (inside test directory):
 
-- Load binaries into attached device (device may ask several questions)
-- Select "Radix Babylon" application on device (device may ask several questions)
-- Run `test/get-api-version/show-api-version.sh` script. It should output human-readable version of the installed
-  binaries of the application to the console.
+```sh
+./test-all.sh
+```
