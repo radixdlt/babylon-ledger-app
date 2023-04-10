@@ -9,12 +9,6 @@ pub const NON_FUNGIBLE_LOCAL_ID_PARAMETER_PRINTER: NonFungibleLocalIdParameterPr
     NonFungibleLocalIdParameterPrinter {};
 
 impl ParameterPrinter for NonFungibleLocalIdParameterPrinter {
-    fn handle_data(&self, state: &mut ParameterPrinterState, event: SborEvent) {
-        if let SborEvent::Data(byte) = event {
-            state.push_byte(byte);
-        }
-    }
-
     fn end(&self, state: &mut ParameterPrinterState) {
         //See radix-engine-common/src/data/scrypto/model/non_fungible_local_id.rs
         match state.active_state().key_type_id {

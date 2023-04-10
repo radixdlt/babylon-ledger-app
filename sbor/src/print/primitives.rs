@@ -17,7 +17,7 @@ impl ParameterPrinter for IgnoredParameter {
     fn handle_data(&self, _state: &mut ParameterPrinterState, _event: SborEvent) {}
 
     fn end(&self, state: &mut ParameterPrinterState) {
-        state.print_text("<UNKNOWN TYPE>".as_bytes())
+        state.print_text(b"<UNKNOWN TYPE>")
     }
 }
 
@@ -27,12 +27,6 @@ pub struct BoolParameterPrinter {}
 pub const BOOL_PARAMETER_PRINTER: BoolParameterPrinter = BoolParameterPrinter {};
 
 impl ParameterPrinter for BoolParameterPrinter {
-    fn handle_data(&self, state: &mut ParameterPrinterState, event: SborEvent) {
-        if let SborEvent::Data(byte) = event {
-            state.push_byte(byte);
-        }
-    }
-
     fn end(&self, state: &mut ParameterPrinterState) {
         if state.data.len() != 1 {
             state.print_text(b"<Invalid bool encoding>");
@@ -55,12 +49,6 @@ pub struct StringParameterPrinter {}
 pub const STRING_PARAMETER_PRINTER: StringParameterPrinter = StringParameterPrinter {};
 
 impl ParameterPrinter for StringParameterPrinter {
-    fn handle_data(&self, state: &mut ParameterPrinterState, event: SborEvent) {
-        if let SborEvent::Data(byte) = event {
-            state.push_byte(byte);
-        }
-    }
-
     fn end(&self, state: &mut ParameterPrinterState) {
         state.print_byte(b'"');
         state.print_data_as_text();

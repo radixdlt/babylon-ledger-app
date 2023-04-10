@@ -24,7 +24,7 @@ impl ValueState {
 }
 
 pub const PARAMETER_AREA_SIZE: usize = 128;
-pub const DISPLAY_SIZE: usize = 256;
+pub const DISPLAY_SIZE: usize = 512;
 
 pub struct ParameterPrinterState {
     pub data: StaticVec<u8, { PARAMETER_AREA_SIZE }>,
@@ -57,7 +57,9 @@ impl ParameterPrinterState {
     }
 
     pub fn push_byte(&mut self, byte: u8) {
-        self.data.push(byte);
+        if self.data.is_not_full() {
+            self.data.push(byte);
+        }
     }
 
     pub fn active_state(&mut self) -> &mut ValueState {

@@ -12,12 +12,6 @@ pub struct AddressParameterPrinter {}
 pub const ADDRESS_PARAMETER_PRINTER: AddressParameterPrinter = AddressParameterPrinter {};
 
 impl ParameterPrinter for AddressParameterPrinter {
-    fn handle_data(&self, state: &mut ParameterPrinterState, event: SborEvent) {
-        if let SborEvent::Data(byte) = event {
-            state.push_byte(byte);
-        }
-    }
-
     fn end(&self, state: &mut ParameterPrinterState) {
         if state.data.len() != (ADDRESS_LEN as usize) {
             state.print_text(b"Invalid address format");

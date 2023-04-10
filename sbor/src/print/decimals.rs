@@ -10,12 +10,6 @@ pub struct DecimalParameterPrinter {}
 pub const DECIMAL_PARAMETER_PRINTER: DecimalParameterPrinter = DecimalParameterPrinter {};
 
 impl ParameterPrinter for DecimalParameterPrinter {
-    fn handle_data(&self, state: &mut ParameterPrinterState, event: SborEvent) {
-        if let SborEvent::Data(byte) = event {
-            state.push_byte(byte);
-        }
-    }
-
     fn end(&self, state: &mut ParameterPrinterState) {
         match Decimal::try_from(state.data.as_slice()) {
             Ok(value) => {
@@ -36,12 +30,6 @@ pub const PRECISE_DECIMAL_PARAMETER_PRINTER: PreciseDecimalParameterPrinter =
     PreciseDecimalParameterPrinter {};
 
 impl ParameterPrinter for PreciseDecimalParameterPrinter {
-    fn handle_data(&self, state: &mut ParameterPrinterState, event: SborEvent) {
-        if let SborEvent::Data(byte) = event {
-            state.push_byte(byte);
-        }
-    }
-
     fn end(&self, state: &mut ParameterPrinterState) {
         match PreciseDecimal::try_from(state.data.as_slice()) {
             Ok(value) => {

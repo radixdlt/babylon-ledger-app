@@ -47,12 +47,6 @@ impl ParameterPrinter for ExpressionParameterPrinter {
 }
 
 impl ParameterPrinter for BucketParameterPrinter {
-    fn handle_data(&self, state: &mut ParameterPrinterState, event: SborEvent) {
-        if let SborEvent::Data(byte) = event {
-            state.push_byte(byte);
-        }
-    }
-
     fn start(&self, state: &mut ParameterPrinterState) {
         state.print_text(b"Bucket(");
     }
@@ -64,12 +58,6 @@ impl ParameterPrinter for BucketParameterPrinter {
 }
 
 impl ParameterPrinter for ProofParameterPrinter {
-    fn handle_data(&self, state: &mut ParameterPrinterState, event: SborEvent) {
-        if let SborEvent::Data(byte) = event {
-            state.push_byte(byte);
-        }
-    }
-
     fn start(&self, state: &mut ParameterPrinterState) {
         state.print_text(b"Proof(");
     }
