@@ -70,7 +70,7 @@ def send_derivation_path(bip_path):
 
 
 for file_name in list_files():
-    if not file_name.endswith("/assert_access_rule.txn"):
+    if not file_name.endswith(".txn"):
         continue
     data = read_file(file_name)
     send_derivation_path("m/44H/1022H/10H/525H/0H/1238H")

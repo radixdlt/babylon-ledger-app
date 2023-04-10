@@ -7,6 +7,8 @@ pub fn debug_print(_s: &str) {}
 pub fn debug_prepared_message(_s: &[u8]) {}
 #[cfg(test)]
 pub fn debug_print_byte(_s: u8) {}
+#[cfg(test)]
+pub fn debug_print_hex_byte(_s: u8) {}
 
 /// Debug 'print' function that uses ARM semihosting
 /// Prints only strings with no formatting
@@ -41,3 +43,17 @@ pub fn debug_print_byte(byte: u8) {
     buffer[2] = b'>';
     debug_prepared_message(&buffer);
 }
+
+#[cfg(all(not(test), any(target_os = "nanos", target_os = "nanox", target_os = "nanosplus")))]
+const HEX_DIGITS: [u8; 16] = *b"0123456789abcdef";
+
+#[cfg(all(not(test), any(target_os = "nanos", target_os = "nanox", target_os = "nanosplus")))]
+pub fn debug_print_hex_byte(byte: u8) {
+    let mut buffer = [0u8; 2];
+    buffer[0] = HEX_DIGITS[((byte >> 4) & 0x0F) as usize];
+    buffer[1] = HEX_DIGITS[(byte & 0x0F) as usize];
+    debug_prepared_message(&buffer);
+}
+#[cfg(all(not(test), not(any(target_os = "nanos", target_os = "nanox", target_os = "nanosplus"))))]
+pub fn debug_print_hex_byte(_s: &str) {}
+

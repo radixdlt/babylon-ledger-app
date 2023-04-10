@@ -1,6 +1,7 @@
 use core::cmp::max;
 
 use nanos_sdk::io::Comm;
+use nanos_ui::ui;
 use sbor::bech32::network::NetworkId;
 use sbor::decoder_error::DecoderError;
 use sbor::instruction_extractor::InstructionExtractor;

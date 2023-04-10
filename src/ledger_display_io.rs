@@ -15,10 +15,15 @@ impl LedgerTTY {
     }
     fn show_message(message: &[u8]) {
         debug_prepared_message(message);
-        match from_utf8(message) {
-            Ok(str) => {ui::MessageScroller::new(str).event_loop();}
-            // TODO: handle this error
-            Err(_) => {ui::MessageScroller::new("Invalid content").event_loop();}
-        }
+        //TODO: uncomment this code after debugging
+        // match from_utf8(message) {
+        //     Ok(str) => {
+        //         ui::MessageScroller::new(str).event_loop();
+        //     }
+        //     // TODO: handle this error
+        //     Err(_) => {
+        //         ui::MessageScroller::new("Invalid content").event_loop();
+        //     }
+        // }
     }
 }

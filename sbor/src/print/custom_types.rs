@@ -1,24 +1,20 @@
+use crate::debug::{debug_prepared_message, debug_print};
 use crate::print::parameter_printer::ParameterPrinter;
 use crate::print::primitives::U32_PARAMETER_PRINTER;
 use crate::print::state::ParameterPrinterState;
 use crate::sbor_decoder::SborEvent;
 
-pub struct HexParameterPrinter {
-    name: &'static [u8],
-}
+pub struct BlobParameterPrinter;
+pub struct ExpressionParameterPrinter;
+pub struct BucketParameterPrinter;
+pub struct ProofParameterPrinter;
 
-pub struct UintParameterPrinter {
-    name: &'static [u8],
-}
+pub const BLOB_PARAMETER_PRINTER: BlobParameterPrinter = BlobParameterPrinter {};
+pub const EXPRESSION_PARAMETER_PRINTER: ExpressionParameterPrinter = ExpressionParameterPrinter {};
+pub const BUCKET_PARAMETER_PRINTER: BucketParameterPrinter = BucketParameterPrinter {};
+pub const PROOF_PARAMETER_PRINTER: ProofParameterPrinter = ProofParameterPrinter {};
 
-pub const BLOB_PARAMETER_PRINTER: HexParameterPrinter = HexParameterPrinter { name: b"Blob" };
-pub const EXPRESSION_PARAMETER_PRINTER: HexParameterPrinter = HexParameterPrinter {
-    name: b"Expression",
-};
-pub const BUCKET_PARAMETER_PRINTER: UintParameterPrinter = UintParameterPrinter { name: b"Bucket" };
-pub const PROOF_PARAMETER_PRINTER: UintParameterPrinter = UintParameterPrinter { name: b"Proof" };
-
-impl ParameterPrinter for HexParameterPrinter {
+impl ParameterPrinter for BlobParameterPrinter {
     fn handle_data(&self, state: &mut ParameterPrinterState, event: SborEvent) {
         if let SborEvent::Data(byte) = event {
             state.print_hex_byte(byte);
@@ -26,8 +22,7 @@ impl ParameterPrinter for HexParameterPrinter {
     }
 
     fn start(&self, state: &mut ParameterPrinterState) {
-        state.print_text(self.name);
-        state.print_byte(b'(');
+        state.print_text(b"Blob(");
     }
 
     fn end(&self, state: &mut ParameterPrinterState) {
@@ -35,7 +30,23 @@ impl ParameterPrinter for HexParameterPrinter {
     }
 }
 
-impl ParameterPrinter for UintParameterPrinter {
+impl ParameterPrinter for ExpressionParameterPrinter {
+    fn handle_data(&self, state: &mut ParameterPrinterState, event: SborEvent) {
+        if let SborEvent::Data(byte) = event {
+            state.print_hex_byte(byte);
+        }
+    }
+
+    fn start(&self, state: &mut ParameterPrinterState) {
+        state.print_text(b"Expression(");
+    }
+
+    fn end(&self, state: &mut ParameterPrinterState) {
+        state.print_byte(b')');
+    }
+}
+
+impl ParameterPrinter for BucketParameterPrinter {
     fn handle_data(&self, state: &mut ParameterPrinterState, event: SborEvent) {
         if let SborEvent::Data(byte) = event {
             state.push_byte(byte);
@@ -43,8 +54,24 @@ impl ParameterPrinter for UintParameterPrinter {
     }
 
     fn start(&self, state: &mut ParameterPrinterState) {
-        state.print_text(self.name);
-        state.print_byte(b'(');
+        state.print_text(b"Bucket(");
+    }
+
+    fn end(&self, state: &mut ParameterPrinterState) {
+        U32_PARAMETER_PRINTER.end(state);
+        state.print_byte(b')');
+    }
+}
+
+impl ParameterPrinter for ProofParameterPrinter {
+    fn handle_data(&self, state: &mut ParameterPrinterState, event: SborEvent) {
+        if let SborEvent::Data(byte) = event {
+            state.push_byte(byte);
+        }
+    }
+
+    fn start(&self, state: &mut ParameterPrinterState) {
+        state.print_text(b"Proof(");
     }
 
     fn end(&self, state: &mut ParameterPrinterState) {
