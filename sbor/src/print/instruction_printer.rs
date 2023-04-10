@@ -49,6 +49,10 @@ impl InstructionPrinter {
         self.state.set_network(network_id);
     }
 
+    pub fn display_hex_string(&mut self, data: &[u8]) {
+        self.state.display_hex_string(data);
+    }
+
     pub fn handle_error(&mut self) {
         self.state.start();
         self.state.print_text(b"Unable to decode transaction intent. Either, input is invalid or application is outdated.");

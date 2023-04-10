@@ -11,8 +11,8 @@ use sbor::sbor_decoder::*;
 use crate::app_error::AppError;
 use crate::command_class::CommandClass;
 use crate::crypto::bip32::Bip32Path;
-use crate::crypto::ed25519::{ED25519_SIGNATURE_LEN, KeyPair25519};
-use crate::crypto::hash::{Digest, Hasher, HashType};
+use crate::crypto::ed25519::{KeyPair25519, ED25519_SIGNATURE_LEN};
+use crate::crypto::hash::{Digest, HashType, Hasher};
 use crate::crypto::secp256k1::{KeyPairSecp256k1, SECP256K1_SIGNATURE_LEN};
 use crate::ledger_display_io::LedgerTTY;
 
@@ -204,8 +204,13 @@ impl InstructionProcessor {
         self.state.tx_size
     }
 
-    pub fn set_network(&mut self, network_id: NetworkId) {
-        self.printer.set_network(network_id);
+    pub fn display_hex_string(&mut self, data: &[u8]) {
+        self.printer.display_hex_string(data);
+    }
+
+    pub fn set_network(&mut self) -> Result<(), AppError> {
+        self.printer.set_network(self.state.network_id()?);
+        Ok(())
     }
 
     pub fn process_data(
@@ -216,10 +221,6 @@ impl InstructionProcessor {
     ) -> Result<(), AppError> {
         self.state.process_data(comm, class, tx_type)?;
 
-        if class == CommandClass::Regular {
-            //First packet
-            self.printer.set_network(self.state.network_id()?);
-        }
         Ok(())
     }
 
@@ -235,6 +236,7 @@ impl InstructionProcessor {
 pub struct TxSignState {
     decoder: SborDecoder,
     processor: InstructionProcessor,
+    show_digest: bool,
 }
 
 impl SborEventHandler for InstructionProcessor {
@@ -258,16 +260,13 @@ impl TxSignState {
                 extractor: InstructionExtractor::new(),
                 printer: InstructionPrinter::new(NetworkId::LocalNet, LedgerTTY::new()),
             },
+            show_digest: false,
         }
     }
 
     pub fn reset(&mut self) {
         self.processor.reset();
         self.decoder.reset();
-    }
-
-    pub fn set_network(&mut self, network_id: NetworkId) {
-        self.processor.set_network(network_id);
     }
 
     pub fn process_request(
@@ -301,7 +300,10 @@ impl TxSignState {
     ) -> Result<SignOutcome, AppError> {
         self.processor.process_data(comm, class, tx_type)?;
 
-        if class != CommandClass::Regular {
+        if class == CommandClass::Regular {
+            self.processor.set_network()?;
+            self.show_digest = comm.get_p1() == 1;
+        } else {
             self.decode_tx_intent(comm.get_data()?, class)?;
         }
 
@@ -313,13 +315,15 @@ impl TxSignState {
     }
 
     fn finalize_sign_tx(&mut self, tx_type: SignTxType) -> Result<SignOutcome, AppError> {
-        // TODO: Display digest to user?
         let digest = self.processor.state.finalize()?;
 
-        // TODO: uncomment code below after debugging!!!
-        // if !ui::Validator::new("Sign Intent?").ask() {
-        //     return Ok(SignOutcome::SigningRejected);
-        // }
+        if self.show_digest {
+            self.processor.display_hex_string(digest.as_bytes());
+        }
+
+        if !ui::Validator::new("Sign Intent?").ask() {
+            return Ok(SignOutcome::SigningRejected);
+        }
 
         self.processor.sign_tx(tx_type, digest)
     }
