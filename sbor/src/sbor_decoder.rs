@@ -110,6 +110,7 @@ impl SborDecoder {
         self.byte_count = 0;
         self.head = 0;
         self.stack[0] = State::new();
+        self.expect_leading_byte = true;
     }
 
     #[inline]

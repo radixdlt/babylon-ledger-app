@@ -61,6 +61,14 @@ impl InstructionExtractor {
         }
     }
 
+    pub fn reset(&mut self) {
+        self.phase = ExtractorPhase::Init;
+        self.instruction_phase = InstructionPhase::Done;
+        self.parameter_count = 0;
+        self.parameters_total = 0;
+        self.discriminator = 0;
+    }
+
     pub fn handle_event(&mut self, handler: &mut impl InstructionHandler, event: SborEvent) {
         match self.phase {
             ExtractorPhase::Init => {

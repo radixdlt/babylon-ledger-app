@@ -6,6 +6,7 @@ use sbor::bech32::network::NetworkId;
 use sbor::decoder_error::DecoderError;
 use sbor::instruction_extractor::InstructionExtractor;
 use sbor::print::instruction_printer::InstructionPrinter;
+use sbor::print::tty::TTY;
 use sbor::sbor_decoder::*;
 
 use crate::app_error::AppError;
@@ -213,6 +214,10 @@ impl InstructionProcessor {
         Ok(())
     }
 
+    pub fn set_tty(&mut self, tty: TTY) {
+        self.printer.set_tty(tty);
+    }
+
     pub fn process_data(
         &mut self,
         comm: &mut Comm,
@@ -226,6 +231,8 @@ impl InstructionProcessor {
 
     pub fn reset(&mut self) {
         self.state.reset();
+        self.extractor.reset();
+        self.printer.reset();
     }
 
     pub fn finalize(&mut self) -> Result<Digest, AppError> {
@@ -267,6 +274,7 @@ impl TxSignState {
     pub fn reset(&mut self) {
         self.processor.reset();
         self.decoder.reset();
+        self.processor.set_tty(LedgerTTY::new());
     }
 
     pub fn process_request(

@@ -45,8 +45,17 @@ impl InstructionPrinter {
         }
     }
 
+    pub fn reset(&mut self) {
+        self.active_instruction = None;
+        self.state.reset();
+    }
+
     pub fn set_network(&mut self, network_id: NetworkId) {
         self.state.set_network(network_id);
+    }
+
+    pub fn set_tty(&mut self, tty: TTY) {
+        self.state.set_tty(tty);
     }
 
     pub fn display_hex_string(&mut self, data: &[u8]) {

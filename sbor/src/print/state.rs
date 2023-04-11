@@ -51,6 +51,10 @@ impl ParameterPrinterState {
         self.network_id = network_id;
     }
 
+    pub fn set_tty(&mut self, tty: TTY) {
+        self.tty = tty;
+    }
+
     pub fn reset(&mut self) {
         self.data.clear();
         self.stack.clear();
