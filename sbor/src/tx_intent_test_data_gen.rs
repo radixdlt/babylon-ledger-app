@@ -10,7 +10,6 @@ pub mod tests {
 
     const BLOBS: &[Blob] = &[
         Blob { name: "access_rule", data: &TX_ACCESS_RULE, },
-        Blob { name: "assert_access_rule", data: &TX_ASSERT_ACCESS_RULE, },
         Blob { name: "call_function", data: &TX_CALL_FUNCTION, },
         Blob { name: "call_method", data: &TX_CALL_METHOD, },
         Blob { name: "create_access_controller", data: &TX_CREATE_ACCESS_CONTROLLER, },

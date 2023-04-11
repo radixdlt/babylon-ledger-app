@@ -323,14 +323,6 @@ mod tests {
     }
 
     #[test]
-    pub fn test_assert_access_rule() {
-        check_partial_decoding(
-            &TX_ASSERT_ACCESS_RULE,
-            &[Instruction::CallMethod, Instruction::AssertAccessRule],
-        );
-    }
-
-    #[test]
     pub fn test_call_function() {
         check_partial_decoding(&TX_CALL_FUNCTION, &[Instruction::CallFunction]);
     }
@@ -397,6 +389,20 @@ mod tests {
         check_partial_decoding(
             &TX_METADATA,
             &[
+                Instruction::SetMetadata,
+                Instruction::SetMetadata,
+                Instruction::SetMetadata,
+                Instruction::SetMetadata,
+                Instruction::SetMetadata,
+                Instruction::SetMetadata,
+                Instruction::SetMetadata,
+                Instruction::SetMetadata,
+                Instruction::SetMetadata,
+                Instruction::SetMetadata,
+                Instruction::SetMetadata,
+                Instruction::SetMetadata,
+                Instruction::SetMetadata,
+                Instruction::SetMetadata,
                 Instruction::SetMetadata,
                 Instruction::SetMetadata,
                 Instruction::SetMetadata,

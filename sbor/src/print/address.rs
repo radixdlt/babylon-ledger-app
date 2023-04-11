@@ -10,6 +10,32 @@ pub struct AddressParameterPrinter {}
 
 pub const ADDRESS_PARAMETER_PRINTER: AddressParameterPrinter = AddressParameterPrinter {};
 
+fn to_hrp_type(id: u8) -> Option<HrpType> {
+    // Depends on EntityType enum
+    match id {
+        0 => Some(HrpType::Package),
+        1 => Some(HrpType::Resource),
+        2 => Some(HrpType::Resource),
+        3 => Some(HrpType::EpochManager),
+        4 => Some(HrpType::Validator),
+        5 => Some(HrpType::Clock),
+        6 => Some(HrpType::AccessController),
+        7 => Some(HrpType::Account),
+        8 => Some(HrpType::Identity),
+        9 => Some(HrpType::Component),
+        10 => Some(HrpType::Account),
+        11 => Some(HrpType::Account),
+        12 => Some(HrpType::Identity),
+        13 => Some(HrpType::Identity),
+        14 => Some(HrpType::InternalVault),
+        15 => Some(HrpType::InternalVault),
+        16 => Some(HrpType::InternalAccount),
+        17 => Some(HrpType::InternalKeyValueStore),
+        18 => Some(HrpType::InternalComponent),
+        _ => None,
+    }
+}
+
 impl ParameterPrinter for AddressParameterPrinter {
     fn end(&self, state: &mut ParameterPrinterState) {
         if state.data.len() != (ADDRESS_LEN as usize) {
@@ -17,20 +43,9 @@ impl ParameterPrinter for AddressParameterPrinter {
             return;
         }
 
-        let resource_id = match state.data[0] {
-            0x00 => HrpType::Package,
-            0x01 => HrpType::FungibleResource,
-            0x02 => HrpType::NonFungibleResource,
-            0x03..=0x0d => HrpType::Component,
-            _ => HrpType::Autodetect,
-        };
-
-        match hrp_prefix(resource_id, state.data[0]) {
-            None => {
-                state.print_text(b"Address(unknown type)");
-                return;
-            }
-            Some(hrp_prefix) => format_address(state, hrp_prefix),
+        match to_hrp_type(state.data[0]) {
+            Some(hrp_type) => format_address(state, hrp_prefix(hrp_type)),
+            None => state.print_text(b"Address(unknown type)"),
         }
     }
 }
@@ -40,10 +55,7 @@ fn format_address(state: &mut ParameterPrinterState, hrp_prefix: &str) {
     vec.extend_from_slice(hrp_prefix.as_bytes());
     vec.extend_from_slice(hrp_suffix(state.network_id).as_bytes());
 
-    let encodind_result = Bech32::encode(
-        vec.as_slice(),
-        state.data.as_slice(),
-    );
+    let encodind_result = Bech32::encode(vec.as_slice(), state.data.as_slice());
 
     match encodind_result {
         Ok(encoder) => {

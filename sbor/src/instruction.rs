@@ -34,9 +34,8 @@ const SET_METHOD_ACCESS_RULE: u8 = 28;
 const MINT_FUNGIBLE: u8 = 29;
 const MINT_NON_FUNGIBLE: u8 = 30;
 const MINT_UUID_NON_FUNGIBLE: u8 = 31;
-const ASSERT_ACCESS_RULE: u8 = 32;
-const CALL_FUNCTION: u8 = 33;
-const CALL_METHOD: u8 = 34;
+const CALL_FUNCTION: u8 = 32;
+const CALL_METHOD: u8 = 33;
 
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -73,7 +72,6 @@ pub enum Instruction {
     MintFungible,        // { resource_address: ResourceAddress, amount: Decimal, },
     MintNonFungible,     // { resource_address: ResourceAddress, args: ManifestValue, },
     MintUuidNonFungible, // { resource_address: ResourceAddress, args: ManifestValue, },
-    AssertAccessRule,    // { access_rule: AccessRule, },
     CallFunction, // { package_address: PackageAddress, blueprint_name: String, function_name: String, args: ManifestValue, },
     CallMethod, // { component_address: ComponentAddress, method_name: String, args: ManifestValue, },
 }
@@ -213,10 +211,6 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
         MINT_UUID_NON_FUNGIBLE => Some(InstructionInfo {
             instruction: Instruction::MintUuidNonFungible,
             name: b"MintUuidNonFungible",
-        }),
-        ASSERT_ACCESS_RULE => Some(InstructionInfo {
-            instruction: Instruction::AssertAccessRule,
-            name: b"AssertAccessRule",
         }),
         CALL_FUNCTION => Some(InstructionInfo {
             instruction: Instruction::CallFunction,

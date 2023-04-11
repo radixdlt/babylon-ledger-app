@@ -3,23 +3,19 @@ use crate::bech32::network::NetworkId;
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum HrpType {
-    Autodetect,
     Package,
-    FungibleResource,
-    NonFungibleResource,
+    Resource,
     Component,
-}
-
-impl From<u8> for HrpType {
-    fn from(value: u8) -> Self {
-        match value {
-            1 => HrpType::Package,
-            2 => HrpType::FungibleResource,
-            3 => HrpType::NonFungibleResource,
-            4 => HrpType::Component,
-            _ => HrpType::Autodetect,
-        }
-    }
+    Account,
+    Identity,
+    EpochManager,
+    Clock,
+    Validator,
+    AccessController,
+    InternalVault,
+    InternalAccount,
+    InternalComponent,
+    InternalKeyValueStore,
 }
 
 pub fn hrp_suffix(net_id: NetworkId) -> &'static str {
@@ -39,21 +35,20 @@ pub fn hrp_suffix(net_id: NetworkId) -> &'static str {
     }
 }
 
-pub fn hrp_prefix(entity_id: HrpType, discriminator: u8) -> Option<&'static str> {
-    match entity_id {
-        HrpType::Autodetect => None,
-        HrpType::Package => Some("package_"),
-        HrpType::FungibleResource | HrpType::NonFungibleResource => Some("resource_"),
-        HrpType::Component => match discriminator {
-            // NOTE: this part depends on Scrypto entity ID's
-            0x03 => Some("component_"),              // Normal
-            0x05 => Some("epochmanager_"),           // EpochManager
-            0x06 => Some("validator_"),              // Validator
-            0x07 => Some("clock_"),                  // Clock
-            0x0d => Some("accesscontroller_"),       // AccessController
-            0x04 | 0x08 | 0x09 => Some("account_"), // Account, EcdsaSecp256k1VirtualAccount, EddsaEd25519VirtualAccount
-            0x0a | 0x0b | 0x0c => Some("identity_"), // Identity, EcdsaSecp256k1VirtualIdentity, EddsaEd25519VirtualIdentity
-            _ => None,
-        },
+pub fn hrp_prefix(hrp_type: HrpType) -> &'static str {
+    match hrp_type {
+        HrpType::Package => "package_",
+        HrpType::Resource => "resource_",
+        HrpType::Component => "component_",
+        HrpType::Account => "account_",
+        HrpType::Identity => "identity_",
+        HrpType::EpochManager => "epochmanager_",
+        HrpType::Clock => "clock_",
+        HrpType::Validator => "validator_",
+        HrpType::AccessController => "accesscontroller_",
+        HrpType::InternalVault => "internal_vault_",
+        HrpType::InternalAccount => "internal_account_",
+        HrpType::InternalComponent => "internal_component_",
+        HrpType::InternalKeyValueStore => "internal_keyvaluestore_",
     }
 }
