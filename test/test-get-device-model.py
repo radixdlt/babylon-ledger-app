@@ -1,5 +1,6 @@
 import sys
 import os
+
 # disable printing stack trace
 sys.tracebacklimit = 0
 
@@ -20,5 +21,11 @@ dataLength = "00"
 print("Testing", "GetDeviceModel", instructionCode, end=" ")
 response = dongle.exchange(bytes.fromhex(instructionClass + instructionCode + p1 + p2 + dataLength))
 
-assert response.hex() == '00', "Invalid model (only Nano S is supported for now)"
-print("Success")
+if response.hex() == '00':
+    print("Model: Nano S")
+elif response.hex() == '01':
+    print("Model: Nano S Plus")
+elif response.hex() == '02':
+    print("Model: Nano X")
+else:
+    print("Unknown model " + reponse.hex())

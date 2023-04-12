@@ -1,6 +1,7 @@
 use crate::crypto::curves::{cx_ecfp_private_key_t, cx_ecfp_public_key_t};
 use core::intrinsics::write_bytes;
 
+#[derive(Clone)]
 pub struct InternalKeyPair {
     pub public: cx_ecfp_public_key_t,
     pub private: cx_ecfp_private_key_t,

@@ -1,0 +1,3 @@
+# Usefult for debugging image size issues. Uncomment line below when necessary.
+[build]
+# rustflags = ["-Clink-args=-Map=./target/nanos/debug/babylon-ledger-app.map"]

@@ -1,0 +1,1 @@
+./speculos.py -d apps/babylon.elf --display headless --model nanosp &

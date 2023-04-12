@@ -1,12 +1,11 @@
-use core::intrinsics::{copy, write_bytes};
-use core::ptr::copy_nonoverlapping;
+use core::intrinsics::write_bytes;
 use core::str::from_utf8;
 
 use nanos_sdk::io::Comm;
 use nanos_ui::ui;
+use sbor::bech32::network::NetworkId;
 
-use crate::utilities::conversion::{read_u32_be, read_u32_le, to_hex, to_hex_str, to_str};
-use crate::utilities::{debug, debug_arr, debug_prepared_message, debug_u32};
+use crate::utilities::conversion::{read_u32_be, to_hex_str};
 use crate::AppError;
 
 const BIP32_REQUIRED_LEN: u8 = 6;
@@ -140,17 +139,14 @@ impl Bip32Path {
             return Err(AppError::BadBip32PathCoinType);
         }
 
-        let mut network_id = self.path[BIP32_NETWORK_ID_INDEX];
+        let network_id = self.path[BIP32_NETWORK_ID_INDEX];
 
         if (network_id & BIP32_HARDENED) == 0 {
             return Err(AppError::BadBip32PathMustBeHardened);
         }
 
-        network_id &= !BIP32_HARDENED;
-
-        if network_id > BIP32_MAX_NETWORK_ID {
-            return Err(AppError::BadBip32PathNetworkId);
-        }
+        NetworkId::try_from(network_id & !BIP32_HARDENED)
+            .map_err(|_| AppError::BadBip32PathNetworkId)?;
 
         if self.path[BIP32_ENTITY_INDEX] != BIP32_ENTITY_ACCOUNT
             && self.path[BIP32_ENTITY_INDEX] != BIP32_ENTITY_IDENTITY
@@ -203,7 +199,7 @@ impl Bip32Path {
         Ok(path)
     }
 
-    pub fn new(len: u8) -> Self {
+    pub const fn new(len: u8) -> Self {
         Self {
             path: [0u32; MAX_BIP32_PATH_LEN],
             len,
@@ -241,5 +237,10 @@ impl Bip32Path {
             }
             ui::MessageScroller::new(from_utf8(&buf).unwrap()).event_loop();
         }
+    }
+
+    pub fn network_id(&self) -> Result<NetworkId, AppError> {
+        NetworkId::try_from(self.path[BIP32_NETWORK_ID_INDEX] & !BIP32_HARDENED)
+            .map_err(|_| AppError::BadBip32PathNetworkId)
     }
 }

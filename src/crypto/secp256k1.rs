@@ -1,12 +1,12 @@
-use core::ffi::{c_uchar, c_uint};
-use core::ptr::{copy, null_mut, write_bytes};
-use core::str::from_utf8;
+use core::ptr::write_bytes;
+use nanos_sdk::bindings::{
+    cx_err_t, cx_md_t, CX_ECCINFO_PARITY_ODD, CX_LAST, CX_RND_RFC6979, CX_SHA256,
+};
 
 use crate::app_error::AppError;
 use crate::crypto::bip32::Bip32Path;
 use crate::crypto::curves::{cx_ecfp_public_key_t, generate_key_pair, size_t, Curve};
 use crate::crypto::key_pair::InternalKeyPair;
-use crate::utilities::{debug, debug_arr, debug_u32};
 
 const PUB_KEY_TYPE_UNCOMPRESSED: u8 = 0x04;
 const PUB_KEY_TYPE_COMPRESSED_Y_EVEN: u8 = 0x02;
@@ -16,6 +16,7 @@ const PUB_KEY_COMPRESSED_LEN: usize = 33;
 const PRIV_KEY_LEN: usize = 32;
 const PUB_KEY_X_COORDINATE_SIZE: usize = 32;
 const PUB_KEY_UNCOMPRESSED_LAST_BYTE: usize = 64;
+pub const SECP256K1_SIGNATURE_LEN: usize = 65;
 
 struct PublicKeySecp256k1(pub [u8; PUB_KEY_COMPRESSED_LEN]);
 struct PrivateKeySecp256k1(pub [u8; PRIV_KEY_LEN]);
@@ -71,12 +72,51 @@ fn validate_secp256k1_public_key(pub_key: &cx_ecfp_public_key_t) -> Result<(), A
     Ok(())
 }
 
+extern "C" {
+    pub fn cx_ecdsa_sign_no_throw(
+        pvkey: *const u8,
+        mode: u32,
+        hashID: cx_md_t,
+        hash: *const u8,
+        hash_len: size_t,
+        sig: *mut u8,
+        sig_len: *mut size_t,
+        info: *mut u32,
+    ) -> cx_err_t;
+}
+
 impl KeyPairSecp256k1 {
     pub fn derive(path: &Bip32Path) -> Result<Self, AppError> {
         let pair = generate_key_pair(Curve::Secp256k1, path)?;
         validate_secp256k1_public_key(&pair.public)?;
 
         Ok(pair.into())
+    }
+
+    pub fn sign(&self, message: &[u8]) -> Result<[u8; SECP256K1_SIGNATURE_LEN], AppError> {
+        let mut signature: [u8; SECP256K1_SIGNATURE_LEN] = [0; SECP256K1_SIGNATURE_LEN];
+
+        unsafe {
+            let mut info: u32 = 0;
+            let mut len: size_t = (signature.len() - 1) as size_t;
+
+            cx_ecdsa_sign_no_throw(
+                self.private.0.as_ptr() as *const u8,
+                CX_RND_RFC6979 | CX_LAST,
+                CX_SHA256,
+                message.as_ptr(),
+                message.len() as size_t,
+                signature.as_mut_ptr().offset(1),
+                &mut len as *mut size_t,
+                &mut info as *mut size_t,
+            );
+
+            if (info & CX_ECCINFO_PARITY_ODD) != 0 {
+                signature[0] |= 0x01;
+            }
+        }
+
+        Ok(signature)
     }
 
     pub fn public(&self) -> &[u8] {

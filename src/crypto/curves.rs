@@ -1,17 +1,13 @@
-use crate::app_error::AppError;
+use crate::app_error::{to_result, AppError};
 use crate::crypto::bip32::Bip32Path;
 use crate::crypto::key_pair::InternalKeyPair;
 use core::ffi::{c_uchar, c_uint};
 use core::intrinsics::write_bytes;
 use core::ptr::null_mut;
 use nanos_sdk::bindings::{
-    cx_curve_t, cx_err_t, CX_CURVE_Ed25519, CX_CARRY, CX_CURVE_SECP256K1, CX_EC_INFINITE_POINT,
-    CX_EC_INVALID_CURVE, CX_EC_INVALID_POINT, CX_INTERNAL_ERROR, CX_INVALID_PARAMETER,
-    CX_INVALID_PARAMETER_SIZE, CX_INVALID_PARAMETER_VALUE, CX_LOCKED, CX_MEMORY_FULL,
-    CX_NOT_INVERTIBLE, CX_NOT_LOCKED, CX_NOT_UNLOCKED, CX_NO_RESIDUE, CX_OK, CX_OVERFLOW,
-    CX_SHA512, CX_UNLOCKED, HDW_ED25519_SLIP10, HDW_NORMAL,
+    cx_curve_t, CX_CURVE_Ed25519, CX_CURVE_SECP256K1, HDW_ED25519_SLIP10, HDW_NORMAL,
 };
-pub use nanos_sdk::bindings::{cx_ecfp_private_key_t, cx_ecfp_public_key_t, size_t};
+pub use nanos_sdk::bindings::{cx_ecfp_private_key_t, cx_ecfp_public_key_t, size_t, cx_err_t, cx_md_t, CX_SHA512};
 
 pub const INTERNAL_SEED_SIZE: usize = 32;
 
@@ -26,7 +22,7 @@ impl Drop for Seed {
 }
 
 #[repr(u8)]
-#[derive(Copy, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum Curve {
     Secp256k1 = CX_CURVE_SECP256K1,
     Ed25519 = CX_CURVE_Ed25519,
@@ -38,17 +34,16 @@ pub fn generate_key_pair(curve: Curve, path: &Bip32Path) -> Result<InternalKeyPa
         public: init_public_key(curve)?,
     };
 
-    unsafe {
-        let rc = cx_ecfp_generate_pair_no_throw(
+    let rc = unsafe {
+        cx_ecfp_generate_pair_no_throw(
             curve as cx_curve_t,
             &mut key_pair.public as *mut cx_ecfp_public_key_t,
             &key_pair.private as *const cx_ecfp_private_key_t,
             true,
-        );
-        map_error_code(rc)?;
-    }
+        )
+    };
 
-    Ok(key_pair)
+    to_result(rc).map(|_| key_pair)
 }
 
 extern "C" {
@@ -92,11 +87,11 @@ fn init_public_key(curve: Curve) -> Result<cx_ecfp_public_key_t, AppError> {
         W: [0; 65],
     };
 
-    unsafe {
-        let rc = cx_ecfp_init_public_key_no_throw(curve as cx_curve_t, null_mut(), 0, &mut pub_key);
-        map_error_code(rc)?;
+    let rc = unsafe {
+        cx_ecfp_init_public_key_no_throw(curve as cx_curve_t, null_mut(), 0, &mut pub_key)
     };
-    Ok(pub_key)
+
+    to_result(rc).map(|_| pub_key)
 }
 
 fn init_private_key(curve: Curve, seed: &Seed) -> Result<cx_ecfp_private_key_t, AppError> {
@@ -106,17 +101,16 @@ fn init_private_key(curve: Curve, seed: &Seed) -> Result<cx_ecfp_private_key_t, 
         d_len: 0,
     };
 
-    unsafe {
-        let rc = cx_ecfp_init_private_key_no_throw(
+    let rc = unsafe {
+        cx_ecfp_init_private_key_no_throw(
             curve as cx_curve_t,
             &seed.0 as *const u8,
             seed.0.len() as size_t,
             &mut priv_key,
-        );
-        map_error_code(rc)?;
+        )
     };
 
-    Ok(priv_key)
+    to_result(rc).map(|_| priv_key)
 }
 
 fn derive(curve: Curve, path: &Bip32Path) -> Result<cx_ecfp_private_key_t, AppError> {
@@ -140,27 +134,4 @@ fn derive(curve: Curve, path: &Bip32Path) -> Result<cx_ecfp_private_key_t, AppEr
     }
 
     init_private_key(curve, &seed)
-}
-
-fn map_error_code(code: cx_err_t) -> Result<(), AppError> {
-    match code {
-        CX_OK => Ok(()),
-        CX_CARRY => Err(AppError::CxErrorCarry),
-        CX_LOCKED => Err(AppError::CxErrorLocked),
-        CX_UNLOCKED => Err(AppError::CxErrorUnlocked),
-        CX_NOT_LOCKED => Err(AppError::CxErrorNotLocked),
-        CX_NOT_UNLOCKED => Err(AppError::CxErrorNotUnlocked),
-        CX_INTERNAL_ERROR => Err(AppError::CxErrorInternalError),
-        CX_INVALID_PARAMETER_SIZE => Err(AppError::CxErrorInvalidParameterSize),
-        CX_INVALID_PARAMETER_VALUE => Err(AppError::CxErrorInvalidParameterValue),
-        CX_INVALID_PARAMETER => Err(AppError::CxErrorInvalidParameter),
-        CX_NOT_INVERTIBLE => Err(AppError::CxErrorNotInvertible),
-        CX_OVERFLOW => Err(AppError::CxErrorOverflow),
-        CX_MEMORY_FULL => Err(AppError::CxErrorMemoryFull),
-        CX_NO_RESIDUE => Err(AppError::CxErrorNoResidue),
-        CX_EC_INFINITE_POINT => Err(AppError::CxErrorEcInfinitePoint),
-        CX_EC_INVALID_POINT => Err(AppError::CxErrorEcInvalidPoint),
-        CX_EC_INVALID_CURVE => Err(AppError::CxErrorEcInvalidCurve),
-        _ => Err(AppError::Unknown),
-    }
 }

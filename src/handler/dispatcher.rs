@@ -3,12 +3,11 @@ use nanos_sdk::io::Comm;
 
 use crate::app_error::AppError;
 use crate::command::Command;
-use crate::handler::{get_device_id, get_private_key_ed25519};
+use crate::command_class::CommandClass;
+use crate::handler::{get_device_id, get_private_key_ed25519, sign_tx_ed25519, sign_tx_secp256k1};
 use crate::handler::{get_private_key_secp256k1, get_public_key_ed25519, get_public_key_secp256k1};
+use crate::tx_sign_state::TxSignState;
 use crate::utilities::version::{MODEL_DATA, VERSION_DATA};
-
-// APDU Command Class for Radix Ledger Apps
-const RADIX_CLASS: u8 = 0xAA;
 
 fn ensure_zero_params(comm: &Comm) -> Result<(), AppError> {
     match (comm.get_p1(), comm.get_p2()) {
@@ -22,20 +21,21 @@ fn send_fixed(comm: &mut Comm, data: &[u8]) -> () {
     ()
 }
 
-fn validate_request(comm: &Comm) -> Result<(), AppError> {
+fn validate_request(comm: &Comm, class: CommandClass) -> Result<(), AppError> {
     if comm.rx == 0 {
         return Err(io::StatusWords::NothingReceived.into());
     }
 
-    if comm.get_cla_ins().0 != RADIX_CLASS {
-        return Err(AppError::BadCla);
+    match class {
+        CommandClass::Regular | CommandClass::Continuation | CommandClass::LastData => Ok(()),
+        _ => Err(AppError::BadCla),
     }
-
-    Ok(())
 }
 
-pub fn dispatcher(comm: &mut Comm, ins: Command) -> Result<(), AppError> {
-    validate_request(comm)?;
+pub fn dispatcher(comm: &mut Comm, ins: Command, state: &mut TxSignState) -> Result<(), AppError> {
+    let class = CommandClass::from(comm.get_cla_ins().0);
+
+    validate_request(comm, class)?;
 
     match ins {
         Command::GetAppVersion => {
@@ -51,6 +51,14 @@ pub fn dispatcher(comm: &mut Comm, ins: Command) -> Result<(), AppError> {
         Command::GetPrivKeyEd25519 => get_private_key_ed25519::handle(comm)?,
         Command::GetPubKeySecp256k1 => get_public_key_secp256k1::handle(comm)?,
         Command::GetPrivKeySecp256k1 => get_private_key_secp256k1::handle(comm)?,
+        // TODO: temporarily handled by the same function as the non-smart version
+        Command::SignTxEd25519 | Command::SignTxEd25519Smart => {
+            sign_tx_ed25519::handle(comm, class, state)?
+        }
+        // TODO: temporarily handled by the same function as the non-smart version
+        Command::SignTxSecp256k1 | Command::SignTxSecp256k1Smart => {
+            sign_tx_secp256k1::handle(comm, class, state)?
+        }
         Command::BadCommand => Err(AppError::NotImplemented)?,
         Command::Exit => nanos_sdk::exit_app(0),
     }
