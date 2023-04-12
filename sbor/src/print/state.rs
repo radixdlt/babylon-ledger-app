@@ -24,7 +24,15 @@ impl ValueState {
 }
 
 pub const PARAMETER_AREA_SIZE: usize = 128;
-pub const DISPLAY_SIZE: usize = 512;
+
+#[cfg(target_os = "nanos")]
+pub const DISPLAY_SIZE: usize = 256;    // Use smaller buffer for Nano S
+#[cfg(target_os = "nanosplus")]
+pub const DISPLAY_SIZE: usize = 1024;   // Nano S+ and Nano X have larger screens and more memory
+#[cfg(target_os = "nanox")]
+pub const DISPLAY_SIZE: usize = 1024;
+#[cfg(not(any(target_os = "nanos", target_os = "nanox", target_os = "nanosplus")))]
+pub const DISPLAY_SIZE: usize = 2048;   // For testing on desktop
 
 pub struct ParameterPrinterState {
     pub data: StaticVec<u8, { PARAMETER_AREA_SIZE }>,

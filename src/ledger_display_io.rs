@@ -1,6 +1,5 @@
 use core::str::from_utf8;
 use nanos_ui::ui;
-use sbor::debug::debug_print;
 use sbor::print::tty::TTY;
 
 #[derive(Copy, Clone, Debug)]
