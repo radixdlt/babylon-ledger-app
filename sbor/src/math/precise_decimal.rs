@@ -1,6 +1,7 @@
+use crypto_bigint::{NonZero, U512, Zero};
+use crate::static_vec::StaticVec;
+
 use crate::math::MathError;
-use crypto_bigint::{NonZero, Zero, U512};
-use staticvec::StaticVec;
 
 #[derive(Copy, Clone)]
 pub struct PreciseDecimal(U512);
@@ -14,52 +15,54 @@ impl PreciseDecimal {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]));
     pub const MAX: Self = Self(U512::MAX);
-    pub const MAX_PRINT_LEN: usize = 180;
+    pub const MAX_PRINT_LEN: usize = 160;
 
     const LOW_TEN: PreciseDecimal = PreciseDecimal(U512::from_u64(10u64));
 
-    fn fmt_uint(uint: U512) -> StaticVec<u8, { Self::MAX_PRINT_LEN }> {
+    fn fmt_uint(uint: U512, vec: &mut StaticVec<u8, { Self::MAX_PRINT_LEN }>) -> u16 {
         let divisor = NonZero::new(PreciseDecimal::LOW_TEN.0).unwrap();
+        let index = vec.len();
         let mut value = uint;
-        let mut vec = StaticVec::<u8, { Self::MAX_PRINT_LEN }>::new();
+        let mut num_digits = 0;
 
         loop {
             let (quotent, remainder) = value.div_rem(&divisor);
-            vec.insert(0, remainder.as_words()[0] as u8 + b'0');
+            vec.insert(index, remainder.as_words()[0] as u8 + b'0');
+            num_digits += 1;
 
             if quotent.is_zero().into() {
                 break;
             }
             value = quotent;
         }
-
-        vec
+        num_digits
     }
 
-    pub fn format(&self) -> StaticVec<u8, {Self::MAX_PRINT_LEN}> {
+    pub fn format(&self) -> StaticVec<u8, { Self::MAX_PRINT_LEN }> {
         let divisor = NonZero::new(PreciseDecimal::ONE.0).unwrap();
         let (quotent, remainder) = self.0.div_rem(&divisor);
-        let whole = PreciseDecimal::fmt_uint(quotent);
         let no_decimals: bool = remainder.is_zero().into();
+        let mut output = StaticVec::<u8, { Self::MAX_PRINT_LEN }>::new();
 
-        let mut output = StaticVec::<u8, { Self::MAX_PRINT_LEN }>::new_from_slice(whole.as_slice());
+        PreciseDecimal::fmt_uint(quotent, &mut output);
 
         if !no_decimals {
-            let mut decimals = PreciseDecimal::fmt_uint(remainder);
+            output.push(b'.');
+            let decimal_start = output.len();
+            let mut decimals = PreciseDecimal::fmt_uint(remainder, &mut output);
 
             // Add leading zeros if necessary
-            while decimals.len() < (PreciseDecimal::SCALE as usize) {
-                decimals.insert(0, b'0');
+            while decimals < (PreciseDecimal::SCALE as u16) {
+                output.insert(decimal_start as usize, b'0');
+                decimals += 1;
             }
 
             // Remove trailing zeros if necessary
-            while let Some(b'0') = decimals.get(decimals.len() - 1) {
-                decimals.remove(decimals.len() - 1);
+            while let Some(b'0') = output.get(output.len() - 1) {
+                output.remove(output.len() - 1);
             }
-
-            output.push(b'.');
-            output.extend_from_slice(decimals.as_slice());
         }
+
         output
     }
 }
@@ -77,9 +80,10 @@ impl TryFrom<&[u8]> for PreciseDecimal {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use core::fmt;
     use core::fmt::Write;
+
+    use super::*;
 
     impl fmt::Display for PreciseDecimal {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {

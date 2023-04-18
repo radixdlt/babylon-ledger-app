@@ -38,7 +38,7 @@ impl InstructionHandler for InstructionPrinter {
 }
 
 impl InstructionPrinter {
-    pub const fn new(network_id: NetworkId, tty: TTY) -> Self {
+    pub fn new(network_id: NetworkId, tty: TTY) -> Self {
         Self {
             active_instruction: None,
             state: ParameterPrinterState::new(network_id, tty),

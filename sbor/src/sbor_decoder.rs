@@ -7,30 +7,74 @@ use core::result::Result;
 use core::result::Result::{Err, Ok};
 
 #[cfg(target_os = "nanos")]
-pub const STACK_DEPTH: u8 = 25;    // Use minimal possible stack for Nano S
+pub const STACK_DEPTH: u8 = 28; // Use minimal possible stack for Nano S
 #[cfg(target_os = "nanosplus")]
-pub const STACK_DEPTH: u8 = 32;   // Nano S+ and Nano X have more memory
+pub const STACK_DEPTH: u8 = 32; // Nano S+ and Nano X have more memory
 #[cfg(target_os = "nanox")]
 pub const STACK_DEPTH: u8 = 32;
 #[cfg(not(any(target_os = "nanos", target_os = "nanox", target_os = "nanosplus")))]
-pub const STACK_DEPTH: u8 = 32;   // For testing on desktop
+pub const STACK_DEPTH: u8 = 32; // For testing on desktop
 
 pub const SBOR_LEADING_BYTE: u8 = 77; // MANIFEST_SBOR_V1_PAYLOAD_PREFIX
 
+#[repr(C, packed)]
+#[derive(Copy, Clone, Debug)]
+struct Flags(u8);
+
+impl Flags {
+    const SKIP_START_END: u8 = 0x80;
+    const FLIP_FLOP: u8 = 0x40;
+    const PHASE_MASK: u8 = 0x3F;
+
+    const fn new(phase: DecoderPhase) -> Self {
+        Self(phase.as_byte())
+    }
+
+    pub fn skip_start_end(&self) -> bool {
+        self.0 & Self::SKIP_START_END != 0
+    }
+
+    pub fn set_skip_start_end(&mut self, value: bool) {
+        self.0 &= !Self::SKIP_START_END;
+
+        if value {
+            self.0 |= Self::SKIP_START_END;
+        }
+    }
+
+    pub fn flip_flop(&self) -> bool {
+        if self.0 & Self::FLIP_FLOP == 0 {
+            false
+        } else {
+            true
+        }
+    }
+
+    pub fn flip(&mut self) {
+        self.0 ^= Self::FLIP_FLOP;
+    }
+
+    pub fn phase(&mut self) -> DecoderPhase {
+        DecoderPhase::from_byte(self.0 & Self::PHASE_MASK)
+    }
+
+    pub fn set_phase(&mut self, phase: DecoderPhase) {
+        self.0 &= !Self::PHASE_MASK;
+        self.0 |= phase.as_byte();
+    }
+}
+
+#[repr(C, packed)]
 #[derive(Copy, Clone, Debug)]
 struct State {
     items_to_read: u32,
-    items_read: u32,
-    len_acc: usize,
+    active_type_id: u8,
+
+    key_type_id: u8,        // Map key type ID
+    element_type_id: u8,    // Map value type ID; Array/Tuple/Enum - element type ID
+
     phase_ptr: u8,
-    element_type_id: u8,
-    key_type_id: u8,
-    value_type_id: u8,
-    len_shift: u8,
-    skip_start_end: bool,
-    active_type: TypeInfo,
-    phase: DecoderPhase,
-    flip_flop: FlipFlopState,
+    flags: Flags,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -67,29 +111,46 @@ pub enum SubTypeKind {
     Value,
 }
 
-#[repr(u8)]
-#[derive(Copy, Clone, Debug)]
-enum FlipFlopState {
-    Key,
-    Value,
-}
-
 impl State {
     const fn new() -> Self {
         Self {
-            phase: DecoderPhase::ReadingTypeId,
             phase_ptr: 0,
-            active_type: NONE_TYPE_INFO,
+            active_type_id: TYPE_NONE,
             items_to_read: 0,
-            items_read: 0,
             element_type_id: TYPE_NONE,
             key_type_id: TYPE_NONE,
-            value_type_id: TYPE_NONE,
-            len_shift: 0,
-            len_acc: 0,
-            skip_start_end: false,
-            flip_flop: FlipFlopState::Key,
+            flags: Flags::new(DecoderPhase::ReadingTypeId),
         }
+    }
+
+    #[inline]
+    pub fn set_phase(&mut self, phase: DecoderPhase) {
+        self.flags.set_phase(phase);
+    }
+
+    #[inline]
+    pub fn phase(&mut self) -> DecoderPhase {
+        self.flags.phase()
+    }
+
+    #[inline]
+    pub fn skip_start_end(&mut self) -> bool {
+        self.flags.skip_start_end()
+    }
+
+    #[inline]
+    pub fn set_skip_start_end(&mut self, value: bool) {
+        self.flags.set_skip_start_end(value);
+    }
+
+    #[inline]
+    pub fn flip_flop(&mut self) -> bool {
+        self.flags.flip_flop()
+    }
+
+    #[inline]
+    pub fn flip(&mut self) {
+        self.flags.flip();
     }
 }
 
@@ -102,6 +163,8 @@ pub struct SborDecoder {
     byte_count: usize,
     head: u8,
     expect_leading_byte: bool,
+    len_acc: usize,
+    len_shift: u8,
 }
 
 impl SborDecoder {
@@ -111,6 +174,8 @@ impl SborDecoder {
             byte_count: 0,
             head: 0,
             expect_leading_byte: expect_leading_byte,
+            len_acc: 0,
+            len_shift: 0,
         }
     }
 
@@ -124,11 +189,6 @@ impl SborDecoder {
     #[inline]
     fn head(&mut self) -> &mut State {
         &mut self.stack[self.head as usize]
-    }
-
-    #[inline]
-    fn phase(&mut self) -> DecoderPhase {
-        self.head().phase
     }
 
     pub fn push(&mut self) -> Result<(), DecoderError> {
@@ -179,7 +239,7 @@ impl SborDecoder {
             }
         }
 
-        match self.phase() {
+        match self.head().phase() {
             DecoderPhase::ReadingTypeId => self.read_type_id(handler, byte),
             DecoderPhase::ReadingLen => self.read_len(handler, byte),
             DecoderPhase::ReadingElementTypeId => {
@@ -224,7 +284,7 @@ impl SborDecoder {
     }
 
     fn decoding_outcome(&mut self) -> DecodingOutcome {
-        if self.head == 0 && self.phase() == DecoderPhase::ReadingTypeId {
+        if self.head == 0 && self.head().phase() == DecoderPhase::ReadingTypeId {
             DecodingOutcome::Done(self.byte_count)
         } else {
             DecodingOutcome::NeedMoreData(self.byte_count)
@@ -235,9 +295,9 @@ impl SborDecoder {
         if self.head().is_last_phase() {
             {
                 let level = self.head;
-                let id = self.head().active_type.type_id;
+                let id = self.head().active_type_id;
 
-                if !self.head().skip_start_end {
+                if !self.head().skip_start_end() {
                     handler.handle(SborEvent::End {
                         type_id: id,
                         nesting_level: level,
@@ -245,7 +305,7 @@ impl SborDecoder {
                 }
             }
 
-            self.head().phase = DecoderPhase::ReadingTypeId;
+            self.head().set_phase(DecoderPhase::ReadingTypeId);
             self.head().phase_ptr = 0;
 
             if self.head > 0 {
@@ -254,7 +314,10 @@ impl SborDecoder {
         } else {
             let mut head = self.head();
             head.phase_ptr += 1;
-            head.phase = head.active_type.next_phases[head.phase_ptr as usize];
+
+            // Safe to unwrap because we know that the type is valid
+            let phase = to_type_info(head.active_type_id).unwrap().next_phases[head.phase_ptr as usize];
+            head.set_phase(phase);
         }
 
         Ok(())
@@ -270,7 +333,7 @@ impl SborDecoder {
 
         let size = self.size();
 
-        if !self.head().skip_start_end {
+        if !self.head().skip_start_end() {
             handler.handle(SborEvent::Start {
                 type_id: byte,
                 nesting_level: self.head,
@@ -286,8 +349,7 @@ impl SborDecoder {
         handler: &mut impl SborEventHandler,
         byte: u8,
     ) -> Result<(), DecoderError> {
-        let byte_count = self.byte_count;
-        if self.head().read_len(byte, byte_count)? {
+        if self.read_encoded_len(byte)? {
             handler.handle(SborEvent::Len(self.head().items_to_read));
             self.advance_phase(handler)?;
 
@@ -296,6 +358,26 @@ impl SborDecoder {
         } else {
             Ok(())
         }
+    }
+
+    fn read_encoded_len(&mut self, byte: u8) -> Result<bool, DecoderError> {
+        let byte_count = self.byte_count;
+
+        self.len_acc |= ((byte & 0x7F) as usize) << self.len_shift;
+
+        if byte < 0x80 {
+            self.head().items_to_read = self.len_acc as u32;
+            self.len_acc = 0;
+            self.len_shift = 0;
+            return Ok(true);
+        }
+
+        self.len_shift += 7;
+        if self.len_shift >= 28 {
+            return Err(DecoderError::InvalidLen(byte_count, byte));
+        }
+
+        Ok(false)
     }
 
     fn read_sub_type_id(
@@ -317,7 +399,7 @@ impl SborDecoder {
     ) -> Result<(), DecoderError> {
         let byte_count = self.byte_count;
 
-        match self.head().active_type.type_id {
+        match self.head().active_type_id {
             // fixed/variable len components with raw bytes payload
             // Unit..String | Custom types
             0x00..=0x0c | 0x80..=0xff => {
@@ -327,24 +409,22 @@ impl SborDecoder {
 
             // variable length components with fields payload
             TYPE_TUPLE | TYPE_ENUM => {
-                self.head().increment_items_read(byte_count)?; // Increment field count
+                self.head().decrement_items_to_read(byte_count)?; // Increment field count
                 self.push()?; // Start new field
                 self.decode_byte(handler, byte, false) // Read first byte (field type id)
             }
 
             // variable length component with flip/flop payload (key/value)
             TYPE_MAP => {
-                let type_id = match self.head().flip_flop {
-                    FlipFlopState::Key => {
-                        self.head().flip_flop = FlipFlopState::Value;
-                        self.head().key_type_id
-                    }
-                    FlipFlopState::Value => {
-                        self.head().flip_flop = FlipFlopState::Key;
-                        self.head().increment_items_read(byte_count)?; // Increment entry count
-                        self.head().value_type_id
-                    }
+                let type_id = if !self.head().flip_flop() {
+                    // Key
+                    self.head().key_type_id
+                } else {
+                    // Value
+                    self.head().decrement_items_to_read(byte_count)?; // Increment entry count
+                    self.head().element_type_id
                 };
+                self.head().flip();
 
                 self.push()?; // Start key or value content read
 
@@ -354,16 +434,15 @@ impl SborDecoder {
 
             // variable length components with fixed payload type
             TYPE_ARRAY => {
-                self.head().increment_items_read(byte_count)?; // Increment element count
+                self.head().decrement_items_to_read(byte_count)?; // Increment element count
                 let type_id = self.head().element_type_id; // Prepare element type
 
                 self.push()?; // Start new element
 
                 match type_id {
                     // do not report start/end of each element for byte arrays
-                    // instead they are reported like strings or enum name
                     TYPE_U8 | TYPE_I8 => {
-                        self.head().skip_start_end = true;
+                        self.head().set_skip_start_end(true);
                     }
                     _ => {}
                 }
@@ -391,54 +470,37 @@ impl SborDecoder {
 
     fn read_single_data_byte(&mut self, _byte: u8) -> Result<(), DecoderError> {
         let byte_count = self.byte_count;
-        self.head().increment_items_read(byte_count)
+        self.head().decrement_items_to_read(byte_count)
     }
 
     fn size(&mut self) -> u8 {
-        self.head().active_type.fixed_len
+        // Safe to unwrap because we already checked that type_id is valid
+        to_type_info(self.head().active_type_id).unwrap().fixed_len
     }
 }
 
 impl State {
     #[inline]
     fn is_last_phase(&mut self) -> bool {
-        self.phase_ptr == (self.active_type.next_phases.len() - 1) as u8
+        // Safe to unwrap because we already checked that type_id is valid
+        let len = to_type_info(self.active_type_id).unwrap().next_phases.len() as u8;
+        self.phase_ptr == len - 1
     }
 
     fn is_read_data_phase(&mut self) -> bool {
-        self.phase == DecoderPhase::ReadingData
+        self.flags.phase() == DecoderPhase::ReadingData
     }
 
     fn read_type_id(&mut self, byte: u8, byte_count: usize) -> Result<(), DecoderError> {
         match to_type_info(byte) {
             None => Err(DecoderError::UnknownType(byte_count, byte)),
             Some(type_info) => {
-                self.active_type = type_info;
-                self.items_to_read = self.active_type.fixed_len as u32;
-                self.items_read = 0;
+                self.active_type_id = byte;
+                self.items_to_read = type_info.fixed_len as u32;
 
                 Ok(())
             }
         }
-    }
-
-    fn read_len(&mut self, byte: u8, byte_count: usize) -> Result<bool, DecoderError> {
-        self.len_acc |= ((byte & 0x7F) as usize) << self.len_shift;
-
-        if byte < 0x80 {
-            self.items_read = 0;
-            self.items_to_read = self.len_acc as u32;
-            self.len_acc = 0;
-            self.len_shift = 0;
-            return Ok(true);
-        }
-
-        self.len_shift += 7;
-        if self.len_shift >= 28 {
-            return Err(DecoderError::InvalidLen(byte_count, byte));
-        }
-
-        Ok(false)
     }
 
     fn read_sub_type_id(
@@ -452,9 +514,9 @@ impl State {
             None => Err(DecoderError::UnknownSubType(byte_count, byte)),
             Some(_) => {
                 match sub_type {
-                    SubTypeKind::Element => self.element_type_id = byte,
                     SubTypeKind::Key => self.key_type_id = byte,
-                    SubTypeKind::Value => self.value_type_id = byte,
+                    SubTypeKind::Value => self.element_type_id = byte,
+                    SubTypeKind::Element => self.element_type_id = byte,
                 }
                 handler.handle(SborEvent::ElementType {
                     kind: sub_type,
@@ -466,15 +528,14 @@ impl State {
     }
 
     fn all_read(&mut self) -> bool {
-        self.items_read == self.items_to_read
+        self.items_to_read == 0
     }
 
-    fn increment_items_read(&mut self, byte_count: usize) -> Result<(), DecoderError> {
-        self.items_read += 1;
-
-        if self.items_to_read < self.items_read {
+    fn decrement_items_to_read(&mut self, byte_count: usize) -> Result<(), DecoderError> {
+        if self.items_to_read == 0 {
             Err(DecoderError::InvalidState(byte_count))
         } else {
+            self.items_to_read -= 1;
             Ok(())
         }
     }

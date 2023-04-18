@@ -230,15 +230,6 @@ impl InstructionProcessor {
         self.printer.set_tty(tty);
     }
 
-    pub fn process_data(
-        &mut self,
-        comm: &mut Comm,
-        class: CommandClass,
-        tx_type: SignTxType,
-    ) -> Result<(), AppError> {
-        self.state.process_data(comm, class, tx_type)
-    }
-
     pub fn reset(&mut self) {
         self.state.reset();
         self.extractor.reset();
@@ -316,7 +307,7 @@ impl TxSignState {
         class: CommandClass,
         tx_type: SignTxType,
     ) -> Result<SignOutcome, AppError> {
-        self.processor.process_data(comm, class, tx_type)?;
+        self.processor.state.process_data(comm, class, tx_type)?;
 
         if class == CommandClass::Regular {
             self.processor.set_network()?;
