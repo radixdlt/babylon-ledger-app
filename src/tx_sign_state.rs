@@ -12,8 +12,8 @@ use sbor::sbor_decoder::*;
 use crate::app_error::AppError;
 use crate::command_class::CommandClass;
 use crate::crypto::bip32::Bip32Path;
-use crate::crypto::ed25519::{ED25519_PUBLIC_KEY_LEN, ED25519_SIGNATURE_LEN, KeyPair25519};
-use crate::crypto::hash::{Digest, Hasher, HashType};
+use crate::crypto::ed25519::{KeyPair25519, ED25519_PUBLIC_KEY_LEN, ED25519_SIGNATURE_LEN};
+use crate::crypto::hash::{Digest, HashType, Hasher};
 use crate::crypto::secp256k1::{
     KeyPairSecp256k1, SECP256K1_PUBLIC_KEY_LEN, SECP256K1_SIGNATURE_LEN,
 };
@@ -44,7 +44,13 @@ impl SignFlowState {
     ) -> Result<(), AppError> {
         match class {
             CommandClass::Regular => {
-                let path = Bip32Path::read(comm).and_then(|path| path.validate())?;
+                let path = Bip32Path::read(comm).and_then(|path| {
+                    if tx_type == SignTxType::Ed25519 {
+                        path.validate()
+                    } else {
+                        path.validate_olympia_path()
+                    }
+                })?;
                 self.start(tx_type, path)?;
                 self.update_counters(0); // First packet contains no data
                 Ok(())
