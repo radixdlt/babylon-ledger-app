@@ -1,15 +1,15 @@
 use core::ptr::write_bytes;
 
-use crate::app_error::{to_result, AppError};
+use crate::app_error::{AppError, to_result};
 use crate::crypto::bip32::Bip32Path;
 use crate::crypto::curves::{
-    cx_ecfp_private_key_t, cx_ecfp_public_key_t, cx_err_t, cx_md_t, generate_key_pair, Curve,
-    CX_SHA512, size_t
+    Curve, cx_ecfp_private_key_t, cx_ecfp_public_key_t, cx_err_t, cx_md_t, CX_SHA512,
+    generate_key_pair, size_t,
 };
 use crate::crypto::key_pair::InternalKeyPair;
 
-const ED25519_PUBLIC_KEY_LEN: usize = 32;
-const ED25519_PRIVATE_KEY_LEN: usize = 32;
+pub const ED25519_PUBLIC_KEY_LEN: usize = 32;
+pub const ED25519_PRIVATE_KEY_LEN: usize = 32;
 pub const ED25519_SIGNATURE_LEN: usize = 64;
 
 struct PublicKey25519(pub [u8; ED25519_PUBLIC_KEY_LEN]);
@@ -34,7 +34,7 @@ impl From<InternalKeyPair> for KeyPair25519 {
         Self {
             public: key_pair.public.into(),
             private: PrivateKey25519(key_pair.private.d),
-            origin: key_pair.clone()
+            origin: key_pair.clone(),
         }
     }
 }
@@ -103,5 +103,9 @@ impl KeyPair25519 {
 
     pub fn private(&self) -> &[u8] {
         &self.private.0
+    }
+
+    pub fn public_key(&self) -> [u8; ED25519_PUBLIC_KEY_LEN] {
+        self.public.0
     }
 }

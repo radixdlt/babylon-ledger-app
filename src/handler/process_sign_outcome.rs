@@ -1,14 +1,21 @@
+use nanos_sdk::io::Comm;
+
 use crate::app_error::AppError;
 use crate::tx_sign_state::SignOutcome;
-use nanos_sdk::io::Comm;
 
 pub fn process_sign_outcome(comm: &mut Comm, outcome: SignOutcome) -> Result<(), AppError> {
     match outcome {
         SignOutcome::SigningRejected => Err(AppError::BadTxSignUserRejected),
-        SignOutcome::Signature { len, signature } => {
-            comm.append(&signature[..(len as usize)]);
+        SignOutcome::SendNextPacket => Ok(()),
+        SignOutcome::SignatureEd25519 { signature, key } => {
+            comm.append(&signature);
+            comm.append(&key);
             Ok(())
         }
-        SignOutcome::SendNextPacket => Ok(()),
+        SignOutcome::SignatureSecp256k1 { signature, key } => {
+            comm.append(&signature);
+            comm.append(&key);
+            Ok(())
+        }
     }
 }

@@ -125,6 +125,7 @@ impl Hasher {
 
         let mut work_data: [u8; Self::WORK_AREA_SIZE] = [0; Self::WORK_AREA_SIZE];
         let rc = unsafe { cx_hash_init_ex(work_data.as_mut_ptr(), hash_id, output_size) };
+
         self.work_data.clone_from(&work_data);
 
         to_result(rc)
@@ -132,6 +133,7 @@ impl Hasher {
 
     pub fn update(&mut self, input: &[u8]) -> Result<(), AppError> {
         let mut work_data: [u8; Self::WORK_AREA_SIZE] = [0; Self::WORK_AREA_SIZE];
+
         work_data.clone_from(&self.work_data);
 
         let rc = unsafe {
@@ -141,6 +143,7 @@ impl Hasher {
                 input.len() as c_uint,
             )
         };
+
         self.work_data.clone_from(&work_data);
 
         to_result(rc)
@@ -149,12 +152,15 @@ impl Hasher {
     pub fn finalize(&mut self) -> Result<Digest, AppError> {
         let mut digest = Digest::new(self.hash_type);
         let mut work_data: [u8; Self::WORK_AREA_SIZE] = [0; Self::WORK_AREA_SIZE];
+
         work_data.clone_from(&self.work_data);
+
         let rc = unsafe {
             cx_hash_final(work_data.as_mut_ptr(), digest.as_mut())
         };
 
         self.work_data.clone_from(&work_data);
+
         to_result(rc).map(|_| digest)
     }
 }

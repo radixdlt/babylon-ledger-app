@@ -1,9 +1,10 @@
 use crate::bech32::network::*;
 use crate::print::tty::TTY;
 use crate::sbor_decoder::STACK_DEPTH;
+use crate::static_vec::StaticVec;
 use core::ops::Range;
-use staticvec::StaticVec;
 
+#[repr(packed)]
 #[derive(Copy, Clone, Debug)]
 pub struct ValueState {
     pub main_type_id: u8,    // Outer type ID at current nesting level
@@ -23,6 +24,20 @@ impl ValueState {
     }
 }
 
+impl Default for ValueState {
+    fn default() -> Self {
+        Self {
+            main_type_id: 0,
+            key_type_id: 0,
+            element_type_id: 0,
+            flip_flop: false,
+        }
+    }
+}
+
+#[cfg(target_os = "nanos")]
+pub const PARAMETER_AREA_SIZE: usize = 128;
+#[cfg(not(target_os = "nanos"))]
 pub const PARAMETER_AREA_SIZE: usize = 128;
 
 #[cfg(target_os = "nanos")]
@@ -35,16 +50,16 @@ pub const DISPLAY_SIZE: usize = 1024;
 pub const DISPLAY_SIZE: usize = 2048;   // For testing on desktop
 
 pub struct ParameterPrinterState {
+    pub display: StaticVec<u8, { DISPLAY_SIZE }>,
     pub data: StaticVec<u8, { PARAMETER_AREA_SIZE }>,
     pub stack: StaticVec<ValueState, { STACK_DEPTH as usize }>,
-    pub display: StaticVec<u8, { DISPLAY_SIZE }>,
     pub nesting_level: u8,
     pub network_id: NetworkId,
     tty: TTY,
 }
 
 impl ParameterPrinterState {
-    pub const fn new(network_id: NetworkId, tty: TTY) -> Self {
+    pub fn new(network_id: NetworkId, tty: TTY) -> Self {
         Self {
             data: StaticVec::new(),
             stack: StaticVec::new(),
@@ -69,9 +84,7 @@ impl ParameterPrinterState {
     }
 
     pub fn push_byte(&mut self, byte: u8) {
-        if self.data.is_not_full() {
-            self.data.push(byte);
-        }
+        self.data.push(byte);
     }
 
     pub fn active_state(&mut self) -> &mut ValueState {
@@ -94,25 +107,17 @@ impl ParameterPrinterState {
 
     pub fn print_data_as_hex(&mut self) {
         for &byte in self.data.as_slice() {
-            if self.display.is_not_full() {
-                self.display
-                    .push(Self::HEX_DIGITS[((byte >> 4) & 0x0F) as usize]);
-            }
-            if self.display.is_not_full() {
-                self.display.push(Self::HEX_DIGITS[(byte & 0x0F) as usize]);
-            }
+            self.display
+                .push(Self::HEX_DIGITS[((byte >> 4) & 0x0F) as usize]);
+            self.display.push(Self::HEX_DIGITS[(byte & 0x0F) as usize]);
         }
     }
 
     pub fn print_data_as_hex_slice(&mut self, range: Range<usize>) {
         for &byte in &self.data.as_slice()[range] {
-            if self.display.is_not_full() {
-                self.display
-                    .push(Self::HEX_DIGITS[((byte >> 4) & 0x0F) as usize]);
-            }
-            if self.display.is_not_full() {
-                self.display.push(Self::HEX_DIGITS[(byte & 0x0F) as usize]);
-            }
+            self.display
+                .push(Self::HEX_DIGITS[((byte >> 4) & 0x0F) as usize]);
+            self.display.push(Self::HEX_DIGITS[(byte & 0x0F) as usize]);
         }
     }
 
@@ -134,9 +139,7 @@ impl ParameterPrinterState {
     }
 
     pub fn print_byte(&mut self, byte: u8) {
-        if self.display.is_not_full() {
-            self.display.push(byte);
-        }
+        self.display.push(byte);
     }
 
     pub fn print_text(&mut self, text: &[u8]) {

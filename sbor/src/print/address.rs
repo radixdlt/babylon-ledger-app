@@ -1,4 +1,4 @@
-use staticvec::StaticVec;
+use crate::static_vec::StaticVec;
 
 use crate::bech32::encoder::*;
 use crate::bech32::hrp::*;
@@ -43,7 +43,8 @@ impl ParameterPrinter for AddressParameterPrinter {
             return;
         }
 
-        match to_hrp_type(state.data[0]) {
+        // Unwrap is safe because we checked the length
+        match to_hrp_type(state.data.first().unwrap()) {
             Some(hrp_type) => format_address(state, hrp_prefix(hrp_type)),
             None => state.print_text(b"Address(unknown type)"),
         }

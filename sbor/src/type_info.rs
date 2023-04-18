@@ -92,42 +92,41 @@ pub enum DecoderPhase {
     ReadingNFLDiscriminator,
 }
 
-#[repr(u8)]
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub enum TypeKind {
-    None,
-    Bool,
-    I8,
-    I16,
-    I32,
-    I64,
-    I128,
-    U8,
-    U16,
-    U32,
-    U64,
-    U128,
-    String,
-    Array,
-    Tuple,
-    Enum,
-    Map,
-    Address,
-    Bucket,
-    Proof,
-    Expression,
-    Blob,
-    Decimal,
-    PreciseDecimal,
-    NonFungibleLocalId,
+impl DecoderPhase {
+    pub const fn as_byte(&self) -> u8 {
+        match self {
+            DecoderPhase::ReadingTypeId => 0,
+            DecoderPhase::ReadingElementTypeId => 1,
+            DecoderPhase::ReadingKeyTypeId => 2,
+            DecoderPhase::ReadingValueTypeId => 3,
+            DecoderPhase::ReadingLen => 4,
+            DecoderPhase::ReadingData => 5,
+            DecoderPhase::ReadingDiscriminator => 6,
+            DecoderPhase::ReadingNFLDiscriminator => 7,
+        }
+    }
+
+    pub const fn from_byte(byte: u8) -> Self {
+        match byte {
+            0 => DecoderPhase::ReadingTypeId,
+            1 => DecoderPhase::ReadingElementTypeId,
+            2 => DecoderPhase::ReadingKeyTypeId,
+            3 => DecoderPhase::ReadingValueTypeId,
+            4 => DecoderPhase::ReadingLen,
+            5 => DecoderPhase::ReadingData,
+            6 => DecoderPhase::ReadingDiscriminator,
+            7 => DecoderPhase::ReadingNFLDiscriminator,
+            _ => panic!("Invalid decoder phase"),
+        }
+    }
 }
 
+#[repr(C, packed)]
 #[derive(Copy, Clone, Debug)]
 pub struct TypeInfo {
     pub next_phases: &'static [DecoderPhase],
     pub fixed_len: u8,
     pub type_id: u8,
-    pub type_kind: TypeKind,
 }
 
 // Placeholder
@@ -173,7 +172,6 @@ const NON_FUNGIBLE_LOCAL_ID_ENCODING: [DecoderPhase; 4] = [
 
 pub const NONE_TYPE_INFO: TypeInfo = TypeInfo {
     type_id: TYPE_NONE,
-    type_kind: TypeKind::None,
     next_phases: &NONE_DECODING,
     fixed_len: 0,
 };
@@ -182,148 +180,124 @@ pub fn to_type_info(byte: u8) -> Option<TypeInfo> {
     match byte {
         TYPE_BOOL => Some(TypeInfo {
             type_id: TYPE_BOOL,
-            type_kind: TypeKind::Bool,
             next_phases: &FIXED_LEN_DECODING,
             fixed_len: 1,
         }),
         TYPE_I8 => Some(TypeInfo {
             type_id: TYPE_I8,
-            type_kind: TypeKind::I8,
             next_phases: &FIXED_LEN_DECODING,
             fixed_len: 1,
         }),
         TYPE_I16 => Some(TypeInfo {
             type_id: TYPE_I16,
-            type_kind: TypeKind::I16,
             next_phases: &FIXED_LEN_DECODING,
             fixed_len: 2,
         }),
         TYPE_I32 => Some(TypeInfo {
             type_id: TYPE_I32,
-            type_kind: TypeKind::I32,
             next_phases: &FIXED_LEN_DECODING,
             fixed_len: 4,
         }),
         TYPE_I64 => Some(TypeInfo {
             type_id: TYPE_I64,
-            type_kind: TypeKind::I64,
             next_phases: &FIXED_LEN_DECODING,
             fixed_len: 8,
         }),
         TYPE_I128 => Some(TypeInfo {
             type_id: TYPE_I128,
-            type_kind: TypeKind::I128,
             next_phases: &FIXED_LEN_DECODING,
             fixed_len: 16,
         }),
         TYPE_U8 => Some(TypeInfo {
             type_id: TYPE_U8,
-            type_kind: TypeKind::U8,
             next_phases: &FIXED_LEN_DECODING,
             fixed_len: 1,
         }),
         TYPE_U16 => Some(TypeInfo {
             type_id: TYPE_U16,
-            type_kind: TypeKind::U16,
             next_phases: &FIXED_LEN_DECODING,
             fixed_len: 2,
         }),
         TYPE_U32 => Some(TypeInfo {
             type_id: TYPE_U32,
-            type_kind: TypeKind::U32,
             next_phases: &FIXED_LEN_DECODING,
             fixed_len: 4,
         }),
         TYPE_U64 => Some(TypeInfo {
             type_id: TYPE_U64,
-            type_kind: TypeKind::U64,
             next_phases: &FIXED_LEN_DECODING,
             fixed_len: 8,
         }),
         TYPE_U128 => Some(TypeInfo {
             type_id: TYPE_U128,
-            type_kind: TypeKind::U128,
             next_phases: &FIXED_LEN_DECODING,
             fixed_len: 16,
         }),
         TYPE_STRING => Some(TypeInfo {
             type_id: TYPE_STRING,
-            type_kind: TypeKind::String,
             next_phases: &VARIABLE_LEN_DECODING,
             fixed_len: 0,
         }),
         TYPE_MAP => Some(TypeInfo {
             type_id: TYPE_MAP,
-            type_kind: TypeKind::Map,
             next_phases: &MAP_DECODING,
             fixed_len: 0,
         }),
 
         TYPE_ENUM => Some(TypeInfo {
             type_id: TYPE_ENUM,
-            type_kind: TypeKind::Enum,
             next_phases: &ENUM_DECODING,
             fixed_len: 0,
         }),
         TYPE_ARRAY => Some(TypeInfo {
             type_id: TYPE_ARRAY,
-            type_kind: TypeKind::Array,
             next_phases: &LIST_DECODING,
             fixed_len: 0,
         }),
         TYPE_TUPLE => Some(TypeInfo {
             type_id: TYPE_TUPLE,
-            type_kind: TypeKind::Tuple,
             next_phases: &VARIABLE_LEN_DECODING,
             fixed_len: 0,
         }),
 
         TYPE_ADDRESS => Some(TypeInfo {
             type_id: TYPE_ADDRESS,
-            type_kind: TypeKind::Address,
             next_phases: &FIXED_LEN_DECODING,
             fixed_len: ADDRESS_LEN,
         }),
 
         TYPE_BUCKET => Some(TypeInfo {
             type_id: TYPE_BUCKET,
-            type_kind: TypeKind::Bucket,
             next_phases: &FIXED_LEN_DECODING,
             fixed_len: BUCKET_LEN,
         }),
         TYPE_PROOF => Some(TypeInfo {
             type_id: TYPE_PROOF,
-            type_kind: TypeKind::Proof,
             next_phases: &FIXED_LEN_DECODING,
             fixed_len: PROOF_LEN,
         }),
         TYPE_EXPRESSION => Some(TypeInfo {
             type_id: TYPE_EXPRESSION,
-            type_kind: TypeKind::Expression,
             next_phases: &FIXED_LEN_DECODING,
             fixed_len: 1,
         }),
         TYPE_BLOB => Some(TypeInfo {
             type_id: TYPE_BLOB,
-            type_kind: TypeKind::Blob,
             next_phases: &FIXED_LEN_DECODING,
             fixed_len: BLOB_LEN,
         }),
         TYPE_DECIMAL => Some(TypeInfo {
             type_id: TYPE_DECIMAL,
-            type_kind: TypeKind::Decimal,
             next_phases: &FIXED_LEN_DECODING,
             fixed_len: DECIMAL_LEN,
         }),
         TYPE_PRECISE_DECIMAL => Some(TypeInfo {
             type_id: TYPE_PRECISE_DECIMAL,
-            type_kind: TypeKind::PreciseDecimal,
             next_phases: &FIXED_LEN_DECODING,
             fixed_len: PRECISE_DECIMAL_LEN,
         }),
         TYPE_NON_FUNGIBLE_LOCAL_ID => Some(TypeInfo {
             type_id: TYPE_NON_FUNGIBLE_LOCAL_ID,
-            type_kind: TypeKind::NonFungibleLocalId,
             next_phases: &NON_FUNGIBLE_LOCAL_ID_ENCODING, // Mix of fixed/variable len encoding
             fixed_len: 0,
         }),
@@ -332,37 +306,32 @@ pub fn to_type_info(byte: u8) -> Option<TypeInfo> {
 }
 
 pub fn to_type_name(type_id: u8) -> &'static [u8] {
-    to_type_info(type_id)
-        .map(|info| to_kind_name(info.type_kind))
-        .unwrap_or(b"(unknown)")
-}
-
-pub fn to_kind_name(kind: TypeKind) -> &'static [u8] {
-    match kind {
-        TypeKind::None => b"None",
-        TypeKind::Bool => b"Bool",
-        TypeKind::I8 => b"I8",
-        TypeKind::I16 => b"I16",
-        TypeKind::I32 => b"I32",
-        TypeKind::I64 => b"I64",
-        TypeKind::I128 => b"I128",
-        TypeKind::U8 => b"U8",
-        TypeKind::U16 => b"U16",
-        TypeKind::U32 => b"U32",
-        TypeKind::U64 => b"U64",
-        TypeKind::U128 => b"U128",
-        TypeKind::String => b"String",
-        TypeKind::Array => b"Array",
-        TypeKind::Tuple => b"Tuple",
-        TypeKind::Enum => b"Enum",
-        TypeKind::Map => b"Map",
-        TypeKind::Address => b"Address",
-        TypeKind::Bucket => b"Bucket",
-        TypeKind::Proof => b"Proof",
-        TypeKind::Expression => b"Expression",
-        TypeKind::Blob => b"Blob",
-        TypeKind::Decimal => b"Decimal",
-        TypeKind::PreciseDecimal => b"PreciseDecimal",
-        TypeKind::NonFungibleLocalId => b"NonFungibleLocalId",
+    match type_id {
+        TYPE_NONE => b"None",
+        TYPE_BOOL => b"Bool",
+        TYPE_I8 => b"I8",
+        TYPE_I16 => b"I16",
+        TYPE_I32 => b"I32",
+        TYPE_I64 => b"I64",
+        TYPE_I128 => b"I128",
+        TYPE_U8 => b"U8",
+        TYPE_U16 => b"U16",
+        TYPE_U32 => b"U32",
+        TYPE_U64 => b"U64",
+        TYPE_U128 => b"U128",
+        TYPE_STRING => b"String",
+        TYPE_ARRAY => b"Array",
+        TYPE_TUPLE => b"Tuple",
+        TYPE_ENUM => b"Enum",
+        TYPE_MAP => b"Map",
+        TYPE_ADDRESS => b"Address",
+        TYPE_BUCKET => b"Bucket",
+        TYPE_PROOF => b"Proof",
+        TYPE_EXPRESSION => b"Expression",
+        TYPE_BLOB => b"Blob",
+        TYPE_DECIMAL => b"Decimal",
+        TYPE_PRECISE_DECIMAL => b"PreciseDecimal",
+        TYPE_NON_FUNGIBLE_LOCAL_ID => b"NonFungibleLocalId",
+        _ => b"(unknown)",
     }
 }

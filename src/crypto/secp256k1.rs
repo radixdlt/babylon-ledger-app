@@ -17,6 +17,7 @@ const PRIV_KEY_LEN: usize = 32;
 const PUB_KEY_X_COORDINATE_SIZE: usize = 32;
 const PUB_KEY_UNCOMPRESSED_LAST_BYTE: usize = 64;
 pub const SECP256K1_SIGNATURE_LEN: usize = 65;
+pub const SECP256K1_PUBLIC_KEY_LEN: usize = PUB_KEY_COMPRESSED_LEN;
 
 struct PublicKeySecp256k1(pub [u8; PUB_KEY_COMPRESSED_LEN]);
 struct PrivateKeySecp256k1(pub [u8; PRIV_KEY_LEN]);
@@ -125,5 +126,9 @@ impl KeyPairSecp256k1 {
 
     pub fn private(&self) -> &[u8] {
         &self.private.0
+    }
+
+    pub fn public_key(&self) -> [u8; PUB_KEY_COMPRESSED_LEN] {
+        self.public.0
     }
 }
