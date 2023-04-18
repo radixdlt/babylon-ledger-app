@@ -13,8 +13,15 @@ const BIP32_LEAD_WORD_INDEX: usize = 0;
 const BIP32_COIN_TYPE_INDEX: usize = 1;
 const BIP32_NETWORK_ID_INDEX: usize = 2;
 const BIP32_ENTITY_INDEX: usize = 3;
-const BIP32_ENTITY_INDEX_INDEX: usize = 4;
-const BIP32_KEY_TYPE_INDEX: usize = 5;
+const BIP32_KEY_TYPE_INDEX: usize = 4;
+const BIP32_ENTITY_INDEX_INDEX: usize = 5;
+
+const OLYMPIA_REQUIRED_LEN: u8 = 5;
+const OLYMPIA_LEAD_WORD_INDEX: usize = 0;
+const OLYMPIA_COIN_TYPE_INDEX: usize = 1;
+const OLYMPIA_ELEMENT1_INDEX: usize = 3;
+const OLYMPIA_ELEMENT2_INDEX: usize = 4;
+const OLYMPIA_ELEMENT3_INDEX: usize = 5;
 
 const BIP32_HARDENED: u32 = 0x80000000u32;
 const BIP32_LEAD_WORD: u32 = 44u32 | BIP32_HARDENED; // 0
@@ -124,6 +131,25 @@ impl Bip32Path {
         }
 
         path
+    }
+
+    pub fn validate_olympia_path(&self) -> Result<Bip32Path, AppError> {
+        if self.len != OLYMPIA_REQUIRED_LEN {
+            return Err(AppError::BadBip32PathLen);
+        }
+
+        if self.path[OLYMPIA_LEAD_WORD_INDEX] != BIP32_LEAD_WORD {
+            return Err(AppError::BadBip32PathLeadWord);
+        }
+
+        if self.path[OLYMPIA_COIN_TYPE_INDEX] != BIP32_COIN_TYPE {
+            return Err(AppError::BadBip32PathCoinType);
+        }
+
+        Ok(Self {
+            len: self.len,
+            path: self.path,
+        })
     }
 
     pub fn validate(&self) -> Result<Bip32Path, AppError> {

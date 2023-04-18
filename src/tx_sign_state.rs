@@ -12,9 +12,11 @@ use sbor::sbor_decoder::*;
 use crate::app_error::AppError;
 use crate::command_class::CommandClass;
 use crate::crypto::bip32::Bip32Path;
-use crate::crypto::ed25519::{KeyPair25519, ED25519_SIGNATURE_LEN};
-use crate::crypto::hash::{Digest, HashType, Hasher};
-use crate::crypto::secp256k1::{KeyPairSecp256k1, SECP256K1_SIGNATURE_LEN};
+use crate::crypto::ed25519::{ED25519_PUBLIC_KEY_LEN, ED25519_SIGNATURE_LEN, KeyPair25519};
+use crate::crypto::hash::{Digest, Hasher, HashType};
+use crate::crypto::secp256k1::{
+    KeyPairSecp256k1, SECP256K1_PUBLIC_KEY_LEN, SECP256K1_SIGNATURE_LEN,
+};
 use crate::ledger_display_io::LedgerTTY;
 
 #[repr(u8)]
@@ -45,20 +47,18 @@ impl SignFlowState {
                 let path = Bip32Path::read(comm).and_then(|path| path.validate())?;
                 self.start(tx_type, path)?;
                 self.update_counters(0); // First packet contains no data
+                Ok(())
             }
 
             CommandClass::Continuation | CommandClass::LastData => {
                 self.validate(class, tx_type)?;
                 let data = comm.get_data()?;
                 self.update_counters(data.len());
-                self.hasher.update(data)?;
+                self.hasher.update(data)
             }
 
-            CommandClass::Unknown => {
-                return Err(AppError::BadTxSignSequence);
-            }
+            CommandClass::Unknown => Err(AppError::BadTxSignSequence),
         }
-        Ok(())
     }
 
     pub fn network_id(&mut self) -> Result<NetworkId, AppError> {
@@ -149,23 +149,23 @@ impl SignFlowState {
 
         match tx_type {
             SignTxType::None => return Err(AppError::BadTxSignStart),
-            SignTxType::Ed25519 => KeyPair25519::derive(&self.path)
-                .and_then(|keypair| keypair.sign(second_pass_digest.as_bytes()))
-                .map(|signature| SignFlowState::build_signature_outcome(&signature)),
+            SignTxType::Ed25519 => KeyPair25519::derive(&self.path).and_then(|keypair| {
+                keypair
+                    .sign(second_pass_digest.as_bytes())
+                    .map(|signature| SignOutcome::SignatureEd25519 {
+                        signature,
+                        key: keypair.public_key(),
+                    })
+            }),
 
-            SignTxType::Secp256k1 => KeyPairSecp256k1::derive(&self.path)
-                .and_then(|keypair| keypair.sign(second_pass_digest.as_bytes()))
-                .map(|signature| SignFlowState::build_signature_outcome(&signature)),
-        }
-    }
-
-    fn build_signature_outcome(signature: &[u8]) -> SignOutcome {
-        let mut full_signature = [0u8; MAX_SIGNATURE_SIZE];
-        full_signature[..signature.len()].clone_from_slice(signature);
-
-        SignOutcome::Signature {
-            len: signature.len() as u8,
-            signature: full_signature,
+            SignTxType::Secp256k1 => KeyPairSecp256k1::derive(&self.path).and_then(|keypair| {
+                keypair
+                    .sign(second_pass_digest.as_bytes())
+                    .map(|signature| SignOutcome::SignatureSecp256k1 {
+                        signature,
+                        key: keypair.public_key(),
+                    })
+            }),
         }
     }
 
@@ -184,15 +184,21 @@ impl SignFlowState {
 }
 
 const MAX_SIGNATURE_SIZE: usize = max(ED25519_SIGNATURE_LEN, SECP256K1_SIGNATURE_LEN);
+const MAX_PUBKEY_SIZE: usize = max(ED25519_PUBLIC_KEY_LEN, SECP256K1_PUBLIC_KEY_LEN);
+const MAX_SIGNATURE_PAYLOAD: usize = MAX_SIGNATURE_SIZE + MAX_PUBKEY_SIZE;
 
 #[repr(u8)]
 #[derive(Copy, Clone)]
 pub enum SignOutcome {
     SendNextPacket,
     SigningRejected,
-    Signature {
-        len: u8,
-        signature: [u8; MAX_SIGNATURE_SIZE],
+    SignatureEd25519 {
+        signature: [u8; ED25519_SIGNATURE_LEN],
+        key: [u8; ED25519_PUBLIC_KEY_LEN],
+    },
+    SignatureSecp256k1 {
+        signature: [u8; SECP256K1_SIGNATURE_LEN],
+        key: [u8; SECP256K1_PUBLIC_KEY_LEN],
     },
 }
 
@@ -230,9 +236,7 @@ impl InstructionProcessor {
         class: CommandClass,
         tx_type: SignTxType,
     ) -> Result<(), AppError> {
-        self.state.process_data(comm, class, tx_type)?;
-
-        Ok(())
+        self.state.process_data(comm, class, tx_type)
     }
 
     pub fn reset(&mut self) {
@@ -259,7 +263,7 @@ impl SborEventHandler for InstructionProcessor {
 }
 
 impl TxSignState {
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             decoder: SborDecoder::new(true),
             processor: InstructionProcessor {

@@ -38,29 +38,24 @@ pub fn dispatcher(comm: &mut Comm, ins: Command, state: &mut TxSignState) -> Res
     validate_request(comm, class)?;
 
     match ins {
-        Command::GetAppVersion => {
-            ensure_zero_params(comm).map(|_| send_fixed(comm, &VERSION_DATA))?
-        }
-        Command::GetDeviceModel => {
-            ensure_zero_params(comm).map(|_| send_fixed(comm, &MODEL_DATA))?
-        }
-        Command::GetDeviceId => {
-            ensure_zero_params(comm).and_then(|_| get_device_id::handle(comm))?
-        }
-        Command::GetPubKeyEd25519 => get_public_key_ed25519::handle(comm)?,
-        Command::GetPrivKeyEd25519 => get_private_key_ed25519::handle(comm)?,
-        Command::GetPubKeySecp256k1 => get_public_key_secp256k1::handle(comm)?,
-        Command::GetPrivKeySecp256k1 => get_private_key_secp256k1::handle(comm)?,
+        Command::GetAppVersion => ensure_zero_params(comm).map(|_| send_fixed(comm, &VERSION_DATA)),
+        Command::GetDeviceModel => ensure_zero_params(comm).map(|_| send_fixed(comm, &MODEL_DATA)),
+        Command::GetDeviceId => ensure_zero_params(comm).and_then(|_| get_device_id::handle(comm)),
+        Command::GetPubKeyEd25519 => get_public_key_ed25519::handle(comm),
+        Command::GetPrivKeyEd25519 => get_private_key_ed25519::handle(comm),
+        Command::GetPubKeySecp256k1 => get_public_key_secp256k1::handle(comm),
+        Command::GetPrivKeySecp256k1 => get_private_key_secp256k1::handle(comm),
         // TODO: temporarily handled by the same function as the non-smart version
         Command::SignTxEd25519 | Command::SignTxEd25519Smart => {
-            sign_tx_ed25519::handle(comm, class, state)?
+            sign_tx_ed25519::handle(comm, class, state)
         }
         // TODO: temporarily handled by the same function as the non-smart version
         Command::SignTxSecp256k1 | Command::SignTxSecp256k1Smart => {
-            sign_tx_secp256k1::handle(comm, class, state)?
+            sign_tx_secp256k1::handle(comm, class, state)
         }
-        Command::BadCommand => Err(AppError::NotImplemented)?,
-        Command::Exit => nanos_sdk::exit_app(0),
+        Command::BadCommand => Err(AppError::NotImplemented),
+        Command::Exit => {
+            nanos_sdk::exit_app(0);
+        }
     }
-    Ok(())
 }

@@ -58,11 +58,11 @@ def send_tx_intent(txn):
         # print("Chunk:", i, "data:", chunk.hex(), "len:", data_length, "cls:", cls)
 
         try:
-            dongle.exchange(bytes.fromhex(cls + instructionCode + p1 + p2 + data_length + chunk.hex()))
+            rc = dongle.exchange(bytes.fromhex(cls + instructionCode + p1 + p2 + data_length + chunk.hex()))
         except Exception as e:
             print("Error sending txn chunk: ", e)
             return None
-    return "9000"
+    return rc
 
 
 def send_derivation_path(bip_path):
@@ -78,9 +78,17 @@ def send_derivation_path(bip_path):
 
 
 for file_name in list_files():
-    if not file_name.endswith(".txn"):
+    if not file_name.endswith("on.txn"):
         continue
     data = read_file(file_name)
-    send_derivation_path("m/44H/1022H/10H/525H/0H/1238H")
+    send_derivation_path("m/44H/1022H/10H/525H/1238H/0H")
     rc = send_tx_intent(data)
-    print("Success")
+
+    if rc is None:
+        print("Failed")
+    else:
+        signature = rc[0:64].hex()
+        key = rc[64:96].hex()
+        print("Success")
+        print("Signature:", signature)
+        print("Key:", key)

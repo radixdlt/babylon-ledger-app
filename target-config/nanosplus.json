@@ -13,8 +13,8 @@
   "panic-strategy": "abort",
   "pre-link-args": {
     "ld.lld": [
-      "-Tnanosplus_layout.ld",
-      "-Tlink.ld"
+      "-Ttarget-config/nanosplus_layout.ld",
+      "-Ttarget-config/link.ld"
     ]
   },
   "relocation-model": "ropi-rwpi",
