@@ -32,7 +32,7 @@ def list_files():
 
 
 def read_file(file):
-    print("Reading ", file, end=' ')
+    print("Reading ", file)
     with open(file, "rb") as f:
         return f.read()
 
