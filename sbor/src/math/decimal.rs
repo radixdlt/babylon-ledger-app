@@ -84,8 +84,7 @@ mod tests {
 
     impl fmt::Display for Decimal {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-            let formatted = self.format();
-            for byte in formatted {
+            for &byte in self.format().as_slice() {
                 f.write_char(byte as char)?;
             }
             Ok(())

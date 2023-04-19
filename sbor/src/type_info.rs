@@ -92,36 +92,7 @@ pub enum DecoderPhase {
     ReadingNFLDiscriminator,
 }
 
-impl DecoderPhase {
-    pub const fn as_byte(&self) -> u8 {
-        match self {
-            DecoderPhase::ReadingTypeId => 0,
-            DecoderPhase::ReadingElementTypeId => 1,
-            DecoderPhase::ReadingKeyTypeId => 2,
-            DecoderPhase::ReadingValueTypeId => 3,
-            DecoderPhase::ReadingLen => 4,
-            DecoderPhase::ReadingData => 5,
-            DecoderPhase::ReadingDiscriminator => 6,
-            DecoderPhase::ReadingNFLDiscriminator => 7,
-        }
-    }
-
-    pub const fn from_byte(byte: u8) -> Self {
-        match byte {
-            0 => DecoderPhase::ReadingTypeId,
-            1 => DecoderPhase::ReadingElementTypeId,
-            2 => DecoderPhase::ReadingKeyTypeId,
-            3 => DecoderPhase::ReadingValueTypeId,
-            4 => DecoderPhase::ReadingLen,
-            5 => DecoderPhase::ReadingData,
-            6 => DecoderPhase::ReadingDiscriminator,
-            7 => DecoderPhase::ReadingNFLDiscriminator,
-            _ => panic!("Invalid decoder phase"),
-        }
-    }
-}
-
-#[repr(C, packed)]
+#[repr(C, align(4))]
 #[derive(Copy, Clone, Debug)]
 pub struct TypeInfo {
     pub next_phases: &'static [DecoderPhase],
@@ -170,14 +141,13 @@ const NON_FUNGIBLE_LOCAL_ID_ENCODING: [DecoderPhase; 4] = [
     DecoderPhase::ReadingData,
 ];
 
-pub const NONE_TYPE_INFO: TypeInfo = TypeInfo {
-    type_id: TYPE_NONE,
-    next_phases: &NONE_DECODING,
-    fixed_len: 0,
-};
-
 pub fn to_type_info(byte: u8) -> Option<TypeInfo> {
     match byte {
+        TYPE_NONE => Some(TypeInfo {
+            type_id: TYPE_NONE,
+            next_phases: &NONE_DECODING,
+            fixed_len: 0,
+        }),
         TYPE_BOOL => Some(TypeInfo {
             type_id: TYPE_BOOL,
             next_phases: &FIXED_LEN_DECODING,

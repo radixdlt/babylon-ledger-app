@@ -23,14 +23,7 @@ version = "0.1.0"
 dependencies = [
  "crypto-bigint",
  "paste",
- "staticvec",
 ]
-
-[[package]]
-name = "staticvec"
-version = "0.11.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e6183943e8c03d78596895561edba95bfc9f1e4547a46f720439d714c4c3d08b"
 
 [[package]]
 name = "subtle"
