@@ -4,7 +4,7 @@ use crate::sbor_decoder::STACK_DEPTH;
 use crate::static_vec::StaticVec;
 use core::ops::Range;
 
-#[repr(packed)]
+#[repr(C, packed)]
 #[derive(Copy, Clone, Debug)]
 pub struct ValueState {
     pub main_type_id: u8,    // Outer type ID at current nesting level
@@ -36,7 +36,7 @@ impl Default for ValueState {
 }
 
 #[cfg(target_os = "nanos")]
-pub const PARAMETER_AREA_SIZE: usize = 128;
+pub const PARAMETER_AREA_SIZE: usize = 96;
 #[cfg(not(target_os = "nanos"))]
 pub const PARAMETER_AREA_SIZE: usize = 128;
 

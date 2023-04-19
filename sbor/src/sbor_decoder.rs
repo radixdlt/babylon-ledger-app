@@ -17,7 +17,7 @@ pub const STACK_DEPTH: u8 = 32; // For testing on desktop
 
 pub const SBOR_LEADING_BYTE: u8 = 77; // MANIFEST_SBOR_V1_PAYLOAD_PREFIX
 
-#[repr(C, packed)]
+#[repr(transparent)]
 #[derive(Copy, Clone, Debug)]
 struct Flags(u8);
 
@@ -64,15 +64,14 @@ impl Flags {
     }
 }
 
+//TODO: get rid of phase in flags and use it as phase_ptr instead
 #[repr(C, packed)]
 #[derive(Copy, Clone, Debug)]
 struct State {
     items_to_read: u32,
     active_type_id: u8,
-
     key_type_id: u8,        // Map key type ID
     element_type_id: u8,    // Map value type ID; Array/Tuple/Enum - element type ID
-
     phase_ptr: u8,
     flags: Flags,
 }
@@ -158,13 +157,14 @@ pub trait SborEventHandler {
     fn handle(&mut self, evt: SborEvent);
 }
 
+#[repr(C, packed)]
 pub struct SborDecoder {
     stack: [State; STACK_DEPTH as usize],
     byte_count: usize,
-    head: u8,
-    expect_leading_byte: bool,
     len_acc: usize,
+    head: u8,
     len_shift: u8,
+    expect_leading_byte: bool,
 }
 
 impl SborDecoder {

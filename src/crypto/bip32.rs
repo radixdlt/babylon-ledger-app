@@ -32,10 +32,10 @@ const BIP32_ENTITY_IDENTITY: u32 = 618u32 | BIP32_HARDENED; // 3
 const BIP32_KEY_TYPE_SIGN_TRANSACTION: u32 = 1238u32 | BIP32_HARDENED; // 5
 const BIP32_KEY_TYPE_SIGN_AUTH: u32 = 706u32 | BIP32_HARDENED; // 5
 
-pub const MAX_BIP32_PATH_LEN: usize = 10;
+pub const MAX_BIP32_PATH_LEN: usize = 8;
 const BIP32_PATH_MIN_ENCODED_LEN: usize = 5;
 
-#[repr(C)]
+#[repr(C, align(4))]
 #[derive(Default, Clone)]
 pub struct Bip32Path {
     pub path: [u32; MAX_BIP32_PATH_LEN],

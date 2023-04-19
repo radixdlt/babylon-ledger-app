@@ -27,6 +27,7 @@ pub enum SignTxType {
     Secp256k1,
 }
 
+#[repr(align(4))]
 struct SignFlowState {
     sign_type: SignTxType,
     tx_packet_count: u32,

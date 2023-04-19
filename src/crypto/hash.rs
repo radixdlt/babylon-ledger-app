@@ -26,6 +26,7 @@ pub enum HashType {
     Blake2b,
 }
 
+#[repr(C, packed)]
 #[derive(Copy, Clone, Debug)]
 pub struct Digest {
     container: [u8; MAX_DIGEST_SIZE],
@@ -57,6 +58,7 @@ impl Digest {
     }
 }
 
+#[repr(C, align(4))]
 pub struct Hasher {
     work_data: [u8; Self::WORK_AREA_SIZE],
     hash_type: HashType,
