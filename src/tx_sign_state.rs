@@ -228,8 +228,11 @@ impl InstructionProcessor {
     }
 
     pub fn set_network(&mut self) -> Result<(), AppError> {
-        self.printer.set_network(self.state.network_id()?);
-        Ok(())
+        match self.state.sign_type {
+            SignTxType::None => Err(AppError::BadTxSignRequestedState),
+            SignTxType::Ed25519 => Ok(self.printer.set_network(self.state.network_id()?)),
+            SignTxType::Secp256k1 => Ok(self.printer.set_network(NetworkId::OlympiaMainNet)),
+        }
     }
 
     pub fn set_tty(&mut self, tty: TTY) {

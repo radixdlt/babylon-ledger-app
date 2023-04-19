@@ -52,7 +52,7 @@ pub const DISPLAY_SIZE: usize = 2048;   // For testing on desktop
 pub struct ParameterPrinterState {
     pub display: StaticVec<u8, { DISPLAY_SIZE }>,
     pub data: StaticVec<u8, { PARAMETER_AREA_SIZE }>,
-    pub stack: StaticVec<ValueState, { STACK_DEPTH as usize }>,
+    pub stack: StaticVec<ValueState, { (STACK_DEPTH - 5) as usize }>,
     pub nesting_level: u8,
     pub network_id: NetworkId,
     tty: TTY,

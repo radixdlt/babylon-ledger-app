@@ -1,6 +1,7 @@
 #[repr(u8)]
 #[derive(Copy, Clone, Debug)]
 pub enum NetworkId {
+    OlympiaMainNet = 0,       //, "olympiamainnet", "rdx"),
     MainNet = 1,              //, "mainnet", "rdx"),
     StokeNet = 2,             //, "stokenet", "tdx_2_"),
     AdapaNet = 10,            //, "adapanet", "tdx_a_"),
@@ -21,6 +22,7 @@ pub enum NetworkIdErrors {
     UnknownNetworkId,
 }
 
+// Note that this implementation deliberately does not support obtaining OlympiaMainNet from a u32
 impl TryFrom<u32> for NetworkId {
     type Error = NetworkIdErrors;
 
