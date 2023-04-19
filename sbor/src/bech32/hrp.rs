@@ -20,6 +20,7 @@ pub enum HrpType {
 
 pub fn hrp_suffix(net_id: NetworkId) -> &'static str {
     match net_id {
+        NetworkId::OlympiaMainNet => "rdx",
         NetworkId::MainNet => "rdx",
         NetworkId::StokeNet => "tdx_2_",
         NetworkId::AdapaNet => "tdx_a_",

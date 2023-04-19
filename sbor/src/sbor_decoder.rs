@@ -7,7 +7,7 @@ use core::result::Result;
 use core::result::Result::{Err, Ok};
 
 #[cfg(target_os = "nanos")]
-pub const STACK_DEPTH: u8 = 28; // Use minimal possible stack for Nano S
+pub const STACK_DEPTH: u8 = 32; // Use minimal possible stack for Nano S
 #[cfg(target_os = "nanosplus")]
 pub const STACK_DEPTH: u8 = 32; // Nano S+ and Nano X have more memory
 #[cfg(target_os = "nanox")]

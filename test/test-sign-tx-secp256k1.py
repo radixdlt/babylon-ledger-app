@@ -13,12 +13,12 @@ else:
     dongle = getDongle(False)
 
 instructionClass = "AA"
-instructionCode = "41"  # SignTx
+instructionCode = "51"  # SignTx
 p1 = "00"
 p2 = "00"
 dataLength = "00"
 
-print("Testing", "SignTx", instructionCode)
+print("Testing", "SignTxSecp256k1", instructionCode)
 print("WARNING: no actual check of the returned signature is performed!!!")
 
 
@@ -78,10 +78,10 @@ def send_derivation_path(bip_path):
 
 
 for file_name in list_files():
-    if not file_name.endswith(".txn"):
+    if not file_name.endswith("call_function.txn"):
         continue
     data = read_file(file_name)
-    send_derivation_path("m/44H/1022H/10H/525H/1238H/0H")
+    send_derivation_path("m/44H/1022H/10H/525H/1238H")
     rc = send_tx_intent(data)
 
     if rc is None:
