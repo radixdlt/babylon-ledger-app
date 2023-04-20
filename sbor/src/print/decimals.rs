@@ -35,7 +35,7 @@ impl ParameterPrinter for PreciseDecimalParameterPrinter {
     fn end(&self, state: &mut ParameterPrinterState) {
         match PreciseDecimal::try_from(state.data.as_slice()) {
             Ok(value) => {
-                state.print_text(b"PreciseDecimal(<not decoded>");
+                state.print_text(b"PreciseDecimal(<not decoded>)");
             }
             Err(_) => state.print_text(b"PreciseDecimal(<invalid value>)"),
         }
