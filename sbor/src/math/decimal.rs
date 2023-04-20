@@ -16,7 +16,7 @@ impl Decimal {
 
     const LOW_TEN: Decimal = Decimal(U256::from_u64(10u64));
 
-    fn fmt_uint(uint: U256, vec: &mut StaticVec<u8, {Self::MAX_PRINT_LEN}>) -> u16 {
+    fn fmt_uint<const N: usize>(uint: U256, vec: &mut StaticVec<u8, N>) -> u16 {
         let divisor = NonZero::new(Decimal::LOW_TEN.0).unwrap();
         let index = vec.len();
         let mut value = uint;
@@ -35,18 +35,17 @@ impl Decimal {
         num_digits
     }
 
-    pub fn format(&self) -> StaticVec<u8, { Self::MAX_PRINT_LEN }> {
+    pub fn format<const N: usize>(&self, output: &mut StaticVec<u8, N>) {
         let divisor = NonZero::new(Decimal::ONE.0).unwrap();
         let (quotent, remainder) = self.0.div_rem(&divisor);
         let no_decimals: bool = remainder.is_zero().into();
-        let mut output = StaticVec::<u8, { Self::MAX_PRINT_LEN }>::new();
 
-        Decimal::fmt_uint(quotent, &mut output);
+        Decimal::fmt_uint(quotent, output);
 
         if !no_decimals {
             output.push(b'.');
             let decimal_start = output.len();
-            let mut decimals = Decimal::fmt_uint(remainder, &mut output);
+            let mut decimals = Decimal::fmt_uint(remainder, output);
 
             // Add leading zeros if necessary
             while decimals < (Decimal::SCALE as u16) {
@@ -59,8 +58,6 @@ impl Decimal {
                 output.remove(output.len() - 1);
             }
         }
-
-        output
     }
 }
 
@@ -84,13 +81,15 @@ mod tests {
 
     impl fmt::Display for Decimal {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-            for &byte in self.format().as_slice() {
+            let mut formatted = StaticVec::<u8, { Self::MAX_PRINT_LEN }>::new();
+            self.format(&mut formatted);
+
+            for &byte in formatted.as_slice() {
                 f.write_char(byte as char)?;
             }
             Ok(())
         }
     }
-
 
     #[test]
     pub fn test_format_decimal() {

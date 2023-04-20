@@ -1,5 +1,5 @@
-use crypto_bigint::{NonZero, U512, Zero};
 use crate::static_vec::StaticVec;
+use crypto_bigint::{NonZero, Zero, U512};
 
 use crate::math::MathError;
 
@@ -19,7 +19,7 @@ impl PreciseDecimal {
 
     const LOW_TEN: PreciseDecimal = PreciseDecimal(U512::from_u64(10u64));
 
-    fn fmt_uint(uint: U512, vec: &mut StaticVec<u8, { Self::MAX_PRINT_LEN }>) -> u16 {
+    fn fmt_uint<const N: usize>(uint: U512, vec: &mut StaticVec<u8, N>) -> u16 {
         let divisor = NonZero::new(PreciseDecimal::LOW_TEN.0).unwrap();
         let index = vec.len();
         let mut value = uint;
@@ -38,18 +38,17 @@ impl PreciseDecimal {
         num_digits
     }
 
-    pub fn format(&self) -> StaticVec<u8, { Self::MAX_PRINT_LEN }> {
+    pub fn format<const N: usize>(&self, output: &mut StaticVec<u8, N>) {
         let divisor = NonZero::new(PreciseDecimal::ONE.0).unwrap();
         let (quotent, remainder) = self.0.div_rem(&divisor);
         let no_decimals: bool = remainder.is_zero().into();
-        let mut output = StaticVec::<u8, { Self::MAX_PRINT_LEN }>::new();
 
-        PreciseDecimal::fmt_uint(quotent, &mut output);
+        PreciseDecimal::fmt_uint(quotent, output);
 
         if !no_decimals {
             output.push(b'.');
             let decimal_start = output.len();
-            let mut decimals = PreciseDecimal::fmt_uint(remainder, &mut output);
+            let mut decimals = PreciseDecimal::fmt_uint(remainder, output);
 
             // Add leading zeros if necessary
             while decimals < (PreciseDecimal::SCALE as u16) {
@@ -62,8 +61,6 @@ impl PreciseDecimal {
                 output.remove(output.len() - 1);
             }
         }
-
-        output
     }
 }
 
@@ -87,7 +84,10 @@ mod tests {
 
     impl fmt::Display for PreciseDecimal {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-            for &byte in self.format().as_slice() {
+            let mut formatted = StaticVec::<u8, { Self::MAX_PRINT_LEN }>::new();
+            self.format(&mut formatted);
+
+            for &byte in formatted.as_slice() {
                 f.write_char(byte as char)?;
             }
             Ok(())

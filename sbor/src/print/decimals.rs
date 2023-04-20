@@ -12,8 +12,10 @@ impl ParameterPrinter for DecimalParameterPrinter {
     fn end(&self, state: &mut ParameterPrinterState) {
         match Decimal::try_from(state.data.as_slice()) {
             Ok(value) => {
+                state.data.clear();
+                value.format(&mut state.data);
                 state.print_text(b"Decimal(");
-                state.print_text(value.format().as_slice());
+                state.print_data_as_text();
                 state.print_text(b")");
             }
             Err(_) => state.print_text(b"Decimal(<invalid value>)"),
@@ -32,8 +34,10 @@ impl ParameterPrinter for PreciseDecimalParameterPrinter {
     fn end(&self, state: &mut ParameterPrinterState) {
         match PreciseDecimal::try_from(state.data.as_slice()) {
             Ok(value) => {
+                state.data.clear();
+                value.format(&mut state.data);
                 state.print_text(b"PreciseDecimal(");
-                state.print_text(value.format().as_slice());
+                state.print_data_as_text();
                 state.print_text(b")")
             }
             Err(_) => state.print_text(b"PreciseDecimal(<invalid value>)"),

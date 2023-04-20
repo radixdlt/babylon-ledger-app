@@ -4,11 +4,11 @@ pub struct StaticVec<T, const N: usize> {
     data: [T; N],
 }
 
-impl<T: Copy + Default, const N: usize> StaticVec<T, N> {
-    pub fn new() -> Self {
+impl<T: Copy, const N: usize> StaticVec<T, N> {
+    pub const fn new(initial_value: T) -> Self {
         Self {
             length: 0,
-            data: [T::default(); N],
+            data: [initial_value; N],
         }
     }
 

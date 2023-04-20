@@ -36,9 +36,9 @@ impl Default for ValueState {
 }
 
 #[cfg(target_os = "nanos")]
-pub const PARAMETER_AREA_SIZE: usize = 96;
+pub const PARAMETER_AREA_SIZE: usize = 160; // Used for PreciseDecimal formatting and can't be smaller
 #[cfg(not(target_os = "nanos"))]
-pub const PARAMETER_AREA_SIZE: usize = 128;
+pub const PARAMETER_AREA_SIZE: usize = 256;
 
 #[cfg(target_os = "nanos")]
 pub const DISPLAY_SIZE: usize = 256;    // Use smaller buffer for Nano S
@@ -61,9 +61,9 @@ pub struct ParameterPrinterState {
 impl ParameterPrinterState {
     pub fn new(network_id: NetworkId, tty: TTY) -> Self {
         Self {
-            data: StaticVec::new(),
-            stack: StaticVec::new(),
-            display: StaticVec::new(),
+            data: StaticVec::new(0),
+            stack: StaticVec::new(ValueState::default()),
+            display: StaticVec::new(0),
             nesting_level: 0,
             network_id,
             tty: tty,
