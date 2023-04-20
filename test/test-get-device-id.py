@@ -21,5 +21,5 @@ dataLength = "00"
 print("Testing", "GetDeviceId", instructionCode, end=" ")
 response = dongle.exchange(bytes.fromhex(instructionClass + instructionCode + p1 + p2 + dataLength))
 
-assert response.hex() == 'ed798e66ded43a63ba7a41cf060062ba4a0c55ad69b14f2215c1526383ac4157aa619ee9106b02582047dd7f802b305dbb0b1641dde02aef7fdac937b9f9ee8c', "Invalid device ID\nReceived:" + response.hex()
+assert response.hex() == '41ac202687326a4fc6cb677e9fd92d08b91ce46c669950d58790d4d5e583adc0', "Invalid device ID\nReceived:" + response.hex()
 print("Success")

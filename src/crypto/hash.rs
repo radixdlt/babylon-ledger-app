@@ -11,7 +11,7 @@ use crate::app_error::{AppError, to_result};
 
 const SHA256_DIGEST_SIZE: usize = 32; // 256 bits
 const SHA512_DIGEST_SIZE: usize = 64; // 512 bits
-const BLAKE2B_DIGEST_SIZE: usize = 64; // 512 bits
+const BLAKE2B_DIGEST_SIZE: usize = 32; // 256 bits
 
 const MAX_DIGEST_SIZE: usize = max(
     SHA256_DIGEST_SIZE,
