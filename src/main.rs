@@ -7,7 +7,6 @@
 #![feature(cfg_version)]
 #![feature(const_mut_refs)]
 
-use core::mem::MaybeUninit;
 use nanos_sdk::buttons::ButtonEvent;
 use nanos_sdk::io::{Comm, Event};
 use nanos_ui::ui::SingleMessage;
@@ -31,19 +30,10 @@ nanos_sdk::set_panic!(nanos_sdk::exiting_panic);
 // Application Name
 const APPLICATION: &str = env!("CARGO_PKG_DESCRIPTION");
 
-static mut APP_STATE: MaybeUninit<TxSignState> = MaybeUninit::uninit();
-
 #[no_mangle]
 extern "C" fn sample_main() {
     let mut comm = Comm::new();
-    let state = unsafe {
-        let ptr = APP_STATE.as_mut_ptr();
-
-        ptr.write_bytes(0, 1);
-        (*ptr).reset();
-
-        APP_STATE.assume_init_mut()
-    };
+    let mut state = TxSignState::new();
 
     loop {
         SingleMessage::new(APPLICATION).show();
@@ -52,7 +42,7 @@ extern "C" fn sample_main() {
             // Press both buttons to exit app
             Event::Button(ButtonEvent::BothButtonsPress) => nanos_sdk::exit_app(0),
 
-            Event::Command(ins) => match dispatcher::dispatcher(&mut comm, ins, state) {
+            Event::Command(ins) => match dispatcher::dispatcher(&mut comm, ins, &mut state) {
                 Ok(()) => comm.reply_ok(),
                 Err(app_error) => comm.reply(app_error),
             },
