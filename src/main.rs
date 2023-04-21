@@ -9,7 +9,7 @@
 
 use nanos_sdk::buttons::ButtonEvent;
 use nanos_sdk::io::{Comm, Event};
-use nanos_ui::ui::{SingleMessage, Validator};
+use nanos_ui::ui::SingleMessage;
 
 use handler::dispatcher;
 
@@ -23,6 +23,7 @@ mod crypto;
 mod handler;
 mod ledger_display_io;
 mod tx_sign_state;
+mod ui;
 mod utilities;
 
 nanos_sdk::set_panic!(nanos_sdk::exiting_panic);
