@@ -81,7 +81,7 @@ mod tests {
 
     impl fmt::Display for Decimal {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-            let mut formatted = StaticVec::<u8, { Self::MAX_PRINT_LEN }>::new();
+            let mut formatted = StaticVec::<u8, { Self::MAX_PRINT_LEN }>::new(0);
             self.format(&mut formatted);
 
             for &byte in formatted.as_slice() {
