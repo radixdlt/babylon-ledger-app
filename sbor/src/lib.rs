@@ -58,6 +58,8 @@
 #![feature(prelude_2024)]
 #![feature(core_intrinsics)]
 #![feature(const_mut_refs)]
+#![feature(generic_const_exprs)]
+#![allow(incomplete_features)]
 #![cfg_attr(not(test), no_std)]
 pub mod bech32;
 pub mod decoder_error;

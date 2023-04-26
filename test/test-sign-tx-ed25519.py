@@ -32,7 +32,7 @@ def list_files():
 
 
 def read_file(file):
-    print("Reading ", file, end=' ')
+    print("Reading ", file)
     with open(file, "rb") as f:
         return f.read()
 
@@ -81,7 +81,7 @@ for file_name in list_files():
     if not file_name.endswith(".txn"):
         continue
     data = read_file(file_name)
-    send_derivation_path("m/44H/1022H/10H/525H/1238H/0H")
+    send_derivation_path("m/44H/1022H/12H/525H/1460H/0H")
     rc = send_tx_intent(data)
 
     if rc is None:

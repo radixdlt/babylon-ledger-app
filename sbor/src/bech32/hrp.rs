@@ -25,6 +25,8 @@ pub fn hrp_suffix(net_id: NetworkId) -> &'static str {
         NetworkId::StokeNet => "tdx_2_",
         NetworkId::AdapaNet => "tdx_a_",
         NetworkId::NebuNet => "tdx_b_",
+        NetworkId::KisharNet => "tdx_c_",
+        NetworkId::AnsharNet => "tdx_d_",
         NetworkId::GilgaNet => "tdx_20_",
         NetworkId::EnkiNet => "tdx_21_",
         NetworkId::HammuNet => "tdx_22_",

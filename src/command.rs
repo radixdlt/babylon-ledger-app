@@ -1,3 +1,5 @@
+use nanos_sdk::io::ApduHeader;
+
 #[repr(u8)]
 pub enum Command {
     GetAppVersion,
@@ -15,9 +17,9 @@ pub enum Command {
     Exit,
 }
 
-impl From<u8> for Command {
-    fn from(ins: u8) -> Command {
-        match ins {
+impl From<ApduHeader> for Command {
+    fn from(header: ApduHeader) -> Command {
+        match header.ins {
             0x10 => Command::GetAppVersion,
             0x11 => Command::GetDeviceModel,
             0x12 => Command::GetDeviceId,

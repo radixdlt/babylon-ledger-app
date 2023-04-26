@@ -11,7 +11,7 @@ use crate::app_error::{AppError, to_result};
 
 const SHA256_DIGEST_SIZE: usize = 32; // 256 bits
 const SHA512_DIGEST_SIZE: usize = 64; // 512 bits
-const BLAKE2B_DIGEST_SIZE: usize = 64; // 512 bits
+const BLAKE2B_DIGEST_SIZE: usize = 32; // 256 bits
 
 const MAX_DIGEST_SIZE: usize = max(
     SHA256_DIGEST_SIZE,
@@ -26,6 +26,7 @@ pub enum HashType {
     Blake2b,
 }
 
+#[repr(C, packed)]
 #[derive(Copy, Clone, Debug)]
 pub struct Digest {
     container: [u8; MAX_DIGEST_SIZE],
@@ -57,6 +58,7 @@ impl Digest {
     }
 }
 
+#[repr(C, align(4))]
 pub struct Hasher {
     work_data: [u8; Self::WORK_AREA_SIZE],
     hash_type: HashType,
@@ -122,45 +124,24 @@ impl Hasher {
             HashType::SHA512 => SHA512_DIGEST_SIZE as size_t,
             HashType::Blake2b => BLAKE2B_DIGEST_SIZE as size_t,
         };
-
-        let mut work_data: [u8; Self::WORK_AREA_SIZE] = [0; Self::WORK_AREA_SIZE];
-        let rc = unsafe { cx_hash_init_ex(work_data.as_mut_ptr(), hash_id, output_size) };
-
-        self.work_data.clone_from(&work_data);
-
+        let rc = unsafe { cx_hash_init_ex(self.work_data.as_mut_ptr(), hash_id, output_size) };
         to_result(rc)
     }
 
     pub fn update(&mut self, input: &[u8]) -> Result<(), AppError> {
-        let mut work_data: [u8; Self::WORK_AREA_SIZE] = [0; Self::WORK_AREA_SIZE];
-
-        work_data.clone_from(&self.work_data);
-
         let rc = unsafe {
             cx_hash_update(
-                work_data.as_mut_ptr(),
+                self.work_data.as_mut_ptr(),
                 input.as_ptr(),
                 input.len() as c_uint,
             )
         };
-
-        self.work_data.clone_from(&work_data);
-
         to_result(rc)
     }
 
     pub fn finalize(&mut self) -> Result<Digest, AppError> {
         let mut digest = Digest::new(self.hash_type);
-        let mut work_data: [u8; Self::WORK_AREA_SIZE] = [0; Self::WORK_AREA_SIZE];
-
-        work_data.clone_from(&self.work_data);
-
-        let rc = unsafe {
-            cx_hash_final(work_data.as_mut_ptr(), digest.as_mut())
-        };
-
-        self.work_data.clone_from(&work_data);
-
+        let rc = unsafe { cx_hash_final(self.work_data.as_mut_ptr(), digest.as_mut()) };
         to_result(rc).map(|_| digest)
     }
 }

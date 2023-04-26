@@ -27,6 +27,7 @@ pub enum SignTxType {
     Secp256k1,
 }
 
+#[repr(align(4))]
 struct SignFlowState {
     sign_type: SignTxType,
     tx_packet_count: u32,
@@ -320,7 +321,7 @@ impl TxSignState {
 
         if class == CommandClass::Regular {
             self.processor.set_network()?;
-            self.show_digest = comm.get_p1() == 1;
+            self.show_digest = comm.get_apdu_metadata().p1 == 1;
         } else {
             self.decode_tx_intent(comm.get_data()?, class)?;
         }

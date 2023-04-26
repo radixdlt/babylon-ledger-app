@@ -52,7 +52,7 @@ impl ParameterPrinter for AddressParameterPrinter {
 }
 
 fn format_address(state: &mut ParameterPrinterState, hrp_prefix: &str) {
-    let mut vec = StaticVec::<u8, { Bech32::MAX_LEN }>::new();
+    let mut vec = StaticVec::<u8, { Bech32::MAX_LEN }>::new(0);
     vec.extend_from_slice(hrp_prefix.as_bytes());
     vec.extend_from_slice(hrp_suffix(state.network_id).as_bytes());
 

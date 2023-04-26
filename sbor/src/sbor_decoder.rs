@@ -17,17 +17,17 @@ pub const STACK_DEPTH: u8 = 32; // For testing on desktop
 
 pub const SBOR_LEADING_BYTE: u8 = 77; // MANIFEST_SBOR_V1_PAYLOAD_PREFIX
 
-#[repr(C, packed)]
+#[repr(transparent)]
 #[derive(Copy, Clone, Debug)]
 struct Flags(u8);
 
 impl Flags {
     const SKIP_START_END: u8 = 0x80;
     const FLIP_FLOP: u8 = 0x40;
-    const PHASE_MASK: u8 = 0x3F;
+    const PHASE_PTR_MASK: u8 = 0x3F;
 
-    const fn new(phase: DecoderPhase) -> Self {
-        Self(phase.as_byte())
+    const fn new() -> Self {
+        Self(0)
     }
 
     pub fn skip_start_end(&self) -> bool {
@@ -54,13 +54,19 @@ impl Flags {
         self.0 ^= Self::FLIP_FLOP;
     }
 
-    pub fn phase(&mut self) -> DecoderPhase {
-        DecoderPhase::from_byte(self.0 & Self::PHASE_MASK)
+    pub fn phase_ptr(&self) -> u8 {
+        self.0 & Self::PHASE_PTR_MASK
     }
 
-    pub fn set_phase(&mut self, phase: DecoderPhase) {
-        self.0 &= !Self::PHASE_MASK;
-        self.0 |= phase.as_byte();
+    pub fn set_phase_ptr(&mut self, phase_ptr: u8) {
+        self.0 &= !Self::PHASE_PTR_MASK;
+        self.0 |= phase_ptr & Self::PHASE_PTR_MASK;
+    }
+
+    pub fn increment_phase_ptr(&mut self) {
+        if self.0 & Self::PHASE_PTR_MASK < Self::PHASE_PTR_MASK {
+            self.0 += 1;
+        }
     }
 }
 
@@ -69,11 +75,8 @@ impl Flags {
 struct State {
     items_to_read: u32,
     active_type_id: u8,
-
     key_type_id: u8,        // Map key type ID
     element_type_id: u8,    // Map value type ID; Array/Tuple/Enum - element type ID
-
-    phase_ptr: u8,
     flags: Flags,
 }
 
@@ -111,60 +114,18 @@ pub enum SubTypeKind {
     Value,
 }
 
-impl State {
-    const fn new() -> Self {
-        Self {
-            phase_ptr: 0,
-            active_type_id: TYPE_NONE,
-            items_to_read: 0,
-            element_type_id: TYPE_NONE,
-            key_type_id: TYPE_NONE,
-            flags: Flags::new(DecoderPhase::ReadingTypeId),
-        }
-    }
-
-    #[inline]
-    pub fn set_phase(&mut self, phase: DecoderPhase) {
-        self.flags.set_phase(phase);
-    }
-
-    #[inline]
-    pub fn phase(&mut self) -> DecoderPhase {
-        self.flags.phase()
-    }
-
-    #[inline]
-    pub fn skip_start_end(&mut self) -> bool {
-        self.flags.skip_start_end()
-    }
-
-    #[inline]
-    pub fn set_skip_start_end(&mut self, value: bool) {
-        self.flags.set_skip_start_end(value);
-    }
-
-    #[inline]
-    pub fn flip_flop(&mut self) -> bool {
-        self.flags.flip_flop()
-    }
-
-    #[inline]
-    pub fn flip(&mut self) {
-        self.flags.flip();
-    }
-}
-
 pub trait SborEventHandler {
     fn handle(&mut self, evt: SborEvent);
 }
 
+#[repr(C, packed)]
 pub struct SborDecoder {
     stack: [State; STACK_DEPTH as usize],
     byte_count: usize,
-    head: u8,
-    expect_leading_byte: bool,
     len_acc: usize,
+    head: u8,
     len_shift: u8,
+    expect_leading_byte: bool,
 }
 
 impl SborDecoder {
@@ -305,19 +266,14 @@ impl SborDecoder {
                 }
             }
 
-            self.head().set_phase(DecoderPhase::ReadingTypeId);
-            self.head().phase_ptr = 0;
+            self.head().active_type_id = TYPE_NONE;
+            self.head().reset_phase();
 
             if self.head > 0 {
                 self.pop()?;
             }
         } else {
-            let mut head = self.head();
-            head.phase_ptr += 1;
-
-            // Safe to unwrap because we know that the type is valid
-            let phase = to_type_info(head.active_type_id).unwrap().next_phases[head.phase_ptr as usize];
-            head.set_phase(phase);
+            self.head().advance_phase();
         }
 
         Ok(())
@@ -480,15 +436,62 @@ impl SborDecoder {
 }
 
 impl State {
-    #[inline]
-    fn is_last_phase(&mut self) -> bool {
-        // Safe to unwrap because we already checked that type_id is valid
-        let len = to_type_info(self.active_type_id).unwrap().next_phases.len() as u8;
-        self.phase_ptr == len - 1
+    const fn new() -> Self {
+        Self {
+            active_type_id: TYPE_NONE,
+            items_to_read: 0,
+            element_type_id: TYPE_NONE,
+            key_type_id: TYPE_NONE,
+            flags: Flags::new(),
+        }
     }
 
-    fn is_read_data_phase(&mut self) -> bool {
-        self.flags.phase() == DecoderPhase::ReadingData
+    pub fn advance_phase(&mut self) {
+        self.flags.increment_phase_ptr();
+    }
+
+    pub fn reset_phase(&mut self) {
+        self.flags.set_phase_ptr(0);
+    }
+
+    #[inline]
+    pub fn phase(&self) -> DecoderPhase {
+        self.phases()[self.flags.phase_ptr() as usize]
+    }
+
+    #[inline]
+    pub fn skip_start_end(&mut self) -> bool {
+        self.flags.skip_start_end()
+    }
+
+    #[inline]
+    pub fn set_skip_start_end(&mut self, value: bool) {
+        self.flags.set_skip_start_end(value);
+    }
+
+    #[inline]
+    pub fn flip_flop(&mut self) -> bool {
+        self.flags.flip_flop()
+    }
+
+    #[inline]
+    pub fn flip(&mut self) {
+        self.flags.flip();
+    }
+
+    #[inline]
+    fn phases(&self) -> &[DecoderPhase] {
+        &to_type_info(self.active_type_id).unwrap().next_phases
+    }
+
+    #[inline]
+    fn is_last_phase(&self) -> bool {
+        let len = self.phases().len() as u8;
+        self.flags.phase_ptr() == len - 1
+    }
+
+    fn is_read_data_phase(&self) -> bool {
+        self.phase() == DecoderPhase::ReadingData
     }
 
     fn read_type_id(&mut self, byte: u8, byte_count: usize) -> Result<(), DecoderError> {
