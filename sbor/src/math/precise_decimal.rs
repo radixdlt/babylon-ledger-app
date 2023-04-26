@@ -1,77 +1,64 @@
-use crate::static_vec::StaticVec;
-use crypto_bigint::{NonZero, Zero, U512};
+use simple_bigint::bigint::{BigInt, BigIntError};
 
-use crate::math::MathError;
+use crate::math::format_big_int;
+use crate::static_vec::StaticVec;
 
 #[derive(Copy, Clone)]
-pub struct PreciseDecimal(U512);
+pub struct PreciseDecimal(BigInt<512>);
 
 impl PreciseDecimal {
-    pub const SCALE: u32 = 64;
-    pub const ZERO: PreciseDecimal = PreciseDecimal(U512::ZERO);
-    pub const ONE: PreciseDecimal = PreciseDecimal(U512::from_le_slice(&[
-        0, 0, 0, 0, 0, 0, 0, 0, 1, 31, 106, 191, 100, 237, 56, 110, 237, 151, 167, 218, 244, 249,
-        63, 233, 3, 79, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    ]));
-    pub const MAX: Self = Self(U512::MAX);
+    pub const SCALE: usize = 64;
     pub const MAX_PRINT_LEN: usize = 160;
+    pub const MAX: PreciseDecimal = PreciseDecimal(BigInt::from_limbs([
+        0xFFFF_FFFF,
+        0xFFFF_FFFF,
+        0xFFFF_FFFF,
+        0xFFFF_FFFF,
+        0xFFFF_FFFF,
+        0xFFFF_FFFF,
+        0xFFFF_FFFF,
+        0xFFFF_FFFF,
+        0xFFFF_FFFF,
+        0xFFFF_FFFF,
+        0xFFFF_FFFF,
+        0xFFFF_FFFF,
+        0xFFFF_FFFF,
+        0xFFFF_FFFF,
+        0xFFFF_FFFF,
+        0x7FFF_FFFF,
+    ]));
+    pub const MIN: PreciseDecimal = PreciseDecimal(BigInt::from_limbs([
+        0x0000_0000,
+        0x0000_0000,
+        0x0000_0000,
+        0x0000_0000,
+        0x0000_0000,
+        0x0000_0000,
+        0x0000_0000,
+        0x0000_0000,
+        0x0000_0000,
+        0x0000_0000,
+        0x0000_0000,
+        0x0000_0000,
+        0x0000_0000,
+        0x0000_0000,
+        0x0000_0000,
+        0x8000_0000,
+    ]));
 
-    const LOW_TEN: PreciseDecimal = PreciseDecimal(U512::from_u64(10u64));
-
-    fn fmt_uint<const N: usize>(uint: U512, vec: &mut StaticVec<u8, N>) -> u16 {
-        let divisor = NonZero::new(PreciseDecimal::LOW_TEN.0).unwrap();
-        let index = vec.len();
-        let mut value = uint;
-        let mut num_digits = 0;
-
-        loop {
-            let (quotent, remainder) = value.div_rem(&divisor);
-            vec.insert(index, remainder.as_words()[0] as u8 + b'0');
-            num_digits += 1;
-
-            if quotent.is_zero().into() {
-                break;
-            }
-            value = quotent;
-        }
-        num_digits
+    pub fn is_negative(&self) -> bool {
+        self.0.is_negative()
     }
 
     pub fn format<const N: usize>(&self, output: &mut StaticVec<u8, N>) {
-        let divisor = NonZero::new(PreciseDecimal::ONE.0).unwrap();
-        let (quotent, remainder) = self.0.div_rem(&divisor);
-        let no_decimals: bool = remainder.is_zero().into();
-
-        PreciseDecimal::fmt_uint(quotent, output);
-
-        if !no_decimals {
-            output.push(b'.');
-            let decimal_start = output.len();
-            let mut decimals = PreciseDecimal::fmt_uint(remainder, output);
-
-            // Add leading zeros if necessary
-            while decimals < (PreciseDecimal::SCALE as u16) {
-                output.insert(decimal_start as usize, b'0');
-                decimals += 1;
-            }
-
-            // Remove trailing zeros if necessary
-            while let Some(b'0') = output.get(output.len() - 1) {
-                output.remove(output.len() - 1);
-            }
-        }
+        format_big_int::<512, { Self::SCALE }, N>(&self.0, output);
     }
 }
 
 impl TryFrom<&[u8]> for PreciseDecimal {
-    type Error = MathError;
-    fn try_from(value: &[u8]) -> Result<Self, MathError> {
-        if value.len() != U512::BYTES {
-            Err(MathError::InvalidSliceLen)
-        } else {
-            Ok(Self(U512::from_le_slice(value)))
-        }
+    type Error = BigIntError;
+    fn try_from(value: &[u8]) -> Result<Self, BigIntError> {
+        Ok(Self(BigInt::<512>::from_bytes(value)?))
     }
 }
 
@@ -85,7 +72,10 @@ mod tests {
     impl fmt::Display for PreciseDecimal {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
             let mut formatted = StaticVec::<u8, { Self::MAX_PRINT_LEN }>::new(0);
-            self.format(&mut formatted);
+            format_big_int::<512, { Self::SCALE }, { Self::MAX_PRINT_LEN }>(
+                &self.0,
+                &mut formatted,
+            );
 
             for &byte in formatted.as_slice() {
                 f.write_char(byte as char)?;
@@ -96,6 +86,12 @@ mod tests {
 
     #[test]
     pub fn test_format_decimal() {
+        let one = PreciseDecimal(BigInt::<512>::from_bytes(&[
+            0, 0, 0, 0, 0, 0, 0, 0, 1, 31, 106, 191, 100, 237, 56, 110, 237, 151, 167, 218, 244, 249,
+            63, 233, 3, 79, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        ]).unwrap());
+
         assert_eq!(
             PreciseDecimal(1u128.into()).to_string(),
             "0.0000000000000000000000000000000000000000000000000000000000000001"
@@ -104,7 +100,7 @@ mod tests {
             PreciseDecimal(123456789123456789u128.into()).to_string(),
             "0.0000000000000000000000000000000000000000000000123456789123456789"
         );
-        assert_eq!(PreciseDecimal::ONE.to_string(), "1");
+        assert_eq!(one.to_string(), "1");
         assert_eq!(
             PreciseDecimal(123000000000000000000000000000000000000u128.into()).to_string(),
             "0.0000000000000000000000000123"
@@ -114,13 +110,23 @@ mod tests {
             "0.0000000000000000000000000123456789123456789"
         );
         assert_eq!(
-            PreciseDecimal::MAX.to_string(),
-            "1340780792994259709957402499820584612747936582059239337772356144372176403007354697680187429.8166903427690031858186486050853753882811946569946433649006084095"
+            PreciseDecimal(BigInt::<512>::from_bytes(&[
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xce, 0xbe, 0xe5, 0x18, 0xac, 0xe9,
+                0xdd, 0x1d, 0x50, 0xb6, 0x62, 0x06, 0x59, 0x92, 0x19, 0x4b, 0x9e, 0x2b, 0x1d, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+            ]).unwrap()).to_string(),
+            "1.2"
         );
-
-        // Signed numbers are not supported yet
-        // assert_eq!(format!("{}", PreciseDecimal::MAX),"57896044618658097711785492504343953926634992332820282019728.792003956564819967");
-        // assert_eq!(PreciseDecimal::MIN.is_negative(), true);
-        // assert_eq!(format!("{}", PreciseDecimal::MIN), "-57896044618658097711785492504343953926634992332820282019728.792003956564819968");
+        assert_eq!(
+            PreciseDecimal::MAX.to_string(),
+            "670390396497129854978701249910292306373968291029619668886178072186088201503677348840093714.9083451713845015929093243025426876941405973284973216824503042047"
+        );
+        assert_eq!(PreciseDecimal::MIN.is_negative(), true);
+        assert_eq!(
+            PreciseDecimal::MIN.to_string(),
+            "-670390396497129854978701249910292306373968291029619668886178072186088201503677348840093714.9083451713845015929093243025426876941405973284973216824503042048"
+        );
     }
 }

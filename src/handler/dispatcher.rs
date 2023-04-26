@@ -10,9 +10,10 @@ use crate::tx_sign_state::TxSignState;
 use crate::utilities::version::{MODEL_DATA, VERSION_DATA};
 
 fn ensure_zero_params(comm: &Comm) -> Result<(), AppError> {
-    match (comm.get_p1(), comm.get_p2()) {
+    let metadata = comm.get_apdu_metadata();
+    match (metadata.p1, metadata.p2) {
         (0u8, 0u8) => Ok(()),
-        (_, _) => Err(AppError::BadParam),
+        (_, _) => Err(AppError::BadP1P2),
     }
 }
 
@@ -33,7 +34,7 @@ fn validate_request(comm: &Comm, class: CommandClass) -> Result<(), AppError> {
 }
 
 pub fn dispatcher(comm: &mut Comm, ins: Command, state: &mut TxSignState) -> Result<(), AppError> {
-    let class = CommandClass::from(comm.get_cla_ins().0);
+    let class = CommandClass::from(comm.get_apdu_metadata().cla);
 
     validate_request(comm, class)?;
 

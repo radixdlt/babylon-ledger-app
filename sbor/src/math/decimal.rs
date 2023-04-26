@@ -1,74 +1,50 @@
-use crypto_bigint::{U256, Zero};
-use crypto_bigint::NonZero;
+use simple_bigint::bigint::{BigInt, BigIntError};
+
+use crate::math::format_big_int;
 use crate::static_vec::StaticVec;
 
-use crate::math::MathError;
-
 #[derive(Copy, Clone)]
-pub struct Decimal(U256);
+pub struct Decimal(BigInt<256>);
 
 impl Decimal {
-    pub const SCALE: u32 = 18;
-    pub const ZERO: Decimal = Decimal(U256::ZERO);
-    pub const ONE: Decimal = Decimal(U256::from_u64(10_u64.pow(Decimal::SCALE)));
-    pub const MAX: Self = Self(U256::MAX);
-    pub const MAX_PRINT_LEN: usize = 80;
+    pub const SCALE: usize = 18;
+    // 2ˆ256 = 1.1579209e+77, 78 digits + 1 decimal point + 1 sign = 80
+    // 2ˆ128 = 3.4028237e+38, 39 digits + 1 decimal point + 1 sign = 41
+    pub const MAX_PRINT_LEN: usize = 86;
+    pub const MAX: Decimal = Decimal(BigInt::from_limbs([
+        0xFFFF_FFFF,
+        0xFFFF_FFFF,
+        0xFFFF_FFFF,
+        0xFFFF_FFFF,
+        0xFFFF_FFFF,
+        0xFFFF_FFFF,
+        0xFFFF_FFFF,
+        0x7FFF_FFFF,
+    ]));
+    pub const MIN: Decimal = Decimal(BigInt::from_limbs([
+        0x0000_0000,
+        0x0000_0000,
+        0x0000_0000,
+        0x0000_0000,
+        0x0000_0000,
+        0x0000_0000,
+        0x0000_0000,
+        0x8000_0000,
+    ]));
 
-    const LOW_TEN: Decimal = Decimal(U256::from_u64(10u64));
-
-    fn fmt_uint<const N: usize>(uint: U256, vec: &mut StaticVec<u8, N>) -> u16 {
-        let divisor = NonZero::new(Decimal::LOW_TEN.0).unwrap();
-        let index = vec.len();
-        let mut value = uint;
-        let mut num_digits = 0;
-
-        loop {
-            let (quotent, remainder) = value.div_rem(&divisor);
-            vec.insert(index, remainder.as_words()[0] as u8 + b'0');
-            num_digits += 1;
-
-            if quotent.is_zero().into() {
-                break;
-            }
-            value = quotent;
-        }
-        num_digits
+    pub fn is_negative(&self) -> bool {
+        self.0.is_negative()
     }
 
     pub fn format<const N: usize>(&self, output: &mut StaticVec<u8, N>) {
-        let divisor = NonZero::new(Decimal::ONE.0).unwrap();
-        let (quotent, remainder) = self.0.div_rem(&divisor);
-        let no_decimals: bool = remainder.is_zero().into();
-
-        Decimal::fmt_uint(quotent, output);
-
-        if !no_decimals {
-            output.push(b'.');
-            let decimal_start = output.len();
-            let mut decimals = Decimal::fmt_uint(remainder, output);
-
-            // Add leading zeros if necessary
-            while decimals < (Decimal::SCALE as u16) {
-                output.insert(decimal_start as usize, b'0');
-                decimals += 1;
-            }
-
-            // Remove trailing zeros if necessary
-            while let Some(b'0') = output.get(output.len() - 1) {
-                output.remove(output.len() - 1);
-            }
-        }
+        format_big_int::<256, { Self::SCALE }, N>(&self.0, output);
     }
 }
 
 impl TryFrom<&[u8]> for Decimal {
-    type Error = MathError;
-    fn try_from(value: &[u8]) -> Result<Self, MathError> {
-        if value.len() != U256::BYTES {
-            Err(MathError::InvalidSliceLen)
-        } else {
-            Ok(Self(U256::from_le_slice(value)))
-        }
+    type Error = BigIntError;
+    fn try_from(value: &[u8]) -> Result<Self, BigIntError> {
+        Ok(Self(BigInt::<256>::from_bytes(value)?))
     }
 }
 
@@ -82,7 +58,10 @@ mod tests {
     impl fmt::Display for Decimal {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
             let mut formatted = StaticVec::<u8, { Self::MAX_PRINT_LEN }>::new(0);
-            self.format(&mut formatted);
+            format_big_int::<256, { Self::SCALE }, { Self::MAX_PRINT_LEN }>(
+                &self.0,
+                &mut formatted,
+            );
 
             for &byte in formatted.as_slice() {
                 f.write_char(byte as char)?;
@@ -94,24 +73,37 @@ mod tests {
     #[test]
     pub fn test_format_decimal() {
         assert_eq!(Decimal(1u128.into()).to_string(), "0.000000000000000001");
+        assert_eq!(Decimal(1000000000000000u128.into()).to_string(), "0.001");
+        assert_eq!(Decimal(10000000000000000u128.into()).to_string(), "0.01");
+        assert_eq!(Decimal(100000000000000000u128.into()).to_string(), "0.1");
+        assert_eq!(Decimal(001000000000000000000u128.into()).to_string(),   "1");
+        assert_eq!(Decimal(001200000000000000000u128.into()).to_string(),   "1.2");
+        assert_eq!(Decimal(012000000000000000000u128.into()).to_string(),  "12");
+        assert_eq!(Decimal(012300000000000000000u128.into()).to_string(),  "12.3");
+        assert_eq!(Decimal(120300000000000000000u128.into()).to_string(), "120.3");
         assert_eq!(
             Decimal(123456789123456789u128.into()).to_string(),
             "0.123456789123456789"
         );
-        assert_eq!(Decimal(1000000000000000000u128.into()).to_string(), "1");
         assert_eq!(Decimal(123000000000000000000u128.into()).to_string(), "123");
         assert_eq!(
             Decimal(123456789123456789000000000000000000u128.into()).to_string(),
             "123456789123456789"
         );
         assert_eq!(
-            Decimal::MAX.to_string(),
-            "115792089237316195423570985008687907853269984665640564039457.584007913129639935"
+            Decimal(
+                BigInt::<256>::from_bytes(&[
+                    0x00, 0x00, 0x78, 0x62, 0xa4, 0x41, 0xa7, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                ])
+                .unwrap()
+            )
+            .to_string(),
+            "1.2"
         );
-
-        // Signed numbers are not supported yet
-        // assert_eq!(format!("{}", Decimal::MAX),"57896044618658097711785492504343953926634992332820282019728.792003956564819967");
-        // assert_eq!(Decimal::MIN.is_negative(), true);
-        // assert_eq!(format!("{}", Decimal::MIN), "-57896044618658097711785492504343953926634992332820282019728.792003956564819968");
+        assert_eq!(Decimal::MAX.to_string(),"57896044618658097711785492504343953926634992332820282019728.792003956564819967");
+        assert_eq!(Decimal::MIN.is_negative(), true);
+        assert_eq!(Decimal::MIN.to_string(), "-57896044618658097711785492504343953926634992332820282019728.792003956564819968");
     }
 }

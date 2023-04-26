@@ -321,7 +321,7 @@ impl TxSignState {
 
         if class == CommandClass::Regular {
             self.processor.set_network()?;
-            self.show_digest = comm.get_p1() == 1;
+            self.show_digest = comm.get_apdu_metadata().p1 == 1;
         } else {
             self.decode_tx_intent(comm.get_data()?, class)?;
         }
