@@ -49,6 +49,7 @@ extern "C" fn sample_main() {
 
             Event::Command(ins) => {
                 ticker = 1; //about 0.1seconds
+                SingleMessage::new(APPLICATION_FLASH).show();
                 match dispatcher::dispatcher(&mut comm, ins, &mut state) {
                     Ok(()) => comm.reply_ok(),
                     Err(app_error) => comm.reply(app_error),
