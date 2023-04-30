@@ -1,8 +1,8 @@
 use core::ptr::write_bytes;
 
 use nanos_sdk::bindings::{
-    cx_ecfp_private_key_t, cx_err_t, cx_md_t, CX_ECCINFO_PARITY_ODD, CX_LAST, CX_RND_RFC6979,
-    CX_SHA256,
+    cx_ecfp_private_key_t, cx_err_t, cx_md_t, CX_ECCINFO_PARITY_ODD, CX_LAST, CX_NONE,
+    CX_RND_RFC6979,
 };
 
 use crate::app_error::{to_result, AppError};
@@ -110,7 +110,7 @@ impl KeyPairSecp256k1 {
             let rc = cx_ecdsa_sign_no_throw(
                 &self.origin.private,
                 CX_RND_RFC6979 | CX_LAST,
-                CX_SHA256,
+                CX_NONE,
                 message.as_ptr(),
                 message.len() as size_t,
                 der.as_mut_ptr(),

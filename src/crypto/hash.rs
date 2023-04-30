@@ -3,25 +3,18 @@ use core::ffi::c_uint;
 use core::intrinsics::write_bytes;
 use core::mem::size_of;
 
-use nanos_sdk::bindings::{
-    CX_BLAKE2B, cx_blake2b_t, cx_md_t, CX_SHA256, cx_sha256_t, CX_SHA512, cx_sha512_t, size_t,
-};
+use nanos_sdk::bindings::{cx_blake2b_t, cx_md_t, cx_sha512_t, size_t, CX_BLAKE2B, CX_SHA512};
 
-use crate::app_error::{AppError, to_result};
+use crate::app_error::{to_result, AppError};
 
-const SHA256_DIGEST_SIZE: usize = 32; // 256 bits
 const SHA512_DIGEST_SIZE: usize = 64; // 512 bits
 const BLAKE2B_DIGEST_SIZE: usize = 32; // 256 bits
 
-const MAX_DIGEST_SIZE: usize = max(
-    SHA256_DIGEST_SIZE,
-    max(BLAKE2B_DIGEST_SIZE, SHA512_DIGEST_SIZE),
-);
+const MAX_DIGEST_SIZE: usize = max(BLAKE2B_DIGEST_SIZE, SHA512_DIGEST_SIZE);
 
 #[repr(u8)]
 #[derive(Copy, Clone, Debug)]
 pub enum HashType {
-    SHA256,
     SHA512,
     Blake2b,
 }
@@ -47,7 +40,6 @@ impl Digest {
 
     pub fn as_bytes(&self) -> &[u8] {
         match self.hash_type {
-            HashType::SHA256 => &self.container[..SHA256_DIGEST_SIZE],
             HashType::SHA512 => &self.container[..SHA512_DIGEST_SIZE],
             HashType::Blake2b => &self.container[..BLAKE2B_DIGEST_SIZE],
         }
@@ -84,15 +76,12 @@ extern "C" {
 }
 
 impl Hasher {
-    const WORK_AREA_SIZE: usize = max(
-        size_of::<cx_sha256_t>(),
-        max(size_of::<cx_sha512_t>(), size_of::<cx_blake2b_t>()),
-    );
+    const WORK_AREA_SIZE: usize = max(size_of::<cx_sha512_t>(), size_of::<cx_blake2b_t>());
 
     pub const fn new() -> Self {
         Self {
             work_data: [0; Self::WORK_AREA_SIZE],
-            hash_type: HashType::SHA256,
+            hash_type: HashType::Blake2b,
         }
     }
 
@@ -114,13 +103,11 @@ impl Hasher {
         self.hash_type = hash_type;
 
         let hash_id = match hash_type {
-            HashType::SHA256 => CX_SHA256,
             HashType::SHA512 => CX_SHA512,
             HashType::Blake2b => CX_BLAKE2B,
         };
 
         let output_size: size_t = match hash_type {
-            HashType::SHA256 => SHA256_DIGEST_SIZE as size_t,
             HashType::SHA512 => SHA512_DIGEST_SIZE as size_t,
             HashType::Blake2b => BLAKE2B_DIGEST_SIZE as size_t,
         };
