@@ -1281,7 +1281,7 @@ mod tests {
         while start < input.len() {
             match decoder.decode(&mut handler, &input[start..end]) {
                 Ok(outcome) => {
-                    if end - start == CHUNK_SIZE {
+                    if end - start == CHUNK_SIZE && end < input.len(){
                         assert_eq!(outcome, DecodingOutcome::NeedMoreData(end));
                     } else {
                         assert_eq!(outcome, DecodingOutcome::Done(input.len()))

@@ -58,7 +58,7 @@ pub const SIMPLE_TYPES: [u8; 20] = [
 ];
 
 // end of custom types
-pub const ADDRESS_LEN: u8 = 27; // 1 byte discriminator + 26 bytes address
+pub const ADDRESS_LEN: u8 = 30; // 1 byte discriminator + 29 bytes address
 pub const COMPONENT_LEN: u8 = 36;
 
 pub const INTEGER_LEN: u8 = 8;

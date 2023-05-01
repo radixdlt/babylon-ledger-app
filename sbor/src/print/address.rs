@@ -31,7 +31,9 @@ fn to_hrp_type(id: u8) -> Option<HrpType> {
         15 => Some(HrpType::InternalVault),
         16 => Some(HrpType::InternalAccount),
         17 => Some(HrpType::InternalKeyValueStore),
-        18 => Some(HrpType::InternalComponent),
+        18 => Some(HrpType::InternalIndex),
+        19 => Some(HrpType::InternalSortedIndex),
+        20 => Some(HrpType::InternalComponent),
         _ => None,
     }
 }
