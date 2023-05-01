@@ -16,6 +16,8 @@ pub enum HrpType {
     InternalAccount,
     InternalComponent,
     InternalKeyValueStore,
+    InternalIndex,
+    InternalSortedIndex,
 }
 
 pub fn hrp_suffix(net_id: NetworkId) -> &'static str {
@@ -53,5 +55,7 @@ pub fn hrp_prefix(hrp_type: HrpType) -> &'static str {
         HrpType::InternalAccount => "internal_account_",
         HrpType::InternalComponent => "internal_component_",
         HrpType::InternalKeyValueStore => "internal_keyvaluestore_",
+        HrpType::InternalIndex => "internal_index_",
+        HrpType::InternalSortedIndex => "internal_sortedindex_",
     }
 }
