@@ -17,8 +17,6 @@ All communication is performed using APDU protocol ([see APDU description](apdu.
 | SignTxEd25519Smart   | 0x42             | Sign transaction intent using Ed25519 curve and given derivation path. Derivation path must conform to CAP-26 SLIP 10 HD Derivation Path Scheme. Signing is performed in "summary mode", when device tries to recognize known transaction format and provide summary for the transaction. |
 | SignTxSecp256k1      | 0x51             | Sign transaction intent using Secp256k1 curve and given derivation path. Signing is done in "advanced mode", when every instruction from transaction intent is decoded and displayed to user.                                                                                             |
 | SignTxSecp256k1Smart | 0x52             | Sign transaction intent using Secp256k1 curve and given derivation path. Signing is performed in "summary mode", when device tries to recognize known transaction format and provide summary for the transaction.                                                                         |
-| SignDigestEd25519    | 0x61             | Sign provided 32 bytes digest using Ed25519 curve and given derivation path. Derivation path must conform to CAP-26 SLIP 10 HD Derivation Path Scheme. Digest is hashed with SHA512 before signing.                                                                                       |
-| DeriveAddressEd25519 | 0x71             | Derive public key, build entity address, display to user and get confirmation. Derivation path must conform to CAP-26 SLIP 10 HD Derivation Path Scheme.                                                                                                                                  | 
 
 ## GetAppVersion
 
@@ -201,42 +199,3 @@ This command accepts the same data as [SignTxSecp256k1](#signtxsecp256k1) comman
 interaction with the user. The [SignTxSecp256k1](#signtxsecp256k1) always displays all instructions present in the transaction intent, while 
 [SignTxSecp256k1Smart](#signtxsecp256k1smart) tries to recognize type of the transaction and provide summary for the transaction.
 For example, for the payment transaction, the device displays only source and destination accounts and amount of the payment.
-
-## SignDigestEd25519
-__Note__: This command accepts derivation path in the format described in CAP-26 SLIP 10 HD Derivation Path Scheme.
-
-APDU:
-| CLA | INS | P1 | P2 | Data |
-|-----|-----|----|----|------|
-| 0xAA | 0x61 | 0x00 | 0x00 | Derivation path in the following format:    
-byte 0 - number of elements in derivation path    
-bytes 1-5 - first element of derivation path in big endian format   
-bytes 6-9 - second element of derivation path in big endian format   
-... - remaining elements of derivation path followed by 32 bytes of input digest.|
-
-Note that the input digest is hashed with SHA512 before signing. 
-
-Upon successful sign, the device returns the signature for the digest. The signature is returned in the following format:
-| Data | Description |
-|------|-------------|
-| byte 0-63 | Ed25519 signature |
-| byte 64-95 | Ed25519 public key |
-
-## DeriveAddressEd25519
-__Note__: This command accepts derivation path in the format described in CAP-26 SLIP 10 HD Derivation Path Scheme.
-
-APDU:
-| CLA | INS | P1 | P2 | Data |
-|-----|-----|----|----|------|
-| 0xAA | 0x71 | 0x00 | 0x00 | Derivation path in the following format:    
-byte 0 - number of elements in derivation path    
-bytes 1-5 - first element of derivation path in big endian format   
-bytes 6-9 - second element of derivation path in big endian format   
-... - remaining elements of derivation path|
-
-Upon confirmation from the user, following response is sent (32 bytes):
-| Data | Description |
-|------|-------------|
-| byte 0-31 | Ed25519 public key |
-
-If user rejects the address, then error code is returned.
