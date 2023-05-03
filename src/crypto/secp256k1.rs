@@ -41,7 +41,7 @@ impl From<InternalKeyPair> for KeyPairSecp256k1 {
         Self {
             public: key_pair.public.into(),
             private: PrivateKeySecp256k1(key_pair.private.d),
-            origin: key_pair.clone(),
+            origin: key_pair,
         }
     }
 }

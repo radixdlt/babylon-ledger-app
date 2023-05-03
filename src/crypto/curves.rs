@@ -30,7 +30,7 @@ pub enum Curve {
 
 pub fn generate_key_pair(curve: Curve, path: &Bip32Path) -> Result<InternalKeyPair, AppError> {
     let mut key_pair = InternalKeyPair {
-        private: derive(curve, &path)?,
+        private: derive(curve, path)?,
         public: init_public_key(curve)?,
     };
 

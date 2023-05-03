@@ -6,7 +6,7 @@ use crate::ui::multiline_scroller::MultilineMessageScroller;
 pub struct LedgerTTY;
 
 impl LedgerTTY {
-    pub const fn new() -> TTY {
+    pub const fn new_tty() -> TTY {
         TTY {
             show_message: Self::show_message,
         }

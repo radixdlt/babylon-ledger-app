@@ -11,7 +11,6 @@ pub fn handle(comm: &mut Comm) -> Result<(), AppError> {
         .and_then(|path| KeyPairSecp256k1::derive(&path))
         .map(|key| {
             comm.append(key.private());
-            ()
         })
 }
 

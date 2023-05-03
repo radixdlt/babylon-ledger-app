@@ -112,9 +112,7 @@ impl<'a> MultilineMessageScroller<'a> {
                 }
                 Some(ButtonEvent::LeftButtonRelease) => {
                     LEFT_S_ARROW.erase();
-                    if cur_page > 0 {
-                        cur_page -= 1;
-                    }
+                    cur_page = cur_page.saturating_sub(1);
                     // We need to draw anyway to clear button press arrow
                     draw(cur_page);
                 }

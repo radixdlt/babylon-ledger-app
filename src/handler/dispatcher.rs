@@ -17,9 +17,8 @@ fn ensure_zero_params(comm: &Comm) -> Result<(), AppError> {
     }
 }
 
-fn send_fixed(comm: &mut Comm, data: &[u8]) -> () {
+fn send_fixed(comm: &mut Comm, data: &[u8]) {
     comm.append(data);
-    ()
 }
 
 fn validate_request(comm: &Comm, class: CommandClass) -> Result<(), AppError> {

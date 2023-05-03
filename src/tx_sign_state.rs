@@ -119,7 +119,7 @@ impl SignFlowState {
 
         match class {
             CommandClass::Continuation | CommandClass::LastData => Ok(()),
-            _ => return Err(AppError::BadTxSignSequence),
+            _ => Err(AppError::BadTxSignSequence),
         }
     }
 
@@ -199,9 +199,10 @@ impl InstructionProcessor {
 
     pub fn set_network(&mut self) -> Result<(), AppError> {
         match self.state.sign_type {
-            SignTxType::Ed25519 => Ok(self.printer.set_network(self.state.network_id()?)),
-            SignTxType::Secp256k1 => Ok(self.printer.set_network(NetworkId::OlympiaMainNet)),
-        }
+            SignTxType::Ed25519 => self.printer.set_network(self.state.network_id()?),
+            SignTxType::Secp256k1 => self.printer.set_network(NetworkId::OlympiaMainNet),
+        };
+        Ok(())
     }
 
     pub fn set_tty(&mut self, tty: TTY) {
@@ -244,7 +245,7 @@ impl TxSignState {
                     hasher: Blake2bHasher::new(),
                 },
                 extractor: InstructionExtractor::new(),
-                printer: InstructionPrinter::new(NetworkId::LocalNet, LedgerTTY::new()),
+                printer: InstructionPrinter::new(NetworkId::LocalNet, LedgerTTY::new_tty()),
             },
             show_digest: false,
         }
@@ -253,7 +254,7 @@ impl TxSignState {
     pub fn reset(&mut self) {
         self.processor.reset();
         self.decoder.reset();
-        self.processor.set_tty(LedgerTTY::new());
+        self.processor.set_tty(LedgerTTY::new_tty());
     }
 
     pub fn process_request(

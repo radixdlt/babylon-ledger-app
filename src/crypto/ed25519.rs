@@ -34,7 +34,7 @@ impl From<InternalKeyPair> for KeyPair25519 {
         Self {
             public: key_pair.public.into(),
             private: PrivateKey25519(key_pair.private.d),
-            origin: key_pair.clone(),
+            origin: key_pair,
         }
     }
 }
