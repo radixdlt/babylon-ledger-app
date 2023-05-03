@@ -7,7 +7,9 @@ use core::ptr::null_mut;
 use nanos_sdk::bindings::{
     cx_curve_t, CX_CURVE_Ed25519, CX_CURVE_SECP256K1, HDW_ED25519_SLIP10, HDW_NORMAL,
 };
-pub use nanos_sdk::bindings::{cx_ecfp_private_key_t, cx_ecfp_public_key_t, size_t, cx_err_t, cx_md_t, CX_SHA512};
+pub use nanos_sdk::bindings::{
+    cx_ecfp_private_key_t, cx_ecfp_public_key_t, cx_err_t, cx_md_t, size_t, CX_SHA512,
+};
 
 pub const INTERNAL_SEED_SIZE: usize = 32;
 

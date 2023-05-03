@@ -75,8 +75,8 @@ impl Flags {
 struct State {
     items_to_read: u32,
     active_type_id: u8,
-    key_type_id: u8,        // Map key type ID
-    element_type_id: u8,    // Map value type ID; Array/Tuple/Enum - element type ID
+    key_type_id: u8,     // Map key type ID
+    element_type_id: u8, // Map value type ID; Array/Tuple/Enum - element type ID
     flags: Flags,
 }
 
@@ -1281,7 +1281,7 @@ mod tests {
         while start < input.len() {
             match decoder.decode(&mut handler, &input[start..end]) {
                 Ok(outcome) => {
-                    if end - start == CHUNK_SIZE && end < input.len(){
+                    if end - start == CHUNK_SIZE && end < input.len() {
                         assert_eq!(outcome, DecodingOutcome::NeedMoreData(end));
                     } else {
                         assert_eq!(outcome, DecodingOutcome::Done(input.len()))

@@ -1,6 +1,6 @@
+use crate::ui::multiline_scroller::MultilineMessageScroller;
 use core::str::from_utf8;
 use sbor::print::tty::TTY;
-use crate::ui::multiline_scroller::MultilineMessageScroller;
 
 #[derive(Copy, Clone, Debug)]
 pub struct LedgerTTY;

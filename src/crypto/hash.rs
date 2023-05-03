@@ -14,7 +14,7 @@ pub struct Digest([u8; BLAKE2B_DIGEST_SIZE]);
 
 impl Digest {
     pub fn new() -> Self {
-        Self ([0; BLAKE2B_DIGEST_SIZE])
+        Self([0; BLAKE2B_DIGEST_SIZE])
     }
 
     fn as_mut(&mut self) -> *mut u8 {
@@ -33,7 +33,6 @@ impl Drop for Digest {
         }
     }
 }
-
 
 #[repr(C, align(4))]
 pub struct Blake2bHasher([u8; Self::WORK_AREA_SIZE]);
@@ -92,13 +91,8 @@ impl Blake2bHasher {
     }
 
     pub fn update(&mut self, input: &[u8]) -> Result<(), AppError> {
-        let rc = unsafe {
-            cx_hash_update(
-                self.0.as_mut_ptr(),
-                input.as_ptr(),
-                input.len() as c_uint,
-            )
-        };
+        let rc =
+            unsafe { cx_hash_update(self.0.as_mut_ptr(), input.as_ptr(), input.len() as c_uint) };
         to_result(rc)
     }
 

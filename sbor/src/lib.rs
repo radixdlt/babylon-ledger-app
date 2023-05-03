@@ -68,8 +68,8 @@ pub mod instruction_extractor;
 pub mod math;
 pub mod print;
 pub mod sbor_decoder;
-pub mod type_info;
 pub mod static_vec;
+pub mod type_info;
 
 pub mod debug;
 

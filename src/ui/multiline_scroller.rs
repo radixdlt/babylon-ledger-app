@@ -2,8 +2,8 @@ use core::cmp::min;
 use nanos_sdk::buttons::{ButtonEvent, ButtonsState};
 use nanos_ui::bagls::{Label, LEFT_ARROW, LEFT_S_ARROW, RIGHT_ARROW, RIGHT_S_ARROW};
 use nanos_ui::layout::{Draw, Location};
-use nanos_ui::SCREEN_HEIGHT;
 use nanos_ui::ui::{clear_screen, get_event};
+use nanos_ui::SCREEN_HEIGHT;
 
 /// A horizontal scroller that
 /// splits any given message

@@ -13,7 +13,7 @@ use crate::app_error::AppError;
 use crate::command_class::CommandClass;
 use crate::crypto::bip32::Bip32Path;
 use crate::crypto::ed25519::{KeyPair25519, ED25519_PUBLIC_KEY_LEN, ED25519_SIGNATURE_LEN};
-use crate::crypto::hash::{Digest, Blake2bHasher};
+use crate::crypto::hash::{Blake2bHasher, Digest};
 use crate::crypto::secp256k1::{
     KeyPairSecp256k1, SECP256K1_PUBLIC_KEY_LEN, SECP256K1_SIGNATURE_LEN,
 };
