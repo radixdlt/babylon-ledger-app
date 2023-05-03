@@ -4,7 +4,7 @@ Ledger Nano S/S Plus/X app for Babylon
 
 ## WARNING!
 
-Do not touch `Cargo.lock` for now. Some dependencies must be of specified versions.
+The `main` branch supports older version of SBOR decoder! Most recent version of SBOR is supported by `develop` branch!
 
 ## Build
 
