@@ -22,10 +22,10 @@ jobs:
         target: ["nanos", "nanox", "nanosplus"]
 
     steps:
-      - name: arm-none-eabi-gcc
-        uses: fiam/arm-none-eabi-gcc@v1.0.3
-        with:
-          release: '9-2019-q4'
+#      - name: arm-none-eabi-gcc
+#        uses: fiam/arm-none-eabi-gcc@v1.0.3
+#        with:
+#          release: '9-2019-q4'
       - name: Install toolchains
         uses: actions-rs/toolchain@v1
         with:
