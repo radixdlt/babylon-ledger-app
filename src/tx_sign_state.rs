@@ -147,17 +147,11 @@ impl SignFlowState {
     fn sign_tx(&self, tx_type: SignTxType, digest: Digest) -> Result<SignOutcome, AppError> {
         self.validate_digest(tx_type, digest)?;
 
-        let digest_to_sign = match tx_type {
-            SignTxType::Ed25519 => Hasher::one_step(digest.as_bytes(), HashType::SHA512),
-            SignTxType::Secp256k1 => Ok(digest),
-            _ => return Err(AppError::BadTxSignType),
-        }?;
-
-        match tx_type {
+            match tx_type {
             SignTxType::None => return Err(AppError::BadTxSignStart),
             SignTxType::Ed25519 => KeyPair25519::derive(&self.path).and_then(|keypair| {
                 keypair
-                    .sign(digest_to_sign.as_bytes())
+                    .sign(digest.as_bytes())
                     .map(|signature| SignOutcome::SignatureEd25519 {
                         signature,
                         key: keypair.public_key(),
@@ -166,7 +160,7 @@ impl SignFlowState {
 
             SignTxType::Secp256k1 => KeyPairSecp256k1::derive(&self.path).and_then(|keypair| {
                 keypair
-                    .sign(digest_to_sign.as_bytes())
+                    .sign(digest.as_bytes())
                     .map(|signature| SignOutcome::SignatureSecp256k1 {
                         signature,
                         key: keypair.public_key(),

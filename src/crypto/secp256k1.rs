@@ -117,8 +117,21 @@ impl KeyPairSecp256k1 {
 
             to_result(rc)?;
 
-            let r_start = if der[3] == 33 { 5usize } else { 4 };
-            let s_start = (der[1] - 32) as usize;
+          // DER has format: `30 || L || 02 || Lr || r || 02 || Ls || s`
+          
+            let index_r_len = 3usize;
+            let r_len = der[index_r_len] as usize;
+            let mut r_start = index_r_len + 1;
+            let index_s_len = r_start + r_len + 1;
+            let s_len = der[index_s_len] as usize;
+            let s_start = index_s_len + 1;
+            if r_len == 33 {
+                // we skip first byte of R.
+                r_start += 1;
+            }
+
+            // +4 for `02`, `Lr`, `02` and `Ls`.
+            assert!(r_len + s_len + 4 == (der[1] as usize), "Parsed S_len + R_len should equal 'L' + 4, but it did not");
 
             signature[1..33].copy_from_slice(&der[r_start..(r_start + 32)]);
             signature[33..65].copy_from_slice(&der[s_start..(s_start + 32)]);
