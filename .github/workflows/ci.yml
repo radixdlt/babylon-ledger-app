@@ -37,7 +37,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: --target ./${{ matrix.target }}.json
+          args: --target ./target-config/${{ matrix.target }}.json
   fmt:
     runs-on: ubuntu-latest
     steps:
@@ -78,7 +78,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --target ./${{ matrix.target }}.json
+          args: --target ./target-config/${{ matrix.target }}.json
 
   test:
     runs-on: ubuntu-latest
@@ -107,4 +107,4 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --target ./${{ matrix.target }}.json --features speculos
+          args: --target ./target-config/${{ matrix.target }}.json --features speculos
