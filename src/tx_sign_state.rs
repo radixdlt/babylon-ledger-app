@@ -13,7 +13,7 @@ use crate::app_error::AppError;
 use crate::command_class::CommandClass;
 use crate::crypto::bip32::Bip32Path;
 use crate::crypto::ed25519::{KeyPair25519, ED25519_PUBLIC_KEY_LEN, ED25519_SIGNATURE_LEN};
-use crate::crypto::hash::{Digest, HashType, Hasher};
+use crate::crypto::hash::{Digest, Blake2bHasher};
 use crate::crypto::secp256k1::{
     KeyPairSecp256k1, SECP256K1_PUBLIC_KEY_LEN, SECP256K1_SIGNATURE_LEN,
 };
@@ -22,7 +22,6 @@ use crate::ledger_display_io::LedgerTTY;
 #[repr(u8)]
 #[derive(PartialEq, Copy, Clone)]
 pub enum SignTxType {
-    None,
     Ed25519,
     Secp256k1,
 }
@@ -33,7 +32,7 @@ struct SignFlowState {
     tx_packet_count: u32,
     tx_size: usize,
     path: Bip32Path,
-    hasher: Hasher,
+    hasher: Blake2bHasher,
 }
 
 impl SignFlowState {
@@ -80,7 +79,7 @@ impl SignFlowState {
         self.hasher.reset();
         self.tx_packet_count = 0;
         self.tx_size = 0;
-        self.sign_type = SignTxType::None;
+        self.sign_type = SignTxType::Ed25519;
         self.path = Bip32Path::new(0);
     }
 
@@ -94,19 +93,11 @@ impl SignFlowState {
         self.partial_reset();
         self.sign_type = sign_type;
         self.path = path;
-
-        let hash_type = match sign_type {
-            SignTxType::Ed25519 | SignTxType::Secp256k1 => HashType::Blake2b,
-            SignTxType::None => {
-                return Err(AppError::BadTxSignRequestedState);
-            }
-        };
-
-        self.hasher.init(hash_type)
+        self.hasher.init()
     }
 
     fn sign_started(&self) -> bool {
-        self.sign_type != SignTxType::None && self.tx_packet_count != 0
+        self.tx_packet_count != 0
     }
 
     fn validate(&self, class: CommandClass, sign_type: SignTxType) -> Result<(), AppError> {
@@ -133,10 +124,6 @@ impl SignFlowState {
     }
 
     fn validate_initial(&self, class: CommandClass) -> Result<(), AppError> {
-        if self.sign_type != SignTxType::None {
-            return Err(AppError::BadTxSignInitialState);
-        }
-
         if class != CommandClass::Regular {
             return Err(AppError::BadTxSignSequence);
         }
@@ -145,10 +132,7 @@ impl SignFlowState {
     }
 
     fn sign_tx(&self, tx_type: SignTxType, digest: Digest) -> Result<SignOutcome, AppError> {
-        self.validate_digest(tx_type, digest)?;
-
-            match tx_type {
-            SignTxType::None => return Err(AppError::BadTxSignStart),
+        match tx_type {
             SignTxType::Ed25519 => KeyPair25519::derive(&self.path).and_then(|keypair| {
                 keypair
                     .sign(digest.as_bytes())
@@ -172,14 +156,6 @@ impl SignFlowState {
     fn update_counters(&mut self, size: usize) {
         self.tx_size += size;
         self.tx_packet_count += 1;
-    }
-
-    fn validate_digest(&self, tx_type: SignTxType, digest: Digest) -> Result<(), AppError> {
-        match (tx_type, digest.hash_type()) {
-            (SignTxType::Ed25519, HashType::Blake2b) => Ok(()),
-            (SignTxType::Secp256k1, HashType::Blake2b) => Ok(()),
-            _ => Err(AppError::BadTxSignDigestState),
-        }
     }
 }
 
@@ -223,7 +199,6 @@ impl InstructionProcessor {
 
     pub fn set_network(&mut self) -> Result<(), AppError> {
         match self.state.sign_type {
-            SignTxType::None => Err(AppError::BadTxSignRequestedState),
             SignTxType::Ed25519 => Ok(self.printer.set_network(self.state.network_id()?)),
             SignTxType::Secp256k1 => Ok(self.printer.set_network(NetworkId::OlympiaMainNet)),
         }
@@ -262,11 +237,11 @@ impl TxSignState {
             decoder: SborDecoder::new(true),
             processor: InstructionProcessor {
                 state: SignFlowState {
-                    sign_type: SignTxType::None,
+                    sign_type: SignTxType::Ed25519,
                     tx_packet_count: 0,
                     tx_size: 0,
                     path: Bip32Path::new(0),
-                    hasher: Hasher::new(),
+                    hasher: Blake2bHasher::new(),
                 },
                 extractor: InstructionExtractor::new(),
                 printer: InstructionPrinter::new(NetworkId::LocalNet, LedgerTTY::new()),
