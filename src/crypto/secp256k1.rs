@@ -131,7 +131,7 @@ impl KeyPairSecp256k1 {
             }
 
             // +4 for `02`, `Lr`, `02` and `Ls`.
-            assert!(r_len + s_len + 4 == (der[1] as usize), "Parsed S_len + R_len should equal 'L' + 4, but it did not");
+            assert_eq!(r_len + s_len + 4, (der[1] as usize), "Parsed S_len + R_len should equal 'L' + 4, but it did not");
 
             signature[1..33].copy_from_slice(&der[r_start..(r_start + 32)]);
             signature[33..65].copy_from_slice(&der[s_start..(s_start + 32)]);
