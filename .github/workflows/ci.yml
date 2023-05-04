@@ -23,7 +23,7 @@ jobs:
 
     steps:
       - name: arm-none-eabi-gcc
-        uses: fiam/arm-none-eabi-gcc@v1.0.3
+        uses: fiam/arm-none-eabi-gcc@v1.0.4
         with:
           release: '9-2019-q4'
       - name: Install toolchains
@@ -62,7 +62,7 @@ jobs:
 
     steps:
       - name: arm-none-eabi-gcc
-        uses: fiam/arm-none-eabi-gcc@v1.0.3
+        uses: fiam/arm-none-eabi-gcc@v1.0.4
         with:
           release: '9-2019-q4'
       - name: Install clang
@@ -88,7 +88,7 @@ jobs:
 #
 #    steps:
 #      - name: arm-none-eabi-gcc
-#        uses: fiam/arm-none-eabi-gcc@v1.0.3
+#        uses: fiam/arm-none-eabi-gcc@v1.0.4
 #        with:
 #          release: '9-2019-q4'
 #      - name: Install clang
