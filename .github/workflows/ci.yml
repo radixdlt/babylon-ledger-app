@@ -23,9 +23,9 @@ jobs:
 
     steps:
       - name: arm-none-eabi-gcc
-        uses: fiam/arm-none-eabi-gcc@v1.0.4
+        uses: carlosperate/arm-none-eabi-gcc-action@v1
         with:
-          release: '9-2019-q4'
+          release: '12.2.Rel1'
       - name: Install toolchains
         uses: actions-rs/toolchain@v1
         with:
@@ -62,9 +62,9 @@ jobs:
 
     steps:
       - name: arm-none-eabi-gcc
-        uses: fiam/arm-none-eabi-gcc@v1.0.4
+        uses: carlosperate/arm-none-eabi-gcc-action@v1
         with:
-          release: '9-2019-q4'
+          release: '12.2.Rel1'
       - name: Install clang
         run: sudo apt-get update && sudo apt install -y clang
       - name: Install toolchains
@@ -88,9 +88,9 @@ jobs:
 #
 #    steps:
 #      - name: arm-none-eabi-gcc
-#        uses: fiam/arm-none-eabi-gcc@v1.0.4
+#        uses: carlosperate/arm-none-eabi-gcc-action@v1
 #        with:
-#          release: '9-2019-q4'
+#          release: '12.2.Rel1'
 #      - name: Install clang
 #        run: sudo apt-get update && sudo apt install -y clang
 #      - uses: actions-rs/toolchain@v1
