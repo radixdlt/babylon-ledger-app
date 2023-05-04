@@ -1,5 +1,6 @@
 pub mod conversion;
 pub mod version;
+pub mod max;
 
 use crate::utilities::conversion::{to_hex, to_hex_str, to_str};
 use core::str::from_utf8;

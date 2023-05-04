@@ -16,6 +16,7 @@ use crate::crypto::secp256k1::{
     KeyPairSecp256k1, SECP256K1_PUBLIC_KEY_LEN, SECP256K1_SIGNATURE_LEN,
 };
 use crate::ledger_display_io::LedgerTTY;
+use crate::utilities::max::max;
 
 #[repr(u8)]
 #[derive(PartialEq, Copy, Clone)]
@@ -157,10 +158,8 @@ impl SignFlowState {
     }
 }
 
-// const MAX_SIGNATURE_SIZE: usize = max(ED25519_SIGNATURE_LEN, SECP256K1_SIGNATURE_LEN);
-const MAX_SIGNATURE_SIZE: usize = SECP256K1_SIGNATURE_LEN;
-// const MAX_PUBKEY_SIZE: usize = max(ED25519_PUBLIC_KEY_LEN, SECP256K1_PUBLIC_KEY_LEN);
-const MAX_PUBKEY_SIZE: usize = SECP256K1_PUBLIC_KEY_LEN;
+const MAX_SIGNATURE_SIZE: usize = max(ED25519_SIGNATURE_LEN, SECP256K1_SIGNATURE_LEN);
+const MAX_PUBKEY_SIZE: usize = max(ED25519_PUBLIC_KEY_LEN, SECP256K1_PUBLIC_KEY_LEN);
 const MAX_SIGNATURE_PAYLOAD: usize = MAX_SIGNATURE_SIZE + MAX_PUBKEY_SIZE;
 
 #[repr(u8)]
