@@ -12,6 +12,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  NODE_TLS_REJECT_UNAUTHORIZED: 0
 
 jobs:
   clippy:
