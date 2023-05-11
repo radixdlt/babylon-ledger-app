@@ -144,7 +144,10 @@ impl From<u128> for BigInt<256> {
                 ((value >> 32) & 0xFFFFFFFF) as u32,
                 ((value >> 64) & 0xFFFFFFFF) as u32,
                 (value >> 96) as u32,
-                0, 0, 0, 0,
+                0,
+                0,
+                0,
+                0,
             ],
         }
     }
@@ -158,9 +161,18 @@ impl From<u128> for BigInt<512> {
                 ((value >> 32) & 0xFFFFFFFF) as u32,
                 ((value >> 64) & 0xFFFFFFFF) as u32,
                 (value >> 96) as u32,
-                0, 0, 0, 0,
-                0, 0, 0, 0,
-                0, 0, 0, 0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
             ],
         }
     }

@@ -18,7 +18,7 @@ use crate::type_info::*;
 
 pub struct InstructionPrinter {
     active_instruction: Option<InstructionInfo>,
-    state: ParameterPrinterState,
+    pub state: ParameterPrinterState,
 }
 
 impl InstructionHandler for InstructionPrinter {
@@ -54,12 +54,12 @@ impl InstructionPrinter {
         self.state.set_network(network_id);
     }
 
-    pub fn set_tty(&mut self, tty: TTY) {
-        self.state.set_tty(tty);
+    pub fn set_show_instructions(&mut self, show: bool) {
+        self.state.set_show_instructions(show);
     }
 
-    pub fn display_hex_string(&mut self, data: &[u8]) {
-        self.state.display_hex_string(data);
+    pub fn set_tty(&mut self, tty: TTY) {
+        self.state.set_tty(tty);
     }
 
     pub fn handle_error(&mut self) {

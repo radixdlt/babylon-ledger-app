@@ -3,8 +3,7 @@ import os
 
 from ledgerblue.comm import getDongle
 from ledgerblue.commTCP import getDongle as getDongleTCP
-from cryptography.hazmat.primitives.asymmetric import ec, utils
-from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import ed25519
 
 # disable printing stack trace
 sys.tracebacklimit = 0
@@ -15,12 +14,12 @@ else:
     dongle = getDongle(False)
 
 instructionClass = "AA"
-instructionCode = "51"
+instructionCode = "42"
 p1 = "00"
 p2 = "00"
 dataLength = "00"
 
-print("Testing", "SignTxSecp256k1", instructionCode)
+print("Testing", "SignTxEd25519Summary", instructionCode)
 
 
 def list_files():
@@ -82,19 +81,15 @@ for file_name in list_files():
     if not file_name.endswith(".txn"):
         continue
     data = read_file(file_name)
-    send_derivation_path("m/44H/1022H/10H/525H/1238H")
+    send_derivation_path("m/44H/1022H/12H/525H/1460H/0H")
     rc = send_tx_intent(data)
 
     if rc is None:
         print("Failed")
     else:
-        r = int.from_bytes(rc[1:33], byteorder='big', signed=False)
-        s = int.from_bytes(rc[33:65], byteorder='big', signed=False)
-        signature = utils.encode_dss_signature(int(r), int(s))
-        pubkey = ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256K1(), bytes(rc[65:98]))
+        pubkey = ed25519.Ed25519PublicKey.from_public_bytes(bytes(rc[64:96]))
         try:
-            # Note that Prehashed parameter is irrelevant here, we just need to pass something known to the library
-            pubkey.verify(signature, bytes(rc[98:130]), ec.ECDSA(utils.Prehashed(hashes.SHA256())))
+            pubkey.verify(bytes(rc[0:64]), bytes(rc[96:128]))
             print("Success")
         except Exception as e:
             print("Invalid signature ", e)

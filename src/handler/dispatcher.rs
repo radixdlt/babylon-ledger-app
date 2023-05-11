@@ -4,7 +4,10 @@ use nanos_sdk::io::Comm;
 use crate::app_error::AppError;
 use crate::command::Command;
 use crate::command_class::CommandClass;
-use crate::handler::{get_device_id, get_private_key_ed25519, sign_tx_ed25519, sign_tx_secp256k1};
+use crate::handler::{
+    get_device_id, get_private_key_ed25519, sign_auth_ed25519, sign_tx_ed25519,
+    sign_tx_ed25519_summary, sign_tx_secp256k1, sign_tx_secp256k1_summary,
+};
 use crate::handler::{get_private_key_secp256k1, get_public_key_ed25519, get_public_key_secp256k1};
 use crate::tx_sign_state::TxSignState;
 use crate::utilities::version::{MODEL_DATA, VERSION_DATA};
@@ -17,9 +20,8 @@ fn ensure_zero_params(comm: &Comm) -> Result<(), AppError> {
     }
 }
 
-fn send_fixed(comm: &mut Comm, data: &[u8]) -> () {
+fn send_fixed(comm: &mut Comm, data: &[u8]) {
     comm.append(data);
-    ()
 }
 
 fn validate_request(comm: &Comm, class: CommandClass) -> Result<(), AppError> {
@@ -46,14 +48,11 @@ pub fn dispatcher(comm: &mut Comm, ins: Command, state: &mut TxSignState) -> Res
         Command::GetPrivKeyEd25519 => get_private_key_ed25519::handle(comm),
         Command::GetPubKeySecp256k1 => get_public_key_secp256k1::handle(comm),
         Command::GetPrivKeySecp256k1 => get_private_key_secp256k1::handle(comm),
-        // TODO: temporarily handled by the same function as the non-smart version
-        Command::SignTxEd25519 | Command::SignTxEd25519Smart => {
-            sign_tx_ed25519::handle(comm, class, state)
-        }
-        // TODO: temporarily handled by the same function as the non-smart version
-        Command::SignTxSecp256k1 | Command::SignTxSecp256k1Smart => {
-            sign_tx_secp256k1::handle(comm, class, state)
-        }
+        Command::SignTxEd25519 => sign_tx_ed25519::handle(comm, class, state),
+        Command::SignTxEd25519Summary => sign_tx_ed25519_summary::handle(comm, class, state),
+        Command::SignTxSecp256k1 => sign_tx_secp256k1::handle(comm, class, state),
+        Command::SignTxSecp256k1Summary => sign_tx_secp256k1_summary::handle(comm, class, state),
+        Command::SignAuthEd25519 => sign_auth_ed25519::handle(comm, class, state),
         Command::BadCommand => Err(AppError::NotImplemented),
         Command::Exit => {
             nanos_sdk::exit_app(0);

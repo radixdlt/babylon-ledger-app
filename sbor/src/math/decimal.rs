@@ -76,11 +76,17 @@ mod tests {
         assert_eq!(Decimal(1000000000000000u128.into()).to_string(), "0.001");
         assert_eq!(Decimal(10000000000000000u128.into()).to_string(), "0.01");
         assert_eq!(Decimal(100000000000000000u128.into()).to_string(), "0.1");
-        assert_eq!(Decimal(001000000000000000000u128.into()).to_string(),   "1");
-        assert_eq!(Decimal(001200000000000000000u128.into()).to_string(),   "1.2");
-        assert_eq!(Decimal(012000000000000000000u128.into()).to_string(),  "12");
-        assert_eq!(Decimal(012300000000000000000u128.into()).to_string(),  "12.3");
-        assert_eq!(Decimal(120300000000000000000u128.into()).to_string(), "120.3");
+        assert_eq!(Decimal(001000000000000000000u128.into()).to_string(), "1");
+        assert_eq!(Decimal(001200000000000000000u128.into()).to_string(), "1.2");
+        assert_eq!(Decimal(012000000000000000000u128.into()).to_string(), "12");
+        assert_eq!(
+            Decimal(012300000000000000000u128.into()).to_string(),
+            "12.3"
+        );
+        assert_eq!(
+            Decimal(120300000000000000000u128.into()).to_string(),
+            "120.3"
+        );
         assert_eq!(
             Decimal(123456789123456789u128.into()).to_string(),
             "0.123456789123456789"
@@ -102,8 +108,14 @@ mod tests {
             .to_string(),
             "1.2"
         );
-        assert_eq!(Decimal::MAX.to_string(),"57896044618658097711785492504343953926634992332820282019728.792003956564819967");
+        assert_eq!(
+            Decimal::MAX.to_string(),
+            "57896044618658097711785492504343953926634992332820282019728.792003956564819967"
+        );
         assert_eq!(Decimal::MIN.is_negative(), true);
-        assert_eq!(Decimal::MIN.to_string(), "-57896044618658097711785492504343953926634992332820282019728.792003956564819968");
+        assert_eq!(
+            Decimal::MIN.to_string(),
+            "-57896044618658097711785492504343953926634992332820282019728.792003956564819968"
+        );
     }
 }

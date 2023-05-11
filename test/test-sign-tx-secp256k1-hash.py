@@ -16,11 +16,11 @@ else:
 
 instructionClass = "AA"
 instructionCode = "51"
-p1 = "00"
+p1 = "01"
 p2 = "00"
 dataLength = "00"
 
-print("Testing", "SignTxSecp256k1", instructionCode)
+print("Testing", "SignTxSecp256k1 (show hash)", instructionCode)
 
 
 def list_files():

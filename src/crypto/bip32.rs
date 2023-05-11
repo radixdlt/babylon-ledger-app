@@ -260,10 +260,8 @@ impl Bip32Path {
             buf[0] = char::from_digit(i.into(), 10).unwrap() as u8;
 
             let num = to_hex_str(self.path[i as usize]);
+            buf[4..12].copy_from_slice(&num);
 
-            for j in 4..12 {
-                buf[j] = num[j - 4];
-            }
             ui::MessageScroller::new(from_utf8(&buf).unwrap()).event_loop();
         }
     }

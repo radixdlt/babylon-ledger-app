@@ -2,8 +2,8 @@ use core::cmp::min;
 use nanos_sdk::buttons::{ButtonEvent, ButtonsState};
 use nanos_ui::bagls::{Label, LEFT_ARROW, LEFT_S_ARROW, RIGHT_ARROW, RIGHT_S_ARROW};
 use nanos_ui::layout::{Draw, Location};
-use nanos_ui::SCREEN_HEIGHT;
 use nanos_ui::ui::{clear_screen, get_event};
+use nanos_ui::SCREEN_HEIGHT;
 
 /// A horizontal scroller that
 /// splits any given message
@@ -84,8 +84,10 @@ impl<'a> MultilineMessageScroller<'a> {
             }
 
             if page > 0 {
+                labels[0].bold = false;
                 LEFT_ARROW.display();
             } else {
+                labels[0].bold = true;
                 LEFT_ARROW.erase();
             }
 
@@ -112,9 +114,7 @@ impl<'a> MultilineMessageScroller<'a> {
                 }
                 Some(ButtonEvent::LeftButtonRelease) => {
                     LEFT_S_ARROW.erase();
-                    if cur_page > 0 {
-                        cur_page -= 1;
-                    }
+                    cur_page = cur_page.saturating_sub(1);
                     // We need to draw anyway to clear button press arrow
                     draw(cur_page);
                 }
@@ -122,6 +122,8 @@ impl<'a> MultilineMessageScroller<'a> {
                     RIGHT_S_ARROW.erase();
                     if cur_page + 1 < page_count {
                         cur_page += 1;
+                    } else {
+                        break;
                     }
                     // We need to draw anyway to clear button press arrow
                     draw(cur_page);

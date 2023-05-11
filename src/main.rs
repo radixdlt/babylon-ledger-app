@@ -2,7 +2,6 @@
 #![no_main]
 #![allow(dead_code)]
 #![feature(result_option_inspect)]
-#![feature(const_cmp)]
 #![feature(asm_const)]
 #![feature(cfg_version)]
 #![feature(const_mut_refs)]

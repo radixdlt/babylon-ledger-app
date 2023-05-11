@@ -15,12 +15,12 @@ else:
     dongle = getDongle(False)
 
 instructionClass = "AA"
-instructionCode = "51"
+instructionCode = "52"
 p1 = "00"
 p2 = "00"
 dataLength = "00"
 
-print("Testing", "SignTxSecp256k1", instructionCode)
+print("Testing", "SignTxSecp256k1Summary", instructionCode)
 
 
 def list_files():
