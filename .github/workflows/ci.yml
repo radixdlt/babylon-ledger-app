@@ -84,7 +84,7 @@ jobs:
         run: |
           mkdir -p downloads
           cp target/${{ matrix.target }}/release/babylon-ledger-app downloads/babylon_ledger_app_${{ matrix.target }}.elf
-          cp app_${{ matrix.target }}.json downloads/app_${{ matrix.target }}.json
+          cp ./*.json downloads/
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
