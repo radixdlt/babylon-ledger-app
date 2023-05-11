@@ -3,6 +3,7 @@ import os
 
 from ledgerblue.comm import getDongle
 from ledgerblue.commTCP import getDongle as getDongleTCP
+from cryptography.hazmat.primitives.asymmetric import ed25519
 
 # disable printing stack trace
 sys.tracebacklimit = 0
@@ -13,13 +14,12 @@ else:
     dongle = getDongle(False)
 
 instructionClass = "AA"
-instructionCode = "41"  # SignTx
+instructionCode = "41"
 p1 = "00"
 p2 = "00"
 dataLength = "00"
 
 print("Testing", "SignTxEd25519", instructionCode)
-print("WARNING: no actual check of the returned signature is performed!!!")
 
 
 def list_files():
@@ -87,8 +87,9 @@ for file_name in list_files():
     if rc is None:
         print("Failed")
     else:
-        signature = rc[0:64].hex()
-        key = rc[64:96].hex()
-        print("Success")
-        print("Signature:", signature)
-        print("Key:", key)
+        pubkey = ed25519.Ed25519PublicKey.from_public_bytes(bytes(rc[64:96]))
+        try:
+            pubkey.verify(bytes(rc[0:64]), bytes(rc[96:128]))
+            print("Success")
+        except Exception as e:
+            print("Invalid signature ", e)

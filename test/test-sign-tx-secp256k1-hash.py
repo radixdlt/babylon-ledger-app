@@ -3,6 +3,8 @@ import os
 
 from ledgerblue.comm import getDongle
 from ledgerblue.commTCP import getDongle as getDongleTCP
+from cryptography.hazmat.primitives.asymmetric import ec, utils
+from cryptography.hazmat.primitives import hashes
 
 # disable printing stack trace
 sys.tracebacklimit = 0
@@ -13,13 +15,12 @@ else:
     dongle = getDongle(False)
 
 instructionClass = "AA"
-instructionCode = "51"  # SignTx
+instructionCode = "51"
 p1 = "01"
 p2 = "00"
 dataLength = "00"
 
 print("Testing", "SignTxSecp256k1 (show hash)", instructionCode)
-print("WARNING: no actual check of the returned signature is performed!!!")
 
 
 def list_files():
@@ -87,8 +88,13 @@ for file_name in list_files():
     if rc is None:
         print("Failed")
     else:
-        signature = rc[0:64].hex()
-        key = rc[64:96].hex()
-        print("Success")
-        print("Signature:", signature)
-        print("Key:", key)
+        r = int.from_bytes(rc[1:33], byteorder='big', signed=False)
+        s = int.from_bytes(rc[33:65], byteorder='big', signed=False)
+        signature = utils.encode_dss_signature(int(r), int(s))
+        pubkey = ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256K1(), bytes(rc[65:98]))
+        try:
+            # Note that Prehashed parameter is irrelevant here, we just need to pass something known to the library
+            pubkey.verify(signature, bytes(rc[98:130]), ec.ECDSA(utils.Prehashed(hashes.SHA256())))
+            print("Success")
+        except Exception as e:
+            print("Invalid signature ", e)

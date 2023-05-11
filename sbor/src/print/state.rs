@@ -109,14 +109,6 @@ impl ParameterPrinterState {
         self.stack.last_mut().expect("Stack can't be empty")
     }
 
-    pub fn display_hex_string(&mut self, data: &[u8]) {
-        self.start();
-        self.data.clear();
-        self.data.extend_from_slice(data);
-        self.print_data_as_hex();
-        self.end();
-    }
-
     pub fn print_data_as_text(&mut self) {
         self.display.extend_from_slice(self.data.as_slice());
     }

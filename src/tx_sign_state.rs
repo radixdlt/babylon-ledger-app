@@ -211,10 +211,6 @@ impl InstructionProcessor {
         self.state.tx_size
     }
 
-    pub fn display_hex_string(&mut self, data: &[u8]) {
-        self.printer.display_hex_string(data);
-    }
-
     pub fn set_network(&mut self) -> Result<(), AppError> {
         match self.state.sign_type {
             SignTxType::Ed25519 | SignTxType::Ed25519Summary | SignTxType::AuthEd25519 => {
@@ -326,8 +322,8 @@ impl TxSignState {
             self.processor.set_show_instructions();
             self.show_digest = match tx_type {
                 SignTxType::Ed25519 | SignTxType::Secp256k1 => comm.get_apdu_metadata().p1 == 1,
-                SignTxType::AuthEd25519 => false,
                 SignTxType::Ed25519Summary | SignTxType::Secp256k1Summary => true,
+                SignTxType::AuthEd25519 => false,
             };
         } else {
             match tx_type {
@@ -405,7 +401,7 @@ impl TxSignState {
         let digest = self.processor.state.finalize()?;
 
         if self.show_digest {
-            self.processor.display_hex_string(digest.as_bytes());
+            self.info_hex(b"Digest:", digest.as_bytes());
         }
 
         if !ui::Validator::new("Sign Intent?").ask() {
