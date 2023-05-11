@@ -178,8 +178,7 @@ impl ParameterPrinterState {
         }
 
         for &byte in data {
-            self.display
-                .push(upper_as_hex(byte));
+            self.display.push(upper_as_hex(byte));
             self.display.push(lower_as_hex(byte));
         }
 
