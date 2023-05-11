@@ -80,6 +80,16 @@ jobs:
         with:
           command: build
           args: --release -Z build-std=core -Z build-std-features=compiler-builtins-mem --target ./target-config/${{ matrix.target }}.json
+      - name: Prepare artifacts
+        run:
+          mkdir -p downloads
+          copy target/${{ matrix.target }}/release/babylon_ledger_app downloads/babylon_ledger_app_${{ matrix.target }}.elf
+          copy app_${{ matrix.target }}.json downloads/app_${{ matrix.target }}.json
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: babylon_ledger_app_${{ matrix.target }}
+          path: downloads
 
 #  test:
 #    runs-on: ubuntu-latest
