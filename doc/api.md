@@ -4,21 +4,20 @@ All communication is performed using APDU protocol ([see APDU description](apdu.
 
 ## Overview
 
-| API Name             | Instruction Code | Description                                                                                                                                                                                                                                                                               |
-|----------------------|------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| GetAppVersion        | 0x10             | Get application version as 3 bytes, where each byte represents version component: __Major__, __Minor__ and __Patch Level__.                                                                                                                                                               |
-| GetDeviceModel       | 0x11             | Get device model code byte. __0__ corresponds to Nano S, __1__ - Nano S Plus, __2__ - Nano X                                                                                                                                                                                              |
-| GetDeviceId          | 0x12             | Get device ID byte array (32 bytes)                                                                                                                                                                                                                                                       |
-| GetPubKeyEd25519     | 0x21             | Get Ed25519 public key for provided derivation path. Derivation path must conform to CAP-26 SLIP 10 HD Derivation Path Scheme.                                                                                                                                                            |
-| GetPrivKeyEd25519    | 0x22             | Get Ed25519 private key for provided derivation path. Derivation path must conform to CAP-26 SLIP 10 HD Derivation Path Scheme. Command available only in debug build.                                                                                                                    |
-| GetPubKeySecp256k1   | 0x31             | Get Secp256k1 public key for provided derivation path.                                                                                                                                                                                                                                    |
-| GetPrivKeySecp256k1  | 0x32             | Get Secp256k1 private key for provided derivation path. Command available only in debug build.                                                                                                                                                                                            |
-| SignTxEd25519        | 0x41             | Sign transaction intent using Ed25519 curve and given derivation path. Derivation path must conform to CAP-26 SLIP 10 HD Derivation Path Scheme. Signing is done in "advanced mode", when every instruction from transaction intent is decoded and displayed to user.                     |
-| SignTxEd25519Smart   | 0x42             | Sign transaction intent using Ed25519 curve and given derivation path. Derivation path must conform to CAP-26 SLIP 10 HD Derivation Path Scheme. Signing is performed in "summary mode", when device tries to recognize known transaction format and provide summary for the transaction. |
-| SignTxSecp256k1      | 0x51             | Sign transaction intent using Secp256k1 curve and given derivation path. Signing is done in "advanced mode", when every instruction from transaction intent is decoded and displayed to user.                                                                                             |
-| SignTxSecp256k1Smart | 0x52             | Sign transaction intent using Secp256k1 curve and given derivation path. Signing is performed in "summary mode", when device tries to recognize known transaction format and provide summary for the transaction.                                                                         |
-| SignDigestEd25519    | 0x61             | Sign provided 32 bytes digest using Ed25519 curve and given derivation path. Derivation path must conform to CAP-26 SLIP 10 HD Derivation Path Scheme. Digest is hashed with SHA512 before signing.                                                                                       |
-| DeriveAddressEd25519 | 0x71             | Derive public key, build entity address, display to user and get confirmation. Derivation path must conform to CAP-26 SLIP 10 HD Derivation Path Scheme.                                                                                                                                  | 
+| API Name                                        | Instruction Code | Description                                                                                                                                                                                                                                                                               |
+|-------------------------------------------------|------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [GetAppVersion](#getappversion)                 | 0x10             | Get application version as 3 bytes, where each byte represents version component: __Major__, __Minor__ and __Patch Level__.                                                                                                                                                               |
+| [GetDeviceModel](#getdevicemodel)               | 0x11             | Get device model code byte. __0__ corresponds to Nano S, __1__ - Nano S Plus, __2__ - Nano X                                                                                                                                                                                              |
+| [GetDeviceId](#getdeviceid)                     | 0x12             | Get device ID byte array (32 bytes)                                                                                                                                                                                                                                                       |
+| [GetPubKeyEd25519](#getpubkeyed25519)           | 0x21             | Get Ed25519 public key for provided derivation path. Derivation path must conform to CAP-26 SLIP 10 HD Derivation Path Scheme.                                                                                                                                                            |
+| [GetPrivKeyEd25519](#getprivkeyed25519)         | 0x22             | Get Ed25519 private key for provided derivation path. Derivation path must conform to CAP-26 SLIP 10 HD Derivation Path Scheme. Command available only in debug build.                                                                                                                    |
+| [GetPubKeySecp256k1](#getpubkeysecp256k1)       | 0x31             | Get Secp256k1 public key for provided derivation path.                                                                                                                                                                                                                                    |
+| [GetPrivKeySecp256k1](#getprivkeysecp256k1)     | 0x32             | Get Secp256k1 private key for provided derivation path. Command available only in debug build.                                                                                                                                                                                            |
+| [SignTxEd25519](#signtxed25519)                 | 0x41             | Sign transaction intent using Ed25519 curve and given derivation path. Derivation path must conform to CAP-26 SLIP 10 HD Derivation Path Scheme. Signing is done in "advanced mode", when every instruction from transaction intent is decoded and displayed to user.                     |
+| [SignTxEd25519Summary](#signtxed25519summary)   | 0x42             | Sign transaction intent using Ed25519 curve and given derivation path. Derivation path must conform to CAP-26 SLIP 10 HD Derivation Path Scheme. Signing is performed in "summary mode", when device tries to recognize known transaction format and provide summary for the transaction. |
+| [SignTxSecp256k1](#signtxsecp256k1)             | 0x51             | Sign transaction intent using Secp256k1 curve and given derivation path. Signing is done in "advanced mode", when every instruction from transaction intent is decoded and displayed to user.                                                                                             |
+| [SignTxSecp256k1Smart](#signtxsecp256k1summary) | 0x52             | Sign transaction intent using Secp256k1 curve and given derivation path. Signing is performed in "summary mode", when device tries to recognize known transaction format and provide summary for the transaction.                                                                         |
+| [SignAuthEd25519](#signauthed25519)             | 0x61             | Sign provided 32 bytes digest using Ed25519 curve and given derivation path. Derivation path must conform to CAP-26 SLIP 10 HD Derivation Path Scheme.                                                                                                                                    |
 
 ## GetAppVersion
 
@@ -156,15 +155,16 @@ Upon successful sign, the device returns the signature for the transaction inten
 |------|-------------|
 | byte 0-63 | Ed25519 signature |
 | byte 64-95 | Ed25519 public key |
+| byte 96-127 | Calculated digest |
 
 If user rejects the sign request, then the device returns error code 0x6e50 (User rejected the sign request).
 
-## SignTxEd25519Smart
+## SignTxEd25519Summary
 __Note__: This command accepts derivation path in the format described in CAP-26 SLIP 10 HD Derivation Path Scheme.
 
 This command accepts the same data as [SignTxEd25519](#signtxed25519) command and returns the same results. The only difference between commands is the
 interaction with the user. The [SignTxEd25519](#signtxed25519) always displays all instructions present in the transaction intent, 
-while [SignTxEd25519Smart](#signtxed25519smart) tries to recognize type of the transaction and provide summary for the transaction.
+while [SignTxEd25519Summary](#signtxed25519summary) tries to recognize type of the transaction and provide summary for the transaction.
 For example, for the payment transaction, the device displays only source and destination accounts and amount of the payment.
 
 ## SignTxSecp256k1
@@ -193,50 +193,46 @@ Upon successful sign, the device returns the signature for the transaction inten
 |------|-------------|
 | byte 0-64 | Secp256k1 signature |
 | byte 65-97 | Secp256k1 public key |
+| byte 96-127 | Calculated digest |
 
 If user rejects the sign request, then the device returns error code 0x6e50 (User rejected the sign request).
 
-## SignTxSecp256k1Smart
+## SignTxSecp256k1Summary
 This command accepts the same data as [SignTxSecp256k1](#signtxsecp256k1) command and returns the same results. The only difference between commands is the
 interaction with the user. The [SignTxSecp256k1](#signtxsecp256k1) always displays all instructions present in the transaction intent, while 
-[SignTxSecp256k1Smart](#signtxsecp256k1smart) tries to recognize type of the transaction and provide summary for the transaction.
+[SignTxSecp256k1Summary](#signtxsecp256k1summary) tries to recognize type of the transaction and provide summary for the transaction.
 For example, for the payment transaction, the device displays only source and destination accounts and amount of the payment.
 
-## SignDigestEd25519
+## SignAuthEd25519
 __Note__: This command accepts derivation path in the format described in CAP-26 SLIP 10 HD Derivation Path Scheme.
 
-APDU:
+This command is invoked in two steps:
+- Send derivation path. The request format is the same as for GetPubKeyEd25519 command except different instruction code (see below).
+- Send auth request data (nonce, origin and dApp address). This packet uses class byte set to `0xAC`.
+
+APDU for derivation path:
 | CLA | INS | P1 | P2 | Data |
 |-----|-----|----|----|------|
-| 0xAA | 0x61 | 0x00 | 0x00 | Derivation path in the following format:    
-byte 0 - number of elements in derivation path    
-bytes 1-5 - first element of derivation path in big endian format   
-bytes 6-9 - second element of derivation path in big endian format   
-... - remaining elements of derivation path followed by 32 bytes of input digest.|
-
-Note that the input digest is hashed with SHA512 before signing. 
-
-Upon successful sign, the device returns the signature for the digest. The signature is returned in the following format:
-| Data | Description |
-|------|-------------|
-| byte 0-63 | Ed25519 signature |
-| byte 64-95 | Ed25519 public key |
-
-## DeriveAddressEd25519
-__Note__: This command accepts derivation path in the format described in CAP-26 SLIP 10 HD Derivation Path Scheme.
-
-APDU:
-| CLA | INS | P1 | P2 | Data |
-|-----|-----|----|----|------|
-| 0xAA | 0x71 | 0x00 | 0x00 | Derivation path in the following format:    
-byte 0 - number of elements in derivation path    
-bytes 1-5 - first element of derivation path in big endian format   
-bytes 6-9 - second element of derivation path in big endian format   
+| 0xAA | 0x61 | 0x00 | 0x00 | Derivation path in the following format:
+byte 0 - number of elements in derivation path  
+bytes 1-5 - first element of derivation path in big endian format  
+bytes 6-9 - second element of derivation path in big endian format  
 ... - remaining elements of derivation path|
 
-Upon confirmation from the user, following response is sent (32 bytes):
+APDU for auth request data:
+| CLA | INS | P1 | P2 | Data |
+|-----|-----|----|----|------|
+| 0xAC | 0x61 | 0x00 | 0x00 | Auth request data in the following format:
+byte 0-31 - nonce
+byte 32 - dApp address length
+byte 33-... - dApp address
+byte ... - bytes left after dApp address contains origin|
+
+Upon successful sign, the device returns the signature for the given auth request. The signature is returned in the following format:
 | Data | Description |
 |------|-------------|
-| byte 0-31 | Ed25519 public key |
+| byte 0-63 | Ed25519 signature   |
+| byte 64-95 | Ed25519 public key |
+| byte 96-127 | Calculated digest |
 
-If user rejects the address, then error code is returned.
+If user rejects the sign request, then the device returns error code 0x6e50 (User rejected the sign request).

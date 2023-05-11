@@ -49,6 +49,9 @@ pub enum AppError {
 
     BadTxSignUserRejected = 0x6e50,
 
+    BadAuthSignSequence = 0x6e60,
+    BadAuthSignRequest = 0x6e61,
+
     NotImplemented = 0x6eff,
     Unknown = 0x6d00,
     CxErrorCarry = 0x6f01,

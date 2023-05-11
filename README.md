@@ -2,10 +2,6 @@
 
 Ledger Nano S/S Plus/X app for Babylon
 
-## WARNING!
-
-Do not touch `Cargo.lock` for now. Some dependencies must be of specified versions.
-
 ## Build
 
 Simplest way to build app is to use application builder container. To build container, use script provided
@@ -18,9 +14,6 @@ Instructions are provided for Ubuntu 22.04. For other operating systems it is su
 Docker builder image. Refer to builder image [documentation](./app-builder/README.md) for details.
 
 ### Prerequisites
-
-__WARNING__: At the moment of writing (2023-03-01) Rust nightly build can't properly link binaries. As a workaround,
-use `rustup default nightly-2023-01-31` instead of plan `rustup default nightly`.
 
 #### Install ARM GCC, Binutils, cross-compilation headers:
 
@@ -154,5 +147,5 @@ The process takes some time (few minutes) to finish. Once process finishes, devi
 For testing there are a number of test scripts provided in `test` directory. To run tests, use following command (inside test directory):
 
 ```sh
-./test-all.sh
+./test-all-release.sh
 ```

@@ -1,6 +1,8 @@
 use core::ptr::write_bytes;
 
-use nanos_sdk::bindings::{cx_ecfp_private_key_t, cx_err_t, cx_md_t, CX_ECCINFO_PARITY_ODD, CX_LAST, CX_RND_TRNG, CX_NONE};
+use nanos_sdk::bindings::{
+    cx_ecfp_private_key_t, cx_err_t, cx_md_t, CX_ECCINFO_PARITY_ODD, CX_LAST, CX_NONE, CX_RND_TRNG,
+};
 
 use crate::app_error::{to_result, AppError};
 use crate::crypto::bip32::Bip32Path;
@@ -41,7 +43,7 @@ impl From<InternalKeyPair> for KeyPairSecp256k1 {
         Self {
             public: key_pair.public.into(),
             private: PrivateKeySecp256k1(key_pair.private.d),
-            origin: key_pair.clone(),
+            origin: key_pair,
         }
     }
 }
@@ -117,8 +119,8 @@ impl KeyPairSecp256k1 {
 
             to_result(rc)?;
 
-          // DER has format: `30 || L || 02 || Lr || r || 02 || Ls || s`
-          
+            // DER has format: `30 || L || 02 || Lr || r || 02 || Ls || s`
+
             let index_r_len = 3usize;
             let r_len = der[index_r_len] as usize;
             let mut r_start = index_r_len + 1;
@@ -131,7 +133,11 @@ impl KeyPairSecp256k1 {
             }
 
             // +4 for `02`, `Lr`, `02` and `Ls`.
-            assert_eq!(r_len + s_len + 4, (der[1] as usize), "Parsed S_len + R_len should equal 'L' + 4, but it did not");
+            assert_eq!(
+                r_len + s_len + 4,
+                (der[1] as usize),
+                "Parsed S_len + R_len should equal 'L' + 4, but it did not"
+            );
 
             signature[1..33].copy_from_slice(&der[r_start..(r_start + 32)]);
             signature[33..65].copy_from_slice(&der[s_start..(s_start + 32)]);

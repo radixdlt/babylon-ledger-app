@@ -1,4 +1,5 @@
 pub mod conversion;
+pub mod max;
 pub mod version;
 
 use crate::utilities::conversion::{to_hex, to_hex_str, to_str};

@@ -41,13 +41,13 @@ pub const PARAMETER_AREA_SIZE: usize = 160; // Used for PreciseDecimal formattin
 pub const PARAMETER_AREA_SIZE: usize = 256;
 
 #[cfg(target_os = "nanos")]
-pub const DISPLAY_SIZE: usize = 256;    // Use smaller buffer for Nano S
+pub const DISPLAY_SIZE: usize = 256; // Use smaller buffer for Nano S
 #[cfg(target_os = "nanosplus")]
-pub const DISPLAY_SIZE: usize = 1024;   // Nano S+ and Nano X have larger screens and more memory
+pub const DISPLAY_SIZE: usize = 1024; // Nano S+ and Nano X have larger screens and more memory
 #[cfg(target_os = "nanox")]
 pub const DISPLAY_SIZE: usize = 1024;
 #[cfg(not(any(target_os = "nanos", target_os = "nanox", target_os = "nanosplus")))]
-pub const DISPLAY_SIZE: usize = 2048;   // For testing on desktop
+pub const DISPLAY_SIZE: usize = 2048; // For testing on desktop
 
 pub struct ParameterPrinterState {
     pub display: StaticVec<u8, { DISPLAY_SIZE }>,
@@ -55,7 +55,20 @@ pub struct ParameterPrinterState {
     pub stack: StaticVec<ValueState, { (STACK_DEPTH - 5) as usize }>,
     pub nesting_level: u8,
     pub network_id: NetworkId,
+    pub show_instructions: bool,
     tty: TTY,
+}
+
+const HEX_DIGITS: [u8; 16] = *b"0123456789abcdef";
+
+#[inline(always)]
+fn lower_as_hex(byte: u8) -> u8 {
+    HEX_DIGITS[(byte & 0x0F) as usize]
+}
+
+#[inline(always)]
+fn upper_as_hex(byte: u8) -> u8 {
+    HEX_DIGITS[((byte >> 4) & 0x0F) as usize]
 }
 
 impl ParameterPrinterState {
@@ -66,12 +79,17 @@ impl ParameterPrinterState {
             display: StaticVec::new(0),
             nesting_level: 0,
             network_id,
+            show_instructions: true,
             tty: tty,
         }
     }
 
     pub fn set_network(&mut self, network_id: NetworkId) {
         self.network_id = network_id;
+    }
+
+    pub fn set_show_instructions(&mut self, show: bool) {
+        self.show_instructions = show;
     }
 
     pub fn set_tty(&mut self, tty: TTY) {
@@ -99,25 +117,21 @@ impl ParameterPrinterState {
         self.end();
     }
 
-    const HEX_DIGITS: [u8; 16] = *b"0123456789abcdef";
-
     pub fn print_data_as_text(&mut self) {
         self.display.extend_from_slice(self.data.as_slice());
     }
 
     pub fn print_data_as_hex(&mut self) {
         for &byte in self.data.as_slice() {
-            self.display
-                .push(Self::HEX_DIGITS[((byte >> 4) & 0x0F) as usize]);
-            self.display.push(Self::HEX_DIGITS[(byte & 0x0F) as usize]);
+            self.display.push(upper_as_hex(byte));
+            self.display.push(lower_as_hex(byte));
         }
     }
 
     pub fn print_data_as_hex_slice(&mut self, range: Range<usize>) {
         for &byte in &self.data.as_slice()[range] {
-            self.display
-                .push(Self::HEX_DIGITS[((byte >> 4) & 0x0F) as usize]);
-            self.display.push(Self::HEX_DIGITS[(byte & 0x0F) as usize]);
+            self.display.push(upper_as_hex(byte));
+            self.display.push(lower_as_hex(byte));
         }
     }
 
@@ -126,8 +140,8 @@ impl ParameterPrinterState {
     }
 
     pub fn print_hex_byte(&mut self, byte: u8) {
-        self.print_byte(Self::HEX_DIGITS[((byte >> 4) & 0x0F) as usize]);
-        self.print_byte(Self::HEX_DIGITS[(byte & 0x0F) as usize]);
+        self.print_byte(upper_as_hex(byte));
+        self.print_byte(lower_as_hex(byte));
     }
 
     pub fn start(&mut self) {
@@ -135,7 +149,9 @@ impl ParameterPrinterState {
     }
 
     pub fn end(&mut self) {
-        (self.tty.show_message)(self.display.as_slice());
+        if self.show_instructions {
+            (self.tty.show_message)(self.display.as_slice());
+        }
     }
 
     pub fn print_byte(&mut self, byte: u8) {
@@ -143,8 +159,39 @@ impl ParameterPrinterState {
     }
 
     pub fn print_text(&mut self, text: &[u8]) {
-        for &byte in text {
-            self.print_byte(byte);
+        self.display.extend_from_slice(text);
+    }
+
+    pub fn info_message(&mut self, text1: &[u8], text2: &[u8]) {
+        self.display.clear();
+        self.display.extend_from_slice(text1);
+
+        // ensure that first part is at separate line
+        while self.display.len() < 16 {
+            self.display.push(b' ');
         }
+
+        self.display.extend_from_slice(text2);
+        (self.tty.show_message)(self.display.as_slice());
+        self.display.clear();
+    }
+
+    pub fn info_hex(&mut self, text1: &[u8], data: &[u8]) {
+        self.display.clear();
+        self.display.extend_from_slice(text1);
+
+        // ensure that first part is at separate line
+        while self.display.len() < 16 {
+            self.display.push(b' ');
+        }
+
+        for &byte in data {
+            self.display
+                .push(upper_as_hex(byte));
+            self.display.push(lower_as_hex(byte));
+        }
+
+        (self.tty.show_message)(self.display.as_slice());
+        self.display.clear();
     }
 }
