@@ -1,5 +1,4 @@
 use nanos_sdk::io::Comm;
-use nanos_ui::ui;
 use sbor::bech32::network::NetworkId;
 use sbor::decoder_error::DecoderError;
 use sbor::instruction_extractor::InstructionExtractor;
@@ -16,6 +15,7 @@ use crate::crypto::secp256k1::{
     KeyPairSecp256k1, SECP256K1_PUBLIC_KEY_LEN, SECP256K1_SIGNATURE_LEN,
 };
 use crate::ledger_display_io::LedgerTTY;
+use crate::ui::multipage_validator::MultipageValidator;
 use crate::utilities::max::max;
 
 #[repr(u8)]
@@ -325,6 +325,7 @@ impl TxSignState {
                 SignTxType::Ed25519Summary | SignTxType::Secp256k1Summary => true,
                 SignTxType::AuthEd25519 => false,
             };
+            self.show_introductory_screen(tx_type)?;
         } else {
             match tx_type {
                 SignTxType::AuthEd25519 => {
@@ -343,6 +344,17 @@ impl TxSignState {
         } else {
             Ok(SignOutcome::SendNextPacket)
         }
+    }
+
+    fn show_introductory_screen(&mut self, tx_type: SignTxType) -> Result<(), AppError> {
+        // let text = match tx_type {
+        //     SignTxType::Ed25519 | SignTxType::Secp256k1  | SignTxType::Ed25519Summary | SignTxType::Secp256k1Summary => {
+        //         "Review Transaction"
+        //     }
+        //     SignTxType::AuthEd25519 => "Review Authentication",
+        // };
+
+        Ok(())
     }
 
     const NONCE_LENGTH: usize = 32;
@@ -369,12 +381,14 @@ impl TxSignState {
         self.info_message(b"dApp Address:", address);
         self.info_hex(b"Nonce:", nonce);
 
-        if !ui::Validator::new("Sign Challenge?").ask() {
+        let rc = MultipageValidator::new(&[&"Sign Auth?"], &[&"Accept"], &[&"Reject"]).ask();
+
+        if rc {
+            let digest = self.calculate_auth(nonce, hash_address, origin)?;
+            self.processor.sign_tx(SignTxType::AuthEd25519, digest)
+        } else {
             return Ok(SignOutcome::SigningRejected);
         }
-
-        let digest = self.calculate_auth(nonce, hash_address, origin)?;
-        self.processor.sign_tx(SignTxType::AuthEd25519, digest)
     }
 
     fn info_message(&mut self, title: &[u8], message: &[u8]) {
@@ -404,11 +418,13 @@ impl TxSignState {
             self.info_hex(b"Digest:", digest.as_bytes());
         }
 
-        if !ui::Validator::new("Sign Intent?").ask() {
+        let rc = MultipageValidator::new(&[&"Sign Tx?"], &[&"Accept"], &[&"Reject"]).ask();
+
+        if rc {
+            self.processor.sign_tx(tx_type, digest)
+        } else {
             return Ok(SignOutcome::SigningRejected);
         }
-
-        self.processor.sign_tx(tx_type, digest)
     }
 
     fn decode_tx_intent(&mut self, data: &[u8], class: CommandClass) -> Result<(), AppError> {

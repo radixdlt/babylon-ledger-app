@@ -193,7 +193,7 @@ Upon successful sign, the device returns the signature for the transaction inten
 |------|-------------|
 | byte 0-64 | Secp256k1 signature |
 | byte 65-97 | Secp256k1 public key |
-| byte 96-127 | Calculated digest |
+| byte 98-130 | Calculated digest |
 
 If user rejects the sign request, then the device returns error code 0x6e50 (User rejected the sign request).
 
