@@ -1,7 +1,8 @@
 use core::cmp::min;
+
 use nanos_sdk::buttons::{ButtonEvent, ButtonsState};
 use nanos_ui::bagls::{Label, LEFT_ARROW, LEFT_S_ARROW, RIGHT_ARROW, RIGHT_S_ARROW};
-use nanos_ui::layout::{Draw, Location};
+use nanos_ui::layout::{Draw, Layout, Location};
 use nanos_ui::ui::{clear_screen, get_event};
 use nanos_ui::SCREEN_HEIGHT;
 
@@ -53,9 +54,10 @@ impl<'a> MultilineMessageScroller<'a> {
         }
 
         let mut labels: [Label; LINES_N] = [
-            Label::from("").location(Location::Custom(LINE1_Y)),
-            Label::from("").location(Location::Custom(LINE2_Y)),
-            Label::from("").location(Location::Custom(LINE3_Y)),
+            // TODO: text is still not aligned properly to the left
+            Label::from_const("").layout(Layout::Custom(0)).location(Location::Custom(LINE1_Y)),
+            Label::from_const("").layout(Layout::Custom(0)).location(Location::Custom(LINE2_Y)),
+            Label::from_const("").layout(Layout::Custom(0)).location(Location::Custom(LINE3_Y)),
         ];
         let mut cur_page = 0;
 

@@ -16,6 +16,7 @@ use crate::crypto::secp256k1::{
 };
 use crate::ledger_display_io::LedgerTTY;
 use crate::ui::multipage_validator::MultipageValidator;
+use crate::ui::single_message::SingleMessage;
 use crate::utilities::max::max;
 
 #[repr(u8)]
@@ -347,12 +348,14 @@ impl TxSignState {
     }
 
     fn show_introductory_screen(&mut self, tx_type: SignTxType) -> Result<(), AppError> {
-        // let text = match tx_type {
-        //     SignTxType::Ed25519 | SignTxType::Secp256k1  | SignTxType::Ed25519Summary | SignTxType::Secp256k1Summary => {
-        //         "Review Transaction"
-        //     }
-        //     SignTxType::AuthEd25519 => "Review Authentication",
-        // };
+        let text = match tx_type {
+            SignTxType::Ed25519 | SignTxType::Secp256k1  | SignTxType::Ed25519Summary | SignTxType::Secp256k1Summary => {
+                "Review\nTransaction"
+            }
+            SignTxType::AuthEd25519 => "Review\nAuthentication",
+        };
+
+        SingleMessage::new(text, true).show_and_wait();
 
         Ok(())
     }

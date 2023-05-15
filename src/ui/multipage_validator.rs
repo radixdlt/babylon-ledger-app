@@ -42,7 +42,7 @@ impl<'a> MultipageValidator<'a> {
         let page_count = &self.message.len() + 2;
         let mut cur_page = 0;
 
-        let draw_icon_and_text = |icon: Icon, strings: &[&str]| {
+        let draw_icon_and_text = |icon: Icon, strings: &[&str], bold: bool| {
             // Draw icon on the center if there is no text.
             let x = match strings.len() {
                 0 => 60,
@@ -53,10 +53,10 @@ impl<'a> MultipageValidator<'a> {
             match strings.len() {
                 0 => {}
                 1 => {
-                    strings[0].place(Location::Middle, Layout::Centered, true);
+                    strings[0].place(Location::Middle, Layout::Centered, bold);
                 }
                 _ => {
-                    strings[..2].place(Location::Middle, Layout::Centered, true);
+                    strings[..2].place(Location::Middle, Layout::Centered, bold);
                 }
             }
         };
@@ -64,12 +64,12 @@ impl<'a> MultipageValidator<'a> {
         let draw = |page: usize| {
             clear_screen();
             if page == page_count - 2 {
-                draw_icon_and_text(CHECKMARK_ICON, &self.confirm);
+                draw_icon_and_text(CHECKMARK_ICON, &self.confirm, true);
                 RIGHT_ARROW.display();
             } else if page == page_count - 1 {
-                draw_icon_and_text(CROSS_ICON, &self.cancel);
+                draw_icon_and_text(CROSS_ICON, &self.cancel, true);
             } else {
-                draw_icon_and_text(VALIDATE_14_ICON, &self.message);
+                draw_icon_and_text(VALIDATE_14_ICON, &self.message, false);
                 RIGHT_ARROW.display();
             }
             if page > 0 {
