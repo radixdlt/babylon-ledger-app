@@ -10,3 +10,4 @@ mod sign_tx_ed25519;
 mod sign_tx_ed25519_summary;
 mod sign_tx_secp256k1;
 mod sign_tx_secp256k1_summary;
+mod sign_auth_secp256k1;

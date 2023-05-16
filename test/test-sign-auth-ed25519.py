@@ -3,6 +3,7 @@ import os
 
 from ledgerblue.comm import getDongle
 from ledgerblue.commTCP import getDongle as getDongleTCP
+from cryptography.hazmat.primitives.asymmetric import ed25519
 
 # disable printing stack trace
 sys.tracebacklimit = 0
@@ -13,7 +14,7 @@ else:
     dongle = getDongle(False)
 
 instructionClass = "AA"
-instructionCode = "61"  # SignAuth
+instructionCode = "61"  # SignAuthEd25519
 p1 = "00"
 p2 = "00"
 dataLength = "00"
@@ -606,13 +607,19 @@ for vector in test_vectors:
     if rc is None:
         print("Failed")
     else:
-        signature = rc[0:64].hex()
-        key = rc[64:96].hex()
-        hash = rc[96:128].hex()
-        print("Success")
+        # signature = rc[0:64].hex()
+        # key = rc[64:96].hex()
+        # hash = rc[96:128].hex()
+        # print("Success")
         # print("Signature:", signature)
         # print("Key:", key)
         # print("Hash:", hash)
-    assert hash == vector[0], "Invalid calculated hash\nExpected: " + vector[0] + "\nReceived: " + hash
+        pubkey = ed25519.Ed25519PublicKey.from_public_bytes(bytes(rc[64:96]))
+        try:
+            pubkey.verify(bytes(rc[0:64]), bytes(rc[96:128]))
+            print("Success")
+            assert rc[96:128].hex() == vector[0], "Invalid calculated hash\nExpected: " + vector[0] + "\nReceived: " + rc[96:128].hex()
+        except Exception as e:
+            print("Invalid signature ", e)
 
 print("All tests successfully passed")

@@ -9,7 +9,7 @@ use sbor::sbor_decoder::*;
 use crate::app_error::AppError;
 use crate::command_class::CommandClass;
 use crate::crypto::bip32::Bip32Path;
-use crate::crypto::ed25519::{ED25519_PUBLIC_KEY_LEN, ED25519_SIGNATURE_LEN, KeyPair25519};
+use crate::crypto::ed25519::{KeyPair25519, ED25519_PUBLIC_KEY_LEN, ED25519_SIGNATURE_LEN};
 use crate::crypto::hash::{Blake2bHasher, Digest};
 use crate::crypto::secp256k1::{
     KeyPairSecp256k1, SECP256K1_PUBLIC_KEY_LEN, SECP256K1_SIGNATURE_LEN,
@@ -29,6 +29,7 @@ pub enum SignTxType {
     Secp256k1,
     Secp256k1Summary,
     AuthEd25519,
+    AuthSecp256k1,
 }
 
 #[repr(align(4))]
@@ -53,9 +54,9 @@ impl SignFlowState {
                     SignTxType::Ed25519 | SignTxType::Ed25519Summary | SignTxType::AuthEd25519 => {
                         path.validate()
                     }
-                    SignTxType::Secp256k1 | SignTxType::Secp256k1Summary => {
-                        path.validate_olympia_path()
-                    }
+                    SignTxType::Secp256k1
+                    | SignTxType::Secp256k1Summary
+                    | SignTxType::AuthSecp256k1 => path.validate_olympia_path(),
                 })?;
                 self.start(tx_type, path)?;
                 self.update_counters(0); // First packet contains no data
@@ -72,7 +73,7 @@ impl SignFlowState {
                     | SignTxType::Ed25519Summary
                     | SignTxType::Secp256k1
                     | SignTxType::Secp256k1Summary => self.hasher.update(data),
-                    SignTxType::AuthEd25519 => Ok(()),
+                    SignTxType::AuthEd25519 | SignTxType::AuthSecp256k1 => Ok(()),
                 }
             }
 
@@ -158,7 +159,7 @@ impl SignFlowState {
                 })
             }
 
-            SignTxType::Secp256k1 | SignTxType::Secp256k1Summary => {
+            SignTxType::Secp256k1 | SignTxType::Secp256k1Summary | SignTxType::AuthSecp256k1 => {
                 KeyPairSecp256k1::derive(&self.path).and_then(|keypair| {
                     keypair.sign(digest.as_bytes()).map(|signature| {
                         SignOutcome::SignatureSecp256k1 {
@@ -219,7 +220,7 @@ impl InstructionProcessor {
             SignTxType::Ed25519 | SignTxType::Ed25519Summary | SignTxType::AuthEd25519 => {
                 self.printer.set_network(self.state.network_id()?)
             }
-            SignTxType::Secp256k1 | SignTxType::Secp256k1Summary => {
+            SignTxType::Secp256k1 | SignTxType::Secp256k1Summary | SignTxType::AuthSecp256k1 => {
                 self.printer.set_network(NetworkId::OlympiaMainNet)
             }
         };
@@ -228,7 +229,10 @@ impl InstructionProcessor {
 
     pub fn set_show_instructions(&mut self) {
         match self.state.sign_type {
-            SignTxType::Secp256k1Summary | SignTxType::Ed25519Summary | SignTxType::AuthEd25519 => {
+            SignTxType::Secp256k1Summary
+            | SignTxType::Ed25519Summary
+            | SignTxType::AuthEd25519
+            | SignTxType::AuthSecp256k1 => {
                 self.printer.set_show_instructions(false);
             }
             SignTxType::Secp256k1 | SignTxType::Ed25519 => {
@@ -326,16 +330,16 @@ impl TxSignState {
             self.show_digest = match tx_type {
                 SignTxType::Ed25519 | SignTxType::Secp256k1 => comm.get_apdu_metadata().p1 == 1,
                 SignTxType::Ed25519Summary | SignTxType::Secp256k1Summary => true,
-                SignTxType::AuthEd25519 => false,
+                SignTxType::AuthEd25519 | SignTxType::AuthSecp256k1 => false,
             };
             self.show_introductory_screen(tx_type)?;
         } else {
             match tx_type {
-                SignTxType::AuthEd25519 => {
+                SignTxType::AuthEd25519 | SignTxType::AuthSecp256k1 => {
                     return if class != CommandClass::LastData {
                         Err(AppError::BadAuthSignSequence)
                     } else {
-                        self.process_sign_auth(comm.get_data()?)
+                        self.process_sign_auth(comm.get_data()?, tx_type)
                     }
                 }
                 _ => self.decode_tx_intent(comm.get_data()?, class)?,
@@ -355,7 +359,7 @@ impl TxSignState {
             | SignTxType::Secp256k1
             | SignTxType::Ed25519Summary
             | SignTxType::Secp256k1Summary => "Review\nTransaction",
-            SignTxType::AuthEd25519 => "Review\nAuthentication",
+            SignTxType::AuthEd25519 | SignTxType::AuthSecp256k1 => "Review\nAuthentication",
         };
 
         SingleMessage::new(text, false).show_and_wait();
@@ -371,7 +375,11 @@ impl TxSignState {
     const MIN_VALID_LENGTH: usize =
         Self::NONCE_LENGTH + Self::MIN_DAPP_ADDRESS_LENGTH + Self::MIN_ORIGIN_LENGTH;
 
-    fn process_sign_auth(&mut self, value: &[u8]) -> Result<SignOutcome, AppError> {
+    fn process_sign_auth(
+        &mut self,
+        value: &[u8],
+        tx_type: SignTxType,
+    ) -> Result<SignOutcome, AppError> {
         if value.len() < Self::MIN_VALID_LENGTH {
             return Err(AppError::BadAuthSignRequest);
         }
@@ -398,7 +406,7 @@ impl TxSignState {
 
         if rc {
             let digest = self.calculate_auth(nonce, hash_address, origin)?;
-            self.processor.sign_tx(SignTxType::AuthEd25519, digest)
+            self.processor.sign_tx(tx_type, digest)
         } else {
             return Ok(SignOutcome::SigningRejected);
         }

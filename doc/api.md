@@ -18,6 +18,7 @@ All communication is performed using APDU protocol ([see APDU description](apdu.
 | [SignTxSecp256k1](#signtxsecp256k1)             | 0x51             | Sign transaction intent using Secp256k1 curve and given derivation path. Signing is done in "advanced mode", when every instruction from transaction intent is decoded and displayed to user.                                                                                             |
 | [SignTxSecp256k1Smart](#signtxsecp256k1summary) | 0x52             | Sign transaction intent using Secp256k1 curve and given derivation path. Signing is performed in "summary mode", when device tries to recognize known transaction format and provide summary for the transaction.                                                                         |
 | [SignAuthEd25519](#signauthed25519)             | 0x61             | Sign provided 32 bytes digest using Ed25519 curve and given derivation path. Derivation path must conform to CAP-26 SLIP 10 HD Derivation Path Scheme.                                                                                                                                    |
+| [SignAuthSecp256k1](#signauthsecp256k1)         | 0x71             | Sign provided 32 bytes digest using Secp265k1 curve and given derivation path.                                                                                                                                                                                                            |
 
 ## GetAppVersion
 
@@ -234,5 +235,38 @@ Upon successful sign, the device returns the signature for the given auth reques
 | byte 0-63 | Ed25519 signature   |
 | byte 64-95 | Ed25519 public key |
 | byte 96-127 | Calculated digest |
+
+If user rejects the sign request, then the device returns error code 0x6e50 (User rejected the sign request).
+
+## SignAuthSecp256k1
+
+This command is invoked in two steps:
+- Send derivation path. The request format is the same as for GetPubKeyEd25519 command except different instruction code (see below).
+- Send auth request data (nonce, origin and dApp address). This packet uses class byte set to `0xAC`.
+
+APDU for derivation path:
+| CLA | INS | P1 | P2 | Data |
+|-----|-----|----|----|------|
+| 0xAA | 0x71 | 0x00 | 0x00 | Derivation path in the following format:
+byte 0 - number of elements in derivation path  
+bytes 1-5 - first element of derivation path in big endian format  
+bytes 6-9 - second element of derivation path in big endian format  
+... - remaining elements of derivation path|
+
+APDU for auth request data:
+| CLA | INS | P1 | P2 | Data |
+|-----|-----|----|----|------|
+| 0xAC | 0x71 | 0x00 | 0x00 | Auth request data in the following format:
+byte 0-31 - nonce
+byte 32 - dApp address length
+byte 33-... - dApp address
+byte ... - bytes left after dApp address contains origin|
+
+Upon successful sign, the device returns the signature for the given auth request. The signature is returned in the following format:
+| Data | Description |
+|------|-------------|
+| byte 0-64 | Secp256k1 signature |
+| byte 65-97 | Secp256k1 public key |
+| byte 98-130 | Calculated digest |
 
 If user rejects the sign request, then the device returns error code 0x6e50 (User rejected the sign request).
