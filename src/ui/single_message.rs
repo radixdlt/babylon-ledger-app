@@ -1,6 +1,6 @@
+use crate::ui::utils::CenteredText;
 use nanos_sdk::buttons::{ButtonEvent, ButtonsState};
 use nanos_ui::ui::{clear_screen, get_event};
-use crate::ui::utils::{CenteredText};
 
 pub struct SingleMessage<'a> {
     message: &'a str,

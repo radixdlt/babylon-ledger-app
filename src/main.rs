@@ -33,7 +33,11 @@ nanos_sdk::set_panic!(nanos_sdk::exiting_panic);
 // Application Name
 const APPLICATION: &str = env!("CARGO_PKG_DESCRIPTION");
 const APPLICATION_ABOUT: &str = concat!(env!("CARGO_PKG_DESCRIPTION"), "\n(c) RDX Works Ltd.");
-const APPLICATION_VERSION: &str = concat!(env!("CARGO_PKG_DESCRIPTION"), "\n", env!("CARGO_PKG_VERSION"));
+const APPLICATION_VERSION: &str = concat!(
+    env!("CARGO_PKG_DESCRIPTION"),
+    "\n",
+    env!("CARGO_PKG_VERSION")
+);
 
 fn app_menu_action() {}
 fn version_menu_action() {
@@ -76,7 +80,7 @@ extern "C" fn sample_main() {
                     Err(app_error) => comm.reply(app_error),
                 };
                 main_menu.display();
-            },
+            }
             _ => (),
         }
     }

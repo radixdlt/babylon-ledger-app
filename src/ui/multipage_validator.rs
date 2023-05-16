@@ -1,7 +1,7 @@
 use nanos_sdk::buttons::{ButtonEvent, ButtonsState};
 use nanos_ui::bagls::{
-    Icon, CHECKMARK_ICON, CROSS_ICON, LEFT_ARROW, LEFT_S_ARROW, RIGHT_ARROW,
-    RIGHT_S_ARROW, VALIDATE_14_ICON,
+    Icon, CHECKMARK_ICON, CROSS_ICON, LEFT_ARROW, LEFT_S_ARROW, RIGHT_ARROW, RIGHT_S_ARROW,
+    VALIDATE_14_ICON,
 };
 use nanos_ui::layout::{Draw, Layout, Location, StringPlace};
 use nanos_ui::screen_util;

@@ -42,11 +42,17 @@ const LINE3_Y: usize = LINE2_Y + VERTICAL_SPACING;
 
 impl<'a> MultilineMessageScroller<'a> {
     pub fn new(message: &'a str) -> Self {
-        MultilineMessageScroller { message, title: None }
+        MultilineMessageScroller {
+            message,
+            title: None,
+        }
     }
 
     pub fn with_title(title: &'a str, message: &'a str) -> Self {
-        MultilineMessageScroller { message, title: Some(title) }
+        MultilineMessageScroller {
+            message,
+            title: Some(title),
+        }
     }
 
     pub fn event_loop(&self) {
@@ -82,7 +88,11 @@ impl<'a> MultilineMessageScroller<'a> {
                 labels[0].text = title;
             }
 
-            let start = if self.title.is_some() && page == 0 { 1 } else { 0 };
+            let start = if self.title.is_some() && page == 0 {
+                1
+            } else {
+                0
+            };
 
             for i in start..LINES_N {
                 if from >= chunk.len() {

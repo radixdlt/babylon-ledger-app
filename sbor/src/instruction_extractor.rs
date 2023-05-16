@@ -189,7 +189,11 @@ impl InstructionExtractor {
             (InstructionPhase::WaitForParameterCount, SborEvent::Len(len)) => {
                 match to_instruction(self.discriminator) {
                     Some(info) => {
-                        handler.handle(ExtractorEvent::InstructionStart(info, self.instruction_count, self.instruction_total));
+                        handler.handle(ExtractorEvent::InstructionStart(
+                            info,
+                            self.instruction_count,
+                            self.instruction_total,
+                        ));
                         self.parameters_total = len;
                         self.instruction_phase = InstructionPhase::Done;
                     }
@@ -297,7 +301,12 @@ mod tests {
             if let ExtractorEvent::InstructionStart(info, count, total) = event {
                 self.instructions[self.instruction_count] = info.instruction;
                 self.instruction_count += 1;
-                println!("Instruction::{:?} {} of {},", info.instruction, count + 1, total);
+                println!(
+                    "Instruction::{:?} {} of {},",
+                    info.instruction,
+                    count + 1,
+                    total
+                );
             } else {
                 //println!("Event: {:?}", event);
             }

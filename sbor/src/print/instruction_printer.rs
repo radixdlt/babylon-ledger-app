@@ -24,7 +24,9 @@ pub struct InstructionPrinter {
 impl InstructionHandler for InstructionPrinter {
     fn handle(&mut self, event: ExtractorEvent) {
         match event {
-            ExtractorEvent::InstructionStart(info, count, total) => self.start_instruction(info, count, total),
+            ExtractorEvent::InstructionStart(info, count, total) => {
+                self.start_instruction(info, count, total)
+            }
             ExtractorEvent::ParameterStart(event, ..) => self.parameter_start(event),
             ExtractorEvent::ParameterData(data) => self.parameter_data(data),
             ExtractorEvent::ParameterEnd(event, ..) => self.parameter_end(event),
