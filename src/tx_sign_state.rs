@@ -9,14 +9,16 @@ use sbor::sbor_decoder::*;
 use crate::app_error::AppError;
 use crate::command_class::CommandClass;
 use crate::crypto::bip32::Bip32Path;
-use crate::crypto::ed25519::{KeyPair25519, ED25519_PUBLIC_KEY_LEN, ED25519_SIGNATURE_LEN};
+use crate::crypto::ed25519::{ED25519_PUBLIC_KEY_LEN, ED25519_SIGNATURE_LEN, KeyPair25519};
 use crate::crypto::hash::{Blake2bHasher, Digest};
 use crate::crypto::secp256k1::{
     KeyPairSecp256k1, SECP256K1_PUBLIC_KEY_LEN, SECP256K1_SIGNATURE_LEN,
 };
 use crate::ledger_display_io::LedgerTTY;
+use crate::ui::multiline_scroller::MultilineMessageScroller;
 use crate::ui::multipage_validator::MultipageValidator;
 use crate::ui::single_message::SingleMessage;
+use crate::utilities::conversion::{lower_as_hex, upper_as_hex};
 use crate::utilities::max::max;
 
 #[repr(u8)]
@@ -349,13 +351,14 @@ impl TxSignState {
 
     fn show_introductory_screen(&mut self, tx_type: SignTxType) -> Result<(), AppError> {
         let text = match tx_type {
-            SignTxType::Ed25519 | SignTxType::Secp256k1  | SignTxType::Ed25519Summary | SignTxType::Secp256k1Summary => {
-                "Review\nTransaction"
-            }
+            SignTxType::Ed25519
+            | SignTxType::Secp256k1
+            | SignTxType::Ed25519Summary
+            | SignTxType::Secp256k1Summary => "Review\nTransaction",
             SignTxType::AuthEd25519 => "Review\nAuthentication",
         };
 
-        SingleMessage::new(text, true).show_and_wait();
+        SingleMessage::new(text, false).show_and_wait();
 
         Ok(())
     }
@@ -380,9 +383,16 @@ impl TxSignState {
         let hash_address = &value[Self::NONCE_LENGTH..addr_end];
         let origin = &value[addr_end..];
 
+        let mut nonce_hex = [0u8; Self::NONCE_LENGTH * 2];
+
+        for (i, &byte) in nonce.iter().enumerate() {
+            nonce_hex[i * 2] = upper_as_hex(byte);
+            nonce_hex[i * 2 + 1] = lower_as_hex(byte);
+        }
+
         self.info_message(b"Origin:", origin);
         self.info_message(b"dApp Address:", address);
-        self.info_hex(b"Nonce:", nonce);
+        self.info_message(b"Nonce:", &nonce_hex);
 
         let rc = MultipageValidator::new(&[&"Sign Auth?"], &[&"Accept"], &[&"Reject"]).ask();
 
@@ -395,11 +405,11 @@ impl TxSignState {
     }
 
     fn info_message(&mut self, title: &[u8], message: &[u8]) {
-        self.processor.printer.state.info_message(title, message);
-    }
-
-    fn info_hex(&mut self, title: &[u8], message: &[u8]) {
-        self.processor.printer.state.info_hex(title, message);
+        MultilineMessageScroller::with_title(
+            core::str::from_utf8(title).unwrap(),
+            core::str::from_utf8(message).unwrap(),
+        )
+        .event_loop();
     }
 
     fn calculate_auth(
@@ -418,7 +428,7 @@ impl TxSignState {
         let digest = self.processor.state.finalize()?;
 
         if self.show_digest {
-            self.info_hex(b"Digest:", digest.as_bytes());
+            self.info_message(b"Digest:", &digest.as_hex());
         }
 
         let rc = MultipageValidator::new(&[&"Sign Tx?"], &[&"Accept"], &[&"Reject"]).ask();

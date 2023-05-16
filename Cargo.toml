@@ -8,6 +8,8 @@ description = "Radix Babylon"
 [dependencies]
 nanos_sdk = { git = "https://github.com/LedgerHQ/ledger-nanos-sdk.git" }
 nanos_ui = { git = "https://github.com/siy/ledger-nanos-ui.git" }
+include_gif = { git = "https://github.com/LedgerHQ/sdk_include_gif" }
+
 sbor = { path = "./sbor", default-features = false }
 
 [profile.dev]

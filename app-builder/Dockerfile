@@ -20,15 +20,18 @@ RUN apt-get update && apt-get upgrade -qy && \
     apt-get clean
 
 RUN echo "(curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly --no-modify-path)" > /install-rust.sh && chmod 755 /install-rust.sh
+RUN echo "Installing Rust"
 RUN /install-rust.sh
+RUN echo "Installation done"
+RUN ls -la /root/
+
 ENV PATH="/root/.cargo/bin:${PATH}"
 ENV LEDGER_TARGETS=/app/target-config
-ENV CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
-RUN rustup update && \
-    rustup target install thumbv7m-none-eabi && \
-    rustup default nightly-2023-01-31 && \
-    cargo install -Z sparse-registry --git https://github.com/LedgerHQ/cargo-ledger && \
-    rustup component add rust-src
+RUN /root/.cargo/bin/rustup update
+RUN /root/.cargo/bin/rustup target install thumbv7m-none-eabi
+RUN /root/.cargo/bin/rustup default nightly
+RUN /root/.cargo/bin/rustup component add rust-src
+RUN /root/.cargo/bin/cargo install --git https://github.com/siy/cargo-ledger
 RUN pip3 install --upgrade protobuf setuptools ecdsa && pip3 install ledgerwallet
 
 WORKDIR /app
