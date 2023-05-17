@@ -47,8 +47,8 @@ impl LeftAlignedMiddle for Icon<'_> {
     }
 }
 
-use include_gif::include_gif;
 use crate::ui::multiline_scroller::{LINE1_Y, LINE2_Y, LINE3_Y};
+use include_gif::include_gif;
 
 pub const RADIX_LOGO: Glyph = Glyph::from_include(include_gif!("icons/nanox_app_radix.gif"));
 pub const RADIX_LOGO_ICON: Icon = Icon::from(&RADIX_LOGO);

@@ -1,6 +1,6 @@
 use nanos_sdk::buttons::{ButtonEvent, ButtonsState};
 use nanos_ui::bagls::{
-    CROSSMARK_ICON, Icon, LEFT_ARROW, LEFT_S_ARROW, RIGHT_ARROW, RIGHT_S_ARROW, VALIDATE_14_ICON,
+    Icon, CROSSMARK_ICON, LEFT_ARROW, LEFT_S_ARROW, RIGHT_ARROW, RIGHT_S_ARROW, VALIDATE_14_ICON,
     WARNING_ICON,
 };
 use nanos_ui::layout::{Draw, Layout, Location, StringPlace};
