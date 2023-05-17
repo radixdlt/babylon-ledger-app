@@ -1,5 +1,4 @@
 use nanos_sdk::io::Comm;
-use nanos_ui::ui;
 use sbor::bech32::network::NetworkId;
 use sbor::decoder_error::DecoderError;
 use sbor::instruction_extractor::InstructionExtractor;
@@ -16,6 +15,10 @@ use crate::crypto::secp256k1::{
     KeyPairSecp256k1, SECP256K1_PUBLIC_KEY_LEN, SECP256K1_SIGNATURE_LEN,
 };
 use crate::ledger_display_io::LedgerTTY;
+use crate::ui::multiline_scroller::MultilineMessageScroller;
+use crate::ui::multipage_validator::MultipageValidator;
+use crate::ui::single_message::SingleMessage;
+use crate::utilities::conversion::{lower_as_hex, upper_as_hex};
 use crate::utilities::max::max;
 
 #[repr(u8)]
@@ -26,6 +29,7 @@ pub enum SignTxType {
     Secp256k1,
     Secp256k1Summary,
     AuthEd25519,
+    AuthSecp256k1,
 }
 
 #[repr(align(4))]
@@ -50,9 +54,9 @@ impl SignFlowState {
                     SignTxType::Ed25519 | SignTxType::Ed25519Summary | SignTxType::AuthEd25519 => {
                         path.validate()
                     }
-                    SignTxType::Secp256k1 | SignTxType::Secp256k1Summary => {
-                        path.validate_olympia_path()
-                    }
+                    SignTxType::Secp256k1
+                    | SignTxType::Secp256k1Summary
+                    | SignTxType::AuthSecp256k1 => path.validate_olympia_path(),
                 })?;
                 self.start(tx_type, path)?;
                 self.update_counters(0); // First packet contains no data
@@ -69,7 +73,7 @@ impl SignFlowState {
                     | SignTxType::Ed25519Summary
                     | SignTxType::Secp256k1
                     | SignTxType::Secp256k1Summary => self.hasher.update(data),
-                    SignTxType::AuthEd25519 => Ok(()),
+                    SignTxType::AuthEd25519 | SignTxType::AuthSecp256k1 => Ok(()),
                 }
             }
 
@@ -155,7 +159,7 @@ impl SignFlowState {
                 })
             }
 
-            SignTxType::Secp256k1 | SignTxType::Secp256k1Summary => {
+            SignTxType::Secp256k1 | SignTxType::Secp256k1Summary | SignTxType::AuthSecp256k1 => {
                 KeyPairSecp256k1::derive(&self.path).and_then(|keypair| {
                     keypair.sign(digest.as_bytes()).map(|signature| {
                         SignOutcome::SignatureSecp256k1 {
@@ -216,7 +220,7 @@ impl InstructionProcessor {
             SignTxType::Ed25519 | SignTxType::Ed25519Summary | SignTxType::AuthEd25519 => {
                 self.printer.set_network(self.state.network_id()?)
             }
-            SignTxType::Secp256k1 | SignTxType::Secp256k1Summary => {
+            SignTxType::Secp256k1 | SignTxType::Secp256k1Summary | SignTxType::AuthSecp256k1 => {
                 self.printer.set_network(NetworkId::OlympiaMainNet)
             }
         };
@@ -225,7 +229,10 @@ impl InstructionProcessor {
 
     pub fn set_show_instructions(&mut self) {
         match self.state.sign_type {
-            SignTxType::Secp256k1Summary | SignTxType::Ed25519Summary | SignTxType::AuthEd25519 => {
+            SignTxType::Secp256k1Summary
+            | SignTxType::Ed25519Summary
+            | SignTxType::AuthEd25519
+            | SignTxType::AuthSecp256k1 => {
                 self.printer.set_show_instructions(false);
             }
             SignTxType::Secp256k1 | SignTxType::Ed25519 => {
@@ -323,15 +330,16 @@ impl TxSignState {
             self.show_digest = match tx_type {
                 SignTxType::Ed25519 | SignTxType::Secp256k1 => comm.get_apdu_metadata().p1 == 1,
                 SignTxType::Ed25519Summary | SignTxType::Secp256k1Summary => true,
-                SignTxType::AuthEd25519 => false,
+                SignTxType::AuthEd25519 | SignTxType::AuthSecp256k1 => false,
             };
+            self.show_introductory_screen(tx_type)?;
         } else {
             match tx_type {
-                SignTxType::AuthEd25519 => {
+                SignTxType::AuthEd25519 | SignTxType::AuthSecp256k1 => {
                     return if class != CommandClass::LastData {
                         Err(AppError::BadAuthSignSequence)
                     } else {
-                        self.process_sign_auth(comm.get_data()?)
+                        self.process_sign_auth(comm.get_data()?, tx_type)
                     }
                 }
                 _ => self.decode_tx_intent(comm.get_data()?, class)?,
@@ -345,6 +353,20 @@ impl TxSignState {
         }
     }
 
+    fn show_introductory_screen(&mut self, tx_type: SignTxType) -> Result<(), AppError> {
+        let text = match tx_type {
+            SignTxType::Ed25519
+            | SignTxType::Secp256k1
+            | SignTxType::Ed25519Summary
+            | SignTxType::Secp256k1Summary => "Review\nSign\nTransaction",
+            SignTxType::AuthEd25519 | SignTxType::AuthSecp256k1 => "Review\nSign\nAuthentication",
+        };
+
+        SingleMessage::new(text, false).show_and_wait();
+
+        Ok(())
+    }
+
     const NONCE_LENGTH: usize = 32;
     const DAPP_ADDRESS_LENGTH: usize = 70;
     const ORIGIN_LENGTH: usize = 150;
@@ -353,7 +375,11 @@ impl TxSignState {
     const MIN_VALID_LENGTH: usize =
         Self::NONCE_LENGTH + Self::MIN_DAPP_ADDRESS_LENGTH + Self::MIN_ORIGIN_LENGTH;
 
-    fn process_sign_auth(&mut self, value: &[u8]) -> Result<SignOutcome, AppError> {
+    fn process_sign_auth(
+        &mut self,
+        value: &[u8],
+        tx_type: SignTxType,
+    ) -> Result<SignOutcome, AppError> {
         if value.len() < Self::MIN_VALID_LENGTH {
             return Err(AppError::BadAuthSignRequest);
         }
@@ -365,24 +391,33 @@ impl TxSignState {
         let hash_address = &value[Self::NONCE_LENGTH..addr_end];
         let origin = &value[addr_end..];
 
-        self.info_message(b"Origin:", origin);
-        self.info_message(b"dApp Address:", address);
-        self.info_hex(b"Nonce:", nonce);
+        let mut nonce_hex = [0u8; Self::NONCE_LENGTH * 2];
 
-        if !ui::Validator::new("Sign Challenge?").ask() {
-            return Ok(SignOutcome::SigningRejected);
+        for (i, &byte) in nonce.iter().enumerate() {
+            nonce_hex[i * 2] = upper_as_hex(byte);
+            nonce_hex[i * 2 + 1] = lower_as_hex(byte);
         }
 
-        let digest = self.calculate_auth(nonce, hash_address, origin)?;
-        self.processor.sign_tx(SignTxType::AuthEd25519, digest)
+        self.info_message(b"Origin:", origin);
+        self.info_message(b"dApp Address:", address);
+        self.info_message(b"Nonce:", &nonce_hex);
+
+        let rc = MultipageValidator::new(&[&"Sign Auth?"], &[&"Accept"], &[&"Reject"]).ask();
+
+        if rc {
+            let digest = self.calculate_auth(nonce, hash_address, origin)?;
+            self.processor.sign_tx(tx_type, digest)
+        } else {
+            return Ok(SignOutcome::SigningRejected);
+        }
     }
 
     fn info_message(&mut self, title: &[u8], message: &[u8]) {
-        self.processor.printer.state.info_message(title, message);
-    }
-
-    fn info_hex(&mut self, title: &[u8], message: &[u8]) {
-        self.processor.printer.state.info_hex(title, message);
+        MultilineMessageScroller::with_title(
+            core::str::from_utf8(title).unwrap(),
+            core::str::from_utf8(message).unwrap(),
+        )
+        .event_loop();
     }
 
     fn calculate_auth(
@@ -401,14 +436,16 @@ impl TxSignState {
         let digest = self.processor.state.finalize()?;
 
         if self.show_digest {
-            self.info_hex(b"Digest:", digest.as_bytes());
+            self.info_message(b"Digest:", &digest.as_hex());
         }
 
-        if !ui::Validator::new("Sign Intent?").ask() {
+        let rc = MultipageValidator::new(&[&"Sign Tx?"], &[&"Accept"], &[&"Reject"]).ask();
+
+        if rc {
+            self.processor.sign_tx(tx_type, digest)
+        } else {
             return Ok(SignOutcome::SigningRejected);
         }
-
-        self.processor.sign_tx(tx_type, digest)
     }
 
     fn decode_tx_intent(&mut self, data: &[u8], class: CommandClass) -> Result<(), AppError> {

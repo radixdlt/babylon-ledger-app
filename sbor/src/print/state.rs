@@ -153,36 +153,4 @@ impl ParameterPrinterState {
     pub fn print_text(&mut self, text: &[u8]) {
         self.display.extend_from_slice(text);
     }
-
-    pub fn info_message(&mut self, text1: &[u8], text2: &[u8]) {
-        self.display.clear();
-        self.display.extend_from_slice(text1);
-
-        // ensure that first part is at separate line
-        while self.display.len() < 16 {
-            self.display.push(b' ');
-        }
-
-        self.display.extend_from_slice(text2);
-        (self.tty.show_message)(self.display.as_slice());
-        self.display.clear();
-    }
-
-    pub fn info_hex(&mut self, text1: &[u8], data: &[u8]) {
-        self.display.clear();
-        self.display.extend_from_slice(text1);
-
-        // ensure that first part is at separate line
-        while self.display.len() < 16 {
-            self.display.push(b' ');
-        }
-
-        for &byte in data {
-            self.display.push(upper_as_hex(byte));
-            self.display.push(lower_as_hex(byte));
-        }
-
-        (self.tty.show_message)(self.display.as_slice());
-        self.display.clear();
-    }
 }

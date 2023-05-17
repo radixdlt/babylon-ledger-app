@@ -1,19 +1,14 @@
-const MAX_ARR_LEN: usize = 256;
+const MAX_ARR_LEN: usize = 64;
 const HEX_DIGITS: [u8; 16] = *b"0123456789abcdef";
 
-#[inline]
-pub fn to_hex(m: &[u8]) -> Result<[u8; MAX_ARR_LEN], ()> {
-    if 2 * m.len() > MAX_ARR_LEN {
-        return Err(());
-    }
-    let mut hex = [0u8; MAX_ARR_LEN];
-    let mut i = 0;
-    for c in m {
-        hex[i] = HEX_DIGITS[(c >> 4) as usize];
-        hex[i + 1] = HEX_DIGITS[(c & 0xf) as usize];
-        i += 2;
-    }
-    Ok(hex)
+#[inline(always)]
+pub fn lower_as_hex(byte: u8) -> u8 {
+    HEX_DIGITS[(byte & 0x0F) as usize]
+}
+
+#[inline(always)]
+pub fn upper_as_hex(byte: u8) -> u8 {
+    HEX_DIGITS[((byte >> 4) & 0x0F) as usize]
 }
 
 pub fn to_str(m: u32) -> [u8; 10] {

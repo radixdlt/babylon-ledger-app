@@ -28,7 +28,7 @@ pub enum InstructionPhase {
 #[repr(u8)]
 #[derive(Copy, Clone, Debug)]
 pub enum ExtractorEvent {
-    InstructionStart(InstructionInfo),
+    InstructionStart(InstructionInfo, u32, u32),
     ParameterStart(SborEvent, u32, TypeInfo),
     ParameterData(SborEvent),
     ParameterEnd(SborEvent),
@@ -47,6 +47,8 @@ pub struct InstructionExtractor {
     instruction_phase: InstructionPhase,
     parameter_count: u32,
     parameters_total: u32,
+    instruction_total: u32,
+    instruction_count: u32,
     discriminator: u8,
 }
 
@@ -57,6 +59,8 @@ impl InstructionExtractor {
             instruction_phase: InstructionPhase::Done,
             parameter_count: 0,
             parameters_total: 0,
+            instruction_total: 0,
+            instruction_count: 0,
             discriminator: 0,
         }
     }
@@ -66,6 +70,8 @@ impl InstructionExtractor {
         self.instruction_phase = InstructionPhase::Done;
         self.parameter_count = 0;
         self.parameters_total = 0;
+        self.instruction_total = 0;
+        self.instruction_count = 0;
         self.discriminator = 0;
     }
 
@@ -92,6 +98,14 @@ impl InstructionExtractor {
                 }
             }
             ExtractorPhase::InstructionShell => {
+                match event {
+                    SborEvent::Len(len) if self.instruction_total == 0 => {
+                        self.instruction_total = len;
+                        self.instruction_count = 0;
+                    }
+                    _ => {}
+                };
+
                 if Self::is_start(event, TYPE_ENUM, 3) {
                     self.phase = ExtractorPhase::Instruction;
                     self.start_instruction();
@@ -113,6 +127,7 @@ impl InstructionExtractor {
 
                 if Self::is_end(event, TYPE_NONE, 3) {
                     self.phase = ExtractorPhase::InstructionShell;
+                    self.instruction_count += 1;
                 }
             }
             ExtractorPhase::InstructionParameter => {
@@ -174,7 +189,11 @@ impl InstructionExtractor {
             (InstructionPhase::WaitForParameterCount, SborEvent::Len(len)) => {
                 match to_instruction(self.discriminator) {
                     Some(info) => {
-                        handler.handle(ExtractorEvent::InstructionStart(info));
+                        handler.handle(ExtractorEvent::InstructionStart(
+                            info,
+                            self.instruction_count,
+                            self.instruction_total,
+                        ));
                         self.parameters_total = len;
                         self.instruction_phase = InstructionPhase::Done;
                     }
@@ -279,10 +298,15 @@ mod tests {
 
     impl InstructionHandler for InstructionFormatter {
         fn handle(&mut self, event: ExtractorEvent) {
-            if let ExtractorEvent::InstructionStart(info) = event {
+            if let ExtractorEvent::InstructionStart(info, count, total) = event {
                 self.instructions[self.instruction_count] = info.instruction;
                 self.instruction_count += 1;
-                println!("Instruction::{:?},", info.instruction);
+                println!(
+                    "Instruction::{:?} {} of {},",
+                    info.instruction,
+                    count + 1,
+                    total
+                );
             } else {
                 //println!("Event: {:?}", event);
             }

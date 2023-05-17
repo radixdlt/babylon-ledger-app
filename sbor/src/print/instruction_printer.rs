@@ -24,7 +24,9 @@ pub struct InstructionPrinter {
 impl InstructionHandler for InstructionPrinter {
     fn handle(&mut self, event: ExtractorEvent) {
         match event {
-            ExtractorEvent::InstructionStart(info) => self.start_instruction(info),
+            ExtractorEvent::InstructionStart(info, count, total) => {
+                self.start_instruction(info, count, total)
+            }
             ExtractorEvent::ParameterStart(event, ..) => self.parameter_start(event),
             ExtractorEvent::ParameterData(data) => self.parameter_data(data),
             ExtractorEvent::ParameterEnd(event, ..) => self.parameter_end(event),
@@ -68,9 +70,15 @@ impl InstructionPrinter {
         self.state.end();
     }
 
-    pub fn start_instruction(&mut self, info: InstructionInfo) {
+    pub fn start_instruction(&mut self, info: InstructionInfo, count: u32, total: u32) {
         self.active_instruction = Some(info);
         self.state.start();
+        print_u32(&mut self.state, count + 1);
+        self.state.print_text(b" of ");
+        print_u32(&mut self.state, total);
+        while self.state.display.len() < 16 {
+            self.state.print_space();
+        }
         self.state.print_text(info.name);
         self.state.print_space();
     }
@@ -393,7 +401,7 @@ mod tests {
 
     impl InstructionHandler for InstructionFormatter {
         fn handle(&mut self, event: ExtractorEvent) {
-            if let ExtractorEvent::InstructionStart(info) = event {
+            if let ExtractorEvent::InstructionStart(info, ..) = event {
                 self.instructions[self.instruction_count] = info.instruction;
                 self.instruction_count += 1;
                 //println!("Instruction::{:?},", info.instruction);

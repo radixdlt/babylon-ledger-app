@@ -5,6 +5,7 @@ use core::mem::size_of;
 use nanos_sdk::bindings::{cx_blake2b_t, cx_md_t, size_t, CX_BLAKE2B};
 
 use crate::app_error::{to_result, AppError};
+use crate::utilities::conversion::{lower_as_hex, upper_as_hex};
 
 const BLAKE2B_DIGEST_SIZE: usize = 32; // 256 bits
 
@@ -25,6 +26,15 @@ impl Digest {
 
     pub fn as_bytes(&self) -> &[u8] {
         &self.0
+    }
+
+    pub fn as_hex(&self) -> [u8; Self::DIGEST_LENGTH * 2] {
+        let mut output = [0u8; Self::DIGEST_LENGTH * 2];
+        for (i, &byte) in self.0.iter().enumerate() {
+            output[i * 2] = upper_as_hex(byte);
+            output[i * 2 + 1] = lower_as_hex(byte);
+        }
+        output
     }
 }
 
