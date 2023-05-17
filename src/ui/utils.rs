@@ -15,9 +15,9 @@ impl CenteredText for &str {
             .for_each(|(index, line)| {
                 line.place(
                     match index {
-                        0 => Location::Top,
-                        1 => Location::Middle,
-                        2 => Location::Bottom,
+                        0 => Location::Custom(LINE1_Y),
+                        1 => Location::Custom(LINE2_Y),
+                        2 => Location::Custom(LINE3_Y),
                         _ => unreachable!(),
                     },
                     Layout::Centered,
@@ -31,7 +31,7 @@ pub trait LeftAlignedMiddle {
     fn draw_left_aligned_middle(&self);
 }
 
-pub const DEFAULT_PADDING: usize = 14;
+pub const DEFAULT_PADDING: usize = 11;
 pub const DEFAULT_ICON_HEIGHT: usize = 14;
 
 impl LeftAlignedMiddle for Icon<'_> {
@@ -48,6 +48,7 @@ impl LeftAlignedMiddle for Icon<'_> {
 }
 
 use include_gif::include_gif;
+use crate::ui::multiline_scroller::{LINE1_Y, LINE2_Y, LINE3_Y};
 
 pub const RADIX_LOGO: Glyph = Glyph::from_include(include_gif!("icons/nanox_app_radix.gif"));
 pub const RADIX_LOGO_ICON: Icon = Icon::from(&RADIX_LOGO);

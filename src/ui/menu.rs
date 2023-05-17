@@ -36,13 +36,8 @@ impl<'a> Menu<'a> {
         self.items[self.current].icon.draw_left_aligned_middle();
         self.items[self.current].text.draw_centered(true);
 
-        if self.current > 0 {
-            LEFT_ARROW.display();
-        }
-
-        if self.current < self.items.len() - 1 {
-            RIGHT_ARROW.display();
-        }
+        LEFT_ARROW.display();
+        RIGHT_ARROW.display();
 
         screen_update();
     }

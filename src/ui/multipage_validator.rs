@@ -1,7 +1,7 @@
 use nanos_sdk::buttons::{ButtonEvent, ButtonsState};
 use nanos_ui::bagls::{
-    Icon, CHECKMARK_ICON, CROSS_ICON, LEFT_ARROW, LEFT_S_ARROW, RIGHT_ARROW, RIGHT_S_ARROW,
-    VALIDATE_14_ICON,
+    CROSSMARK_ICON, Icon, LEFT_ARROW, LEFT_S_ARROW, RIGHT_ARROW, RIGHT_S_ARROW, VALIDATE_14_ICON,
+    WARNING_ICON,
 };
 use nanos_ui::layout::{Draw, Layout, Location, StringPlace};
 use nanos_ui::screen_util;
@@ -64,12 +64,12 @@ impl<'a> MultipageValidator<'a> {
         let draw = |page: usize| {
             clear_screen();
             if page == page_count - 2 {
-                draw_icon_and_text(CHECKMARK_ICON, &self.confirm, true);
+                draw_icon_and_text(VALIDATE_14_ICON, &self.confirm, true);
                 RIGHT_ARROW.display();
             } else if page == page_count - 1 {
-                draw_icon_and_text(CROSS_ICON, &self.cancel, true);
+                draw_icon_and_text(CROSSMARK_ICON, &self.cancel, true);
             } else {
-                draw_icon_and_text(VALIDATE_14_ICON, &self.message, false);
+                draw_icon_and_text(WARNING_ICON, &self.message, false);
                 RIGHT_ARROW.display();
             }
             if page > 0 {

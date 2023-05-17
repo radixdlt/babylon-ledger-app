@@ -358,8 +358,8 @@ impl TxSignState {
             SignTxType::Ed25519
             | SignTxType::Secp256k1
             | SignTxType::Ed25519Summary
-            | SignTxType::Secp256k1Summary => "Review\nTransaction",
-            SignTxType::AuthEd25519 | SignTxType::AuthSecp256k1 => "Review\nAuthentication",
+            | SignTxType::Secp256k1Summary => "Review\nSign\nTransaction",
+            SignTxType::AuthEd25519 | SignTxType::AuthSecp256k1 => "Review\nSign\nAuthentication",
         };
 
         SingleMessage::new(text, false).show_and_wait();

@@ -30,24 +30,23 @@ mod utilities;
 
 nanos_sdk::set_panic!(nanos_sdk::exiting_panic);
 
-// Application Name
 const APPLICATION: &str = env!("CARGO_PKG_DESCRIPTION");
-const APPLICATION_ABOUT: &str = concat!(env!("CARGO_PKG_DESCRIPTION"), "\n(c) RDX Works Ltd.");
-const APPLICATION_VERSION: &str = concat!(
+const APPLICATION_ABOUT: &str = concat!(
     env!("CARGO_PKG_DESCRIPTION"),
-    "\n",
-    env!("CARGO_PKG_VERSION")
+    "\n(c) 2022-2023\nRDX Works Ltd."
 );
+const APPLICATION_VERSION: &str = concat!("\n", env!("CARGO_PKG_VERSION"), "\n",);
 
 fn app_menu_action() {}
+
 fn version_menu_action() {
     clear_screen();
-    SingleMessage::new(APPLICATION_VERSION, true).show_and_wait();
+    SingleMessage::new(APPLICATION_VERSION, false).show_and_wait();
 }
 
 fn about_menu_action() {
     clear_screen();
-    SingleMessage::new(APPLICATION_ABOUT, true).show_and_wait();
+    SingleMessage::new(APPLICATION_ABOUT, false).show_and_wait();
 }
 
 fn quit_menu_action() {
@@ -58,7 +57,7 @@ fn quit_menu_action() {
 #[no_mangle]
 extern "C" fn sample_main() {
     let menu = [
-        MenuItem::new(&RADIX_LOGO_ICON, "Radix\nBabylon\n", app_menu_action),
+        MenuItem::new(&RADIX_LOGO_ICON, "\n Radix Babylon", app_menu_action),
         MenuItem::new(&PROCESSING_ICON, "\nVersion", version_menu_action),
         MenuItem::new(&CERTIFICATE_ICON, "\nAbout", about_menu_action),
         MenuItem::new(&DASHBOARD_X_ICON, "\nQuit", quit_menu_action),

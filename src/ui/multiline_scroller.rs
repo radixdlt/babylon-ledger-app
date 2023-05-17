@@ -24,21 +24,21 @@ const DEFAULT_FONT_HEIGHT: usize = 11;
 
 // Nano S with smallest screen resolution
 #[cfg(target_os = "nanos")]
-const LINE1_Y: usize = 0;
+pub const LINE1_Y: usize = 0;
 #[cfg(target_os = "nanos")]
-const LINE2_Y: usize = (SCREEN_HEIGHT - DEFAULT_FONT_HEIGHT) / 2;
+pub const LINE2_Y: usize = (SCREEN_HEIGHT - DEFAULT_FONT_HEIGHT) / 2;
 #[cfg(target_os = "nanos")]
-const LINE3_Y: usize = SCREEN_HEIGHT - DEFAULT_FONT_HEIGHT;
+pub const LINE3_Y: usize = SCREEN_HEIGHT - DEFAULT_FONT_HEIGHT;
 
 // Remaining devices
 #[cfg(not(target_os = "nanos"))]
 const VERTICAL_SPACING: usize = DEFAULT_FONT_HEIGHT + 1;
 #[cfg(not(target_os = "nanos"))]
-const LINE1_Y: usize = LINE2_Y - VERTICAL_SPACING;
+pub const LINE1_Y: usize = LINE2_Y - VERTICAL_SPACING;
 #[cfg(not(target_os = "nanos"))]
-const LINE2_Y: usize = (SCREEN_HEIGHT - VERTICAL_SPACING) / 2;
+pub const LINE2_Y: usize = (SCREEN_HEIGHT - VERTICAL_SPACING) / 2;
 #[cfg(not(target_os = "nanos"))]
-const LINE3_Y: usize = LINE2_Y + VERTICAL_SPACING;
+pub const LINE3_Y: usize = LINE2_Y + VERTICAL_SPACING;
 
 impl<'a> MultilineMessageScroller<'a> {
     pub fn new(message: &'a str) -> Self {
