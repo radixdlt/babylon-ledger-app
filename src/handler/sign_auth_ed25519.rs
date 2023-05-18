@@ -3,14 +3,11 @@ use nanos_sdk::io::Comm;
 use crate::app_error::AppError;
 use crate::command_class::CommandClass;
 use crate::handler::process_sign_outcome::process_sign_outcome;
-use crate::tx_sign_state::{SignTxType, TxSignState};
+use crate::sign::sign_type::SignType;
+use crate::sign::tx_state::TxState;
 
-pub fn handle(
-    comm: &mut Comm,
-    class: CommandClass,
-    state: &mut TxSignState,
-) -> Result<(), AppError> {
+pub fn handle(comm: &mut Comm, class: CommandClass, state: &mut TxState) -> Result<(), AppError> {
     state
-        .process_request(comm, class, SignTxType::AuthEd25519)
+        .process_request(comm, class, SignType::AuthEd25519)
         .and_then(|outcome| process_sign_outcome(comm, outcome))
 }

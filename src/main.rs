@@ -13,7 +13,7 @@ use nanos_ui::ui::clear_screen;
 use handler::dispatcher;
 
 use crate::app_error::AppError;
-use crate::tx_sign_state::TxSignState;
+use crate::sign::tx_state::TxState;
 use crate::ui::menu::{Menu, MenuItem};
 use crate::ui::single_message::SingleMessage;
 use crate::ui::utils::RADIX_LOGO_ICON;
@@ -24,7 +24,7 @@ mod command_class;
 mod crypto;
 mod handler;
 mod ledger_display_io;
-mod tx_sign_state;
+mod sign;
 mod ui;
 mod utilities;
 
@@ -63,7 +63,7 @@ extern "C" fn sample_main() {
         MenuItem::new(&DASHBOARD_X_ICON, "\nQuit", quit_menu_action),
     ];
     let mut comm = Comm::new();
-    let mut state = TxSignState::new();
+    let mut state = TxState::new();
     let mut main_menu = Menu::new(&menu);
 
     main_menu.display();

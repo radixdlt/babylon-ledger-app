@@ -9,7 +9,7 @@ use crate::handler::{
     sign_tx_ed25519, sign_tx_ed25519_summary, sign_tx_secp256k1, sign_tx_secp256k1_summary,
 };
 use crate::handler::{get_private_key_secp256k1, get_public_key_ed25519, get_public_key_secp256k1};
-use crate::tx_sign_state::TxSignState;
+use crate::sign::tx_state::TxState;
 use crate::utilities::version::{MODEL_DATA, VERSION_DATA};
 
 fn ensure_zero_params(comm: &Comm) -> Result<(), AppError> {
@@ -35,7 +35,7 @@ fn validate_request(comm: &Comm, class: CommandClass) -> Result<(), AppError> {
     }
 }
 
-pub fn dispatcher(comm: &mut Comm, ins: Command, state: &mut TxSignState) -> Result<(), AppError> {
+pub fn dispatcher(comm: &mut Comm, ins: Command, state: &mut TxState) -> Result<(), AppError> {
     let class = CommandClass::from(comm.get_apdu_metadata().cla);
 
     validate_request(comm, class)?;

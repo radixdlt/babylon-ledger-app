@@ -1,7 +1,7 @@
 use nanos_sdk::io::Comm;
 
 use crate::app_error::AppError;
-use crate::tx_sign_state::SignOutcome;
+use crate::sign::sign_outcome::SignOutcome;
 
 pub fn process_sign_outcome(comm: &mut Comm, outcome: SignOutcome) -> Result<(), AppError> {
     match outcome {
