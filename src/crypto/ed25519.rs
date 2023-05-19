@@ -3,7 +3,7 @@ use core::ptr::write_bytes;
 use crate::app_error::{to_result, AppError};
 use crate::crypto::bip32::Bip32Path;
 use crate::crypto::curves::{
-    cx_ecfp_private_key_t, cx_ecfp_public_key_t, cx_err_t, cx_md_t, generate_key_pair, size_t,
+    cx_ecfp_private_key_t, cx_ecfp_public_key_t, cx_err_t, cx_md_t, size_t,
     Curve, CX_SHA512,
 };
 use crate::crypto::key_pair::InternalKeyPair;
@@ -76,8 +76,7 @@ extern "C" {
 
 impl KeyPair25519 {
     pub fn derive(path: &Bip32Path) -> Result<Self, AppError> {
-        let pair = generate_key_pair(Curve::Ed25519, path)?;
-        Ok(pair.into())
+        Ok(Curve::Ed25519.key_pair(path)?.into())
     }
 
     pub fn sign(&self, message: &[u8]) -> Result<[u8; ED25519_SIGNATURE_LEN], AppError> {

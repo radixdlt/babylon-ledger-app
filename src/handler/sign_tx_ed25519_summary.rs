@@ -8,6 +8,6 @@ use crate::sign::tx_state::TxState;
 
 pub fn handle(comm: &mut Comm, class: CommandClass, state: &mut TxState) -> Result<(), AppError> {
     state
-        .process_request(comm, class, SignType::Ed25519Summary)
+        .process_sign(comm, class, SignType::Ed25519Summary)
         .and_then(|outcome| process_sign_outcome(comm, outcome))
 }

@@ -38,13 +38,13 @@ impl InstructionProcessor {
         self.state.sign_tx(tx_type, digest)
     }
 
-    pub fn calculate_auth(
+    pub fn auth_digest(
         &mut self,
         nonce: &[u8],
         address: &[u8],
         origin: &[u8],
     ) -> Result<Digest, AppError> {
-        self.state.calculate_auth(nonce, address, origin)
+        self.state.auth_digest(nonce, address, origin)
     }
 
     pub fn tx_size(&self) -> usize {
@@ -91,12 +91,12 @@ impl InstructionProcessor {
         self.state.finalize()
     }
 
-    pub fn process_data(
+    pub fn process_sign(
         &mut self,
         comm: &mut Comm,
         class: CommandClass,
         tx_type: SignType,
     ) -> Result<(), AppError> {
-        self.state.process_data(comm, class, tx_type)
+        self.state.process_sign(comm, class, tx_type)
     }
 }

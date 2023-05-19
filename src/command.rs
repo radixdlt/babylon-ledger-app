@@ -16,7 +16,6 @@ pub enum Command {
     SignAuthEd25519,
     SignAuthSecp256k1,
     BadCommand,
-    Exit,
 }
 
 impl From<ApduHeader> for Command {
@@ -35,7 +34,6 @@ impl From<ApduHeader> for Command {
             0x52 => Command::SignTxSecp256k1Summary,
             0x61 => Command::SignAuthEd25519,
             0x71 => Command::SignAuthSecp256k1,
-            0xff => Command::Exit,
             _ => Command::BadCommand,
         }
     }

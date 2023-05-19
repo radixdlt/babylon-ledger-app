@@ -65,13 +65,6 @@ pub const fn bytes_to_number(bytes: &[u8]) -> u8 {
     acc as u8
 }
 
-pub fn read_u32_le(bytes: &[u8]) -> u32 {
-    (bytes[0] as u32)
-        + ((bytes[1] as u32) << 8)
-        + ((bytes[2] as u32) << 16)
-        + ((bytes[3] as u32) << 24)
-}
-
 pub fn read_u32_be(bytes: &[u8]) -> u32 {
     ((bytes[0] as u32) << 24)
         + ((bytes[1] as u32) << 16)

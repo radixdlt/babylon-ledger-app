@@ -1,12 +1,10 @@
 use core::intrinsics::write_bytes;
-use core::str::from_utf8;
 
 use nanos_sdk::io::Comm;
-use nanos_ui::ui;
 use sbor::bech32::network::NetworkId;
 
-use crate::utilities::conversion::{read_u32_be, to_hex_str};
 use crate::AppError;
+use crate::utilities::conversion::read_u32_be;
 
 const BIP32_REQUIRED_LEN: u8 = 6;
 const BIP32_LEAD_WORD_INDEX: usize = 0;
@@ -135,7 +133,7 @@ impl Bip32Path {
         path
     }
 
-    pub fn validate_olympia_path(&self) -> Result<Bip32Path, AppError> {
+    fn validate_for_olympia(&self) -> Result<Bip32Path, AppError> {
         if self.len != OLYMPIA_REQUIRED_LEN {
             return Err(AppError::BadBip32PathLen);
         }
@@ -154,7 +152,7 @@ impl Bip32Path {
         })
     }
 
-    pub fn validate(&self) -> Result<Bip32Path, AppError> {
+    fn validate_for_cap26(&self) -> Result<Bip32Path, AppError> {
         if self.len != BIP32_REQUIRED_LEN {
             return Err(AppError::BadBip32PathLen);
         }
@@ -204,7 +202,7 @@ impl Bip32Path {
     // [1..5] - first path element (big endian)
     // [5..9] - second path element (big endian)
     // ...
-    pub fn read(comm: &mut Comm) -> Result<Self, AppError> {
+    fn read(comm: &mut Comm) -> Result<Self, AppError> {
         let data = comm.get_data()?;
 
         if data.len() < BIP32_PATH_MIN_ENCODED_LEN {
@@ -228,6 +226,16 @@ impl Bip32Path {
         Ok(path)
     }
 
+    // Read path and validate according to the CAP-26 document.
+    pub fn read_cap26(comm: &mut Comm) -> Result<Self, AppError> {
+        Bip32Path::read(comm).and_then(|path| path.validate_for_cap26())
+    }
+
+    // Read path and validate according to the Olympia mainnet rules.
+    pub fn read_olympia(comm: &mut Comm) -> Result<Self, AppError> {
+        Bip32Path::read(comm).and_then(|path| path.validate_for_olympia())
+    }
+
     pub const fn new(len: u8) -> Self {
         Self {
             path: [0u32; MAX_BIP32_PATH_LEN],
@@ -248,22 +256,6 @@ impl Bip32Path {
             i += 1;
         }
         path
-    }
-
-    pub fn show(&self) {
-        let mut buf: [u8; 12] = [0; 12];
-        buf[1] = b'/';
-        buf[2] = char::from_digit(self.len.into(), 10).unwrap() as u8;
-        buf[3] = b':';
-
-        for i in 0..self.len {
-            buf[0] = char::from_digit(i.into(), 10).unwrap() as u8;
-
-            let num = to_hex_str(self.path[i as usize]);
-            buf[4..12].copy_from_slice(&num);
-
-            ui::MessageScroller::new(from_utf8(&buf).unwrap()).event_loop();
-        }
     }
 
     pub fn network_id(&self) -> Result<NetworkId, AppError> {

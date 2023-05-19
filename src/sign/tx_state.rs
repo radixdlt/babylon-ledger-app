@@ -34,13 +34,13 @@ impl TxState {
         self.processor.set_tty(LedgerTTY::new_tty());
     }
 
-    pub fn process_request(
+    pub fn process_sign(
         &mut self,
         comm: &mut Comm,
         class: CommandClass,
         tx_type: SignType,
     ) -> Result<SignOutcome, AppError> {
-        let result = self.do_process(comm, class, tx_type);
+        let result = self.process_sign_internal(comm, class, tx_type);
 
         match result {
             Ok(outcome) => match outcome {
@@ -57,13 +57,13 @@ impl TxState {
         }
     }
 
-    fn do_process(
+    fn process_sign_internal(
         &mut self,
         comm: &mut Comm,
         class: CommandClass,
         tx_type: SignType,
     ) -> Result<SignOutcome, AppError> {
-        self.processor.process_data(comm, class, tx_type)?;
+        self.processor.process_sign(comm, class, tx_type)?;
 
         if class == CommandClass::Regular {
             self.processor.set_network()?;
@@ -143,10 +143,10 @@ impl TxState {
         self.info_message(b"dApp Address:", address);
         self.info_message(b"Nonce:", &nonce_hex);
 
-        let rc = MultipageValidator::new(&[&"Sign Auth?"], &[&"Accept"], &[&"Reject"]).ask();
+        let rc = MultipageValidator::new(&[&"Sign Auth?"], &[&"Sign"], &[&"Reject"]).ask();
 
         if rc {
-            let digest = self.calculate_auth(nonce, hash_address, origin)?;
+            let digest = self.auth_digest(nonce, hash_address, origin)?;
             self.processor.sign_tx(tx_type, digest)
         } else {
             return Ok(SignOutcome::SigningRejected);
@@ -161,13 +161,13 @@ impl TxState {
         .event_loop();
     }
 
-    fn calculate_auth(
+    fn auth_digest(
         &mut self,
         nonce: &[u8],
         address: &[u8],
         origin: &[u8],
     ) -> Result<Digest, AppError> {
-        self.processor.calculate_auth(nonce, address, origin)
+        self.processor.auth_digest(nonce, address, origin)
     }
 
     fn finalize_sign_tx(&mut self, tx_type: SignType) -> Result<SignOutcome, AppError> {
@@ -177,7 +177,7 @@ impl TxState {
             self.info_message(b"Digest:", &digest.as_hex());
         }
 
-        let rc = MultipageValidator::new(&[&"Sign Tx?"], &[&"Accept"], &[&"Reject"]).ask();
+        let rc = MultipageValidator::new(&[&"Sign TX?"], &[&"Sign"], &[&"Reject"]).ask();
 
         if rc {
             self.processor.sign_tx(tx_type, digest)

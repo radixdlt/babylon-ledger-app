@@ -6,7 +6,7 @@ use nanos_sdk::bindings::{
 
 use crate::app_error::{to_result, AppError};
 use crate::crypto::bip32::Bip32Path;
-use crate::crypto::curves::{cx_ecfp_public_key_t, generate_key_pair, size_t, Curve};
+use crate::crypto::curves::{cx_ecfp_public_key_t, size_t, Curve};
 use crate::crypto::key_pair::InternalKeyPair;
 
 const PUB_KEY_TYPE_UNCOMPRESSED: u8 = 0x04;
@@ -92,7 +92,7 @@ extern "C" {
 
 impl KeyPairSecp256k1 {
     pub fn derive(path: &Bip32Path) -> Result<Self, AppError> {
-        let pair = generate_key_pair(Curve::Secp256k1, path)?;
+        let pair = Curve::Secp256k1.key_pair(path)?;
         validate_secp256k1_public_key(&pair.public)?;
 
         Ok(pair.into())

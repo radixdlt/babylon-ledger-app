@@ -30,43 +30,52 @@ impl SigningFlowState {
         }
     }
 
-    pub fn process_data(
+    pub fn process_sign(
         &mut self,
         comm: &mut Comm,
         class: CommandClass,
         tx_type: SignType,
     ) -> Result<(), AppError> {
         match class {
-            CommandClass::Regular => {
-                let path = Bip32Path::read(comm).and_then(|path| match tx_type {
-                    SignType::Ed25519 | SignType::Ed25519Summary | SignType::AuthEd25519 => {
-                        path.validate()
-                    }
-                    SignType::Secp256k1 | SignType::Secp256k1Summary | SignType::AuthSecp256k1 => {
-                        path.validate_olympia_path()
-                    }
-                })?;
-                self.start(tx_type, path)?;
-                self.update_counters(0); // First packet contains no data
-                Ok(())
-            }
-
+            CommandClass::Regular => self.init_sign(comm, tx_type),
             CommandClass::Continuation | CommandClass::LastData => {
-                self.validate(class, tx_type)?;
-                let data = comm.get_data()?;
-                self.update_counters(data.len());
-
-                match tx_type {
-                    SignType::Ed25519
-                    | SignType::Ed25519Summary
-                    | SignType::Secp256k1
-                    | SignType::Secp256k1Summary => self.hasher.update(data),
-                    SignType::AuthEd25519 | SignType::AuthSecp256k1 => Ok(()),
-                }
+                self.continue_sign(comm, class, tx_type)
             }
-
-            CommandClass::Unknown => Err(AppError::BadTxSignSequence),
         }
+    }
+
+    fn continue_sign(
+        &mut self,
+        comm: &mut Comm,
+        class: CommandClass,
+        tx_type: SignType,
+    ) -> Result<(), AppError> {
+        self.validate(class, tx_type)?;
+        let data = comm.get_data()?;
+        self.update_counters(data.len());
+
+        match tx_type {
+            SignType::Ed25519
+            | SignType::Ed25519Summary
+            | SignType::Secp256k1
+            | SignType::Secp256k1Summary => self.hasher.update(data),
+            SignType::AuthEd25519 | SignType::AuthSecp256k1 => Ok(()),
+        }
+    }
+
+    fn init_sign(&mut self, comm: &mut Comm, tx_type: SignType) -> Result<(), AppError> {
+        let path = match tx_type {
+            SignType::Ed25519 | SignType::Ed25519Summary | SignType::AuthEd25519 => {
+                Bip32Path::read_cap26(comm)
+            }
+            SignType::Secp256k1 | SignType::Secp256k1Summary | SignType::AuthSecp256k1 => {
+                Bip32Path::read_olympia(comm)
+            }
+        }?;
+
+        self.start(tx_type, path)?;
+        self.update_counters(0); // First packet contains no data
+        Ok(())
     }
 
     #[inline(always)]
@@ -85,13 +94,13 @@ impl SigningFlowState {
     }
 
     #[inline(always)]
-    pub fn calculate_auth(
+    pub fn auth_digest(
         &mut self,
         nonce: &[u8],
         address: &[u8],
         origin: &[u8],
     ) -> Result<Digest, AppError> {
-        self.hasher.calculate_auth(nonce, address, origin)
+        self.hasher.for_auth(nonce, address, origin)
     }
 
     #[inline(always)]
