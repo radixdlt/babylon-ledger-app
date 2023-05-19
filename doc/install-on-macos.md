@@ -11,7 +11,7 @@
 
 ## Step-by-step
 
-Clone repo and cd into app-builder directory
+Clone the repo and cd into app-builder directory
 
 ```
 cd ./babylon-ledger-app/app-builder
@@ -20,34 +20,34 @@ cd ./babylon-ledger-app/app-builder
 Build the docker image by running
 
 ```
-docker build -t app-radix-builder:latest .
+./build-image.sh
 ```
 
-Go back to root directory
+Go back to the repo root directory
 
 ```
 cd ..
 ```
 
-Run the container
+Run the app builder. **NOTE!** This will open the app builder shell.
 
 ```
-docker run --rm -ti -v "$(realpath .):/app" app-radix-builder:latest
+./run-app-builder.sh
 ```
 
-Run command
+Whilst in the app builder shell. Run command
 
 ```
-sh ./build-nanos.sh
+./build-nanos.sh
 ```
 
-Exit container
+Exit the app builder shell
 
 ```
-cmd + d
+ctrl + d
 ```
 
-Run command
+Run command. **NOTE!** at this point you are in the host shell.
 
 ```
 python3 -m pip install ledgerblue
@@ -56,8 +56,8 @@ python3 -m pip install ledgerwallet
 cargo install --git  https://github.com/siy/cargo-ledger.git
 ```
 
-Connect and unlock ledger nano S and run command
+Connect and unlock ledger nano S and run command. **NOTE!** at this point you are in the host shell.
 
 ```
-sh ./flash-nanos.sh
+./flash-nanos.sh
 ```
