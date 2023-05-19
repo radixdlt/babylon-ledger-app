@@ -14,11 +14,11 @@ use nanos_ui::SCREEN_HEIGHT;
 pub struct MultilineMessageScroller<'a> {
     message: &'a str,
     title: Option<&'a str>,
+    show_right_arrow: bool,
 }
 
 const LINES_N: usize = 3;
 const CHARS_PER_LINE: usize = 16;
-const CHAR_N: usize = CHARS_PER_LINE * LINES_N;
 
 const DEFAULT_FONT_HEIGHT: usize = 11;
 
@@ -45,20 +45,23 @@ impl<'a> MultilineMessageScroller<'a> {
         MultilineMessageScroller {
             message,
             title: None,
+            show_right_arrow: false,
         }
     }
 
-    pub fn with_title(title: &'a str, message: &'a str) -> Self {
+    pub fn with_title(title: &'a str, message: &'a str, show_right_arrow: bool) -> Self {
         MultilineMessageScroller {
             message,
             title: Some(title),
+            show_right_arrow,
         }
     }
 
     pub fn event_loop(&self) {
         clear_screen();
+        let page_len = CHARS_PER_LINE * if self.title.is_some() { LINES_N - 1 } else { LINES_N };
         let mut buttons = ButtonsState::new();
-        let page_count = (self.message.len() - 1) / CHAR_N + 1;
+        let page_count = (self.message.len() - 1) / page_len + 1;
 
         if page_count == 0 {
             return;
@@ -74,27 +77,26 @@ impl<'a> MultilineMessageScroller<'a> {
         // A closure to draw common elements of the screen
         // cur_page passed as parameter to prevent borrowing
         let mut draw = |page: usize| {
-            let start = page * CHAR_N;
-            let end = (start + CHAR_N).min(self.message.len());
+            let start = page * page_len;
+            let end = (start + page_len).min(self.message.len());
             let chunk = &self.message[start..end];
-
-            for label in labels.iter() {
-                label.erase();
-            }
-
-            let mut from = 0;
-
-            if let Some(title) = self.title {
-                labels[0].text = title;
-            }
-
-            let start = if self.title.is_some() && page == 0 {
+            let start_line = if self.title.is_some() {
                 1
             } else {
                 0
             };
 
-            for i in start..LINES_N {
+            for label in labels.iter() {
+                label.erase();
+            }
+
+            if let Some(title) = self.title {
+                labels[0].text = title;
+            }
+
+            let mut from = 0;
+
+            for i in start_line..LINES_N {
                 if from >= chunk.len() {
                     labels[i].text = "";
                 } else {
@@ -106,17 +108,25 @@ impl<'a> MultilineMessageScroller<'a> {
             }
 
             if page > 0 {
-                labels[0].bold = false;
+                labels[0].bold = self.title.is_some();
                 LEFT_ARROW.display();
             } else {
                 labels[0].bold = true;
                 LEFT_ARROW.erase();
             }
 
-            if page + 1 < page_count {
+            if page + 1 < page_count || self.show_right_arrow {
                 RIGHT_ARROW.display();
+
+                if self.show_right_arrow && page + 1 == page_count {
+                    RIGHT_S_ARROW.display();
+                }
             } else {
                 RIGHT_ARROW.erase();
+
+                if page + 1 != page_count {
+                    RIGHT_S_ARROW.erase();
+                }
             }
 
             for label in labels.iter() {

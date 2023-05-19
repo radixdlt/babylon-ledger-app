@@ -41,12 +41,12 @@ fn app_menu_action() {}
 
 fn version_menu_action() {
     clear_screen();
-    SingleMessage::new(APPLICATION_VERSION, false).show_and_wait();
+    SingleMessage::new(APPLICATION_VERSION).show_and_wait();
 }
 
 fn about_menu_action() {
     clear_screen();
-    SingleMessage::new(APPLICATION_ABOUT, false).show_and_wait();
+    SingleMessage::new(APPLICATION_ABOUT).show_and_wait();
 }
 
 fn quit_menu_action() {
@@ -65,6 +65,7 @@ extern "C" fn sample_main() {
     let mut comm = Comm::new();
     let mut state = TxState::new();
     let mut main_menu = Menu::new(&menu);
+    let mut ticker = 0;
 
     main_menu.display();
 
@@ -78,9 +79,17 @@ extern "C" fn sample_main() {
                     Ok(()) => comm.reply_ok(),
                     Err(app_error) => comm.reply(app_error),
                 };
-                main_menu.display();
+                ticker = 0;
             }
-            _ => (),
+            Event::Ticker => {
+                if ticker == 5 {
+                    ticker = 0;
+                    main_menu.display();
+                } else {
+                    ticker += 1;
+                }
+                main_menu.display()
+            },
         }
     }
 }

@@ -49,9 +49,12 @@ pub const DISPLAY_SIZE: usize = 1024;
 #[cfg(not(any(target_os = "nanos", target_os = "nanox", target_os = "nanosplus")))]
 pub const DISPLAY_SIZE: usize = 2048; // For testing on desktop
 
+pub const TITLE_SIZE: usize = 32;
+
 pub struct ParameterPrinterState {
     pub display: StaticVec<u8, { DISPLAY_SIZE }>,
     pub data: StaticVec<u8, { PARAMETER_AREA_SIZE }>,
+    pub title: StaticVec<u8, { TITLE_SIZE }>,
     pub stack: StaticVec<ValueState, { (STACK_DEPTH - 5) as usize }>,
     pub nesting_level: u8,
     pub network_id: NetworkId,
@@ -77,6 +80,7 @@ impl ParameterPrinterState {
             data: StaticVec::new(0),
             stack: StaticVec::new(ValueState::default()),
             display: StaticVec::new(0),
+            title: StaticVec::new(0),
             nesting_level: 0,
             network_id,
             show_instructions: true,
@@ -138,11 +142,12 @@ impl ParameterPrinterState {
 
     pub fn start(&mut self) {
         self.display.clear();
+        self.title.clear();
     }
 
     pub fn end(&mut self) {
         if self.show_instructions {
-            (self.tty.show_message)(self.display.as_slice());
+            (self.tty.show_message)(self.title.as_slice(), self.display.as_slice());
         }
     }
 

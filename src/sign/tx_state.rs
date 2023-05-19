@@ -99,11 +99,11 @@ impl TxState {
             SignType::Ed25519
             | SignType::Secp256k1
             | SignType::Ed25519Summary
-            | SignType::Secp256k1Summary => "Review\nSign\nTransaction",
-            SignType::AuthEd25519 | SignType::AuthSecp256k1 => "Review\nSign\nAuthentication",
+            | SignType::Secp256k1Summary => "Review\n\nTransaction",
+            SignType::AuthEd25519 | SignType::AuthSecp256k1 => "Review\nOwnership\nProof",
         };
 
-        SingleMessage::new(text, false).show_and_wait();
+        SingleMessage::with_right_arrow(text).show_and_wait();
 
         Ok(())
     }
@@ -143,7 +143,7 @@ impl TxState {
         self.info_message(b"dApp Address:", address);
         self.info_message(b"Nonce:", &nonce_hex);
 
-        let rc = MultipageValidator::new(&[&"Sign Auth?"], &[&"Sign"], &[&"Reject"]).ask();
+        let rc = MultipageValidator::new(&[&"Sign Proof?"], &[&"Sign"], &[&"Reject"]).ask();
 
         if rc {
             let digest = self.auth_digest(nonce, hash_address, origin)?;
@@ -157,6 +157,7 @@ impl TxState {
         MultilineMessageScroller::with_title(
             core::str::from_utf8(title).unwrap(),
             core::str::from_utf8(message).unwrap(),
+            true
         )
         .event_loop();
     }
