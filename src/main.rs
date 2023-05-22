@@ -13,7 +13,7 @@ use nanos_ui::ui::clear_screen;
 use handler::dispatcher;
 
 use crate::app_error::AppError;
-use crate::tx_sign_state::TxSignState;
+use crate::sign::tx_state::TxState;
 use crate::ui::menu::{Menu, MenuItem};
 use crate::ui::single_message::SingleMessage;
 use crate::ui::utils::RADIX_LOGO_ICON;
@@ -24,7 +24,7 @@ mod command_class;
 mod crypto;
 mod handler;
 mod ledger_display_io;
-mod tx_sign_state;
+mod sign;
 mod ui;
 mod utilities;
 
@@ -33,7 +33,7 @@ nanos_sdk::set_panic!(nanos_sdk::exiting_panic);
 const APPLICATION: &str = env!("CARGO_PKG_DESCRIPTION");
 const APPLICATION_ABOUT: &str = concat!(
     env!("CARGO_PKG_DESCRIPTION"),
-    "\n(c) 2022-2023\nRDX Works Ltd."
+    "\n(c) 2022-23\nRDX Works Ltd."
 );
 const APPLICATION_VERSION: &str = concat!("\n", env!("CARGO_PKG_VERSION"), "\n",);
 
@@ -41,12 +41,12 @@ fn app_menu_action() {}
 
 fn version_menu_action() {
     clear_screen();
-    SingleMessage::new(APPLICATION_VERSION, false).show_and_wait();
+    SingleMessage::new(APPLICATION_VERSION).show_and_wait();
 }
 
 fn about_menu_action() {
     clear_screen();
-    SingleMessage::new(APPLICATION_ABOUT, false).show_and_wait();
+    SingleMessage::new(APPLICATION_ABOUT).show_and_wait();
 }
 
 fn quit_menu_action() {
@@ -57,14 +57,15 @@ fn quit_menu_action() {
 #[no_mangle]
 extern "C" fn sample_main() {
     let menu = [
-        MenuItem::new(&RADIX_LOGO_ICON, "\n Radix Babylon", app_menu_action),
+        MenuItem::new(&RADIX_LOGO_ICON, "\nRadix Babylon", app_menu_action),
         MenuItem::new(&PROCESSING_ICON, "\nVersion", version_menu_action),
         MenuItem::new(&CERTIFICATE_ICON, "\nAbout", about_menu_action),
         MenuItem::new(&DASHBOARD_X_ICON, "\nQuit", quit_menu_action),
     ];
     let mut comm = Comm::new();
-    let mut state = TxSignState::new();
+    let mut state = TxState::new();
     let mut main_menu = Menu::new(&menu);
+    let mut ticker = 0;
 
     main_menu.display();
 
@@ -78,9 +79,17 @@ extern "C" fn sample_main() {
                     Ok(()) => comm.reply_ok(),
                     Err(app_error) => comm.reply(app_error),
                 };
-                main_menu.display();
+                ticker = 0;
             }
-            _ => (),
+            Event::Ticker => {
+                if ticker >= 5 {
+                    ticker = 0;
+                    main_menu.display();
+                } else {
+                    ticker += 1;
+                }
+                main_menu.display()
+            }
         }
     }
 }

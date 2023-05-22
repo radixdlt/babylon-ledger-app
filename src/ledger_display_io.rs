@@ -11,15 +11,12 @@ impl LedgerTTY {
             show_message: Self::show_message,
         }
     }
-    fn show_message(message: &[u8]) {
-        match from_utf8(message) {
-            Ok(str) => {
-                MultilineMessageScroller::new(str).event_loop();
-            }
-            // TODO: handle this error?
-            Err(_) => {
-                MultilineMessageScroller::new("Invalid content").event_loop();
-            }
-        }
+    fn show_message(title: &[u8], message: &[u8]) {
+        MultilineMessageScroller::with_title(
+            from_utf8(title).unwrap(),
+            from_utf8(message).unwrap(),
+            true,
+        )
+        .event_loop();
     }
 }

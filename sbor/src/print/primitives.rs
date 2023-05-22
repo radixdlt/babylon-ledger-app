@@ -6,7 +6,9 @@ use paste::paste;
 
 use crate::print::parameter_printer::ParameterPrinter;
 use crate::print::state::ParameterPrinterState;
+use crate::print::state::TITLE_SIZE;
 use crate::sbor_decoder::SborEvent;
+use crate::static_vec::StaticVec;
 
 // Parameter which we just skip, without printing anything
 pub struct IgnoredParameter {}
@@ -239,9 +241,9 @@ printer_for_itype!(i64, u64);
 printer_for_itype!(i128, u128);
 
 // Standalone printer for u32
-pub fn print_u32(state: &mut ParameterPrinterState, number: u32) {
+pub fn print_u32(output: &mut StaticVec<u8, { TITLE_SIZE }>, number: u32) {
     let mut buf = [MaybeUninit::<u8>::uninit(); 12];
     let bytes = uxx!(number, buf);
 
-    state.print_text(bytes);
+    output.extend_from_slice(bytes);
 }

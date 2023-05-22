@@ -8,17 +8,8 @@ use nanos_ui::screen_util;
 use nanos_ui::ui::{clear_screen, get_event};
 
 pub struct MultipageValidator<'a> {
-    /// Strings displayed in the pages. One string per page. Can be empty.
     message: &'a [&'a str],
-    /// Strings displayed in the confirmation page.
-    /// 0 element: only the icon is displayed, in center of the screen.
-    /// 1 element: icon and one line of text displayed.
-    /// 2 elements: icon and two lines of text displayed.
     confirm: &'a [&'a str],
-    /// Strings displayed in the cancel page.
-    /// 0 element: only the icon is displayed, in center of the screen.
-    /// 1 element: icon and one line of text displayed.
-    /// 2 elements: icon and two lines of text displayed.
     cancel: &'a [&'a str],
 }
 

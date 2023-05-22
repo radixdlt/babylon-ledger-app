@@ -82,7 +82,7 @@ impl Blake2bHasher {
         hasher.finalize()
     }
 
-    pub fn calculate_auth(
+    pub fn for_auth(
         &mut self,
         nonce: &[u8],
         address: &[u8],

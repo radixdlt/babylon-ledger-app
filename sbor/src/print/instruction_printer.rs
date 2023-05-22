@@ -73,14 +73,10 @@ impl InstructionPrinter {
     pub fn start_instruction(&mut self, info: InstructionInfo, count: u32, total: u32) {
         self.active_instruction = Some(info);
         self.state.start();
-        print_u32(&mut self.state, count + 1);
-        self.state.print_text(b" of ");
-        print_u32(&mut self.state, total);
-        while self.state.display.len() < 16 {
-            self.state.print_space();
-        }
-        self.state.print_text(info.name);
-        self.state.print_space();
+
+        print_u32(&mut self.state.title, count + 1);
+        self.state.title.extend_from_slice(b" of ");
+        print_u32(&mut self.state.title, total);
     }
 
     pub fn instruction_end(&mut self) {
