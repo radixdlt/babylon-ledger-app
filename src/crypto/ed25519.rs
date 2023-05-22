@@ -3,8 +3,7 @@ use core::ptr::write_bytes;
 use crate::app_error::{to_result, AppError};
 use crate::crypto::bip32::Bip32Path;
 use crate::crypto::curves::{
-    cx_ecfp_private_key_t, cx_ecfp_public_key_t, cx_err_t, cx_md_t, size_t,
-    Curve, CX_SHA512,
+    cx_ecfp_private_key_t, cx_ecfp_public_key_t, cx_err_t, cx_md_t, size_t, Curve, CX_SHA512,
 };
 use crate::crypto::key_pair::InternalKeyPair;
 

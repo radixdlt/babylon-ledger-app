@@ -6,11 +6,6 @@ use nanos_ui::layout::{Draw, Location};
 use nanos_ui::ui::{clear_screen, get_event};
 use nanos_ui::SCREEN_HEIGHT;
 
-/// A horizontal scroller that
-/// splits any given message
-/// over several panes in chunks
-/// of CHARS_PER_LINE*LINES_N characters.
-/// Press both buttons to exit.
 pub struct MultilineMessageScroller<'a> {
     message: &'a str,
     title: Option<&'a str>,
@@ -59,7 +54,12 @@ impl<'a> MultilineMessageScroller<'a> {
 
     pub fn event_loop(&self) {
         clear_screen();
-        let page_len = CHARS_PER_LINE * if self.title.is_some() { LINES_N - 1 } else { LINES_N };
+        let page_len = CHARS_PER_LINE
+            * if self.title.is_some() {
+                LINES_N - 1
+            } else {
+                LINES_N
+            };
         let mut buttons = ButtonsState::new();
         let page_count = (self.message.len() - 1) / page_len + 1;
 
@@ -74,17 +74,11 @@ impl<'a> MultilineMessageScroller<'a> {
         ];
         let mut cur_page = 0;
 
-        // A closure to draw common elements of the screen
-        // cur_page passed as parameter to prevent borrowing
         let mut draw = |page: usize| {
             let start = page * page_len;
             let end = (start + page_len).min(self.message.len());
             let chunk = &self.message[start..end];
-            let start_line = if self.title.is_some() {
-                1
-            } else {
-                0
-            };
+            let start_line = if self.title.is_some() { 1 } else { 0 };
 
             for label in labels.iter() {
                 label.erase();
@@ -147,7 +141,7 @@ impl<'a> MultilineMessageScroller<'a> {
                 Some(ButtonEvent::LeftButtonRelease) => {
                     LEFT_S_ARROW.erase();
                     cur_page = cur_page.saturating_sub(1);
-                    // We need to draw anyway to clear button press arrow
+
                     draw(cur_page);
                 }
                 Some(ButtonEvent::RightButtonRelease) => {
@@ -157,7 +151,7 @@ impl<'a> MultilineMessageScroller<'a> {
                     } else {
                         break;
                     }
-                    // We need to draw anyway to clear button press arrow
+
                     draw(cur_page);
                 }
                 Some(ButtonEvent::BothButtonsRelease) => break,

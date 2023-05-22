@@ -3,8 +3,8 @@ use core::intrinsics::write_bytes;
 use nanos_sdk::io::Comm;
 use sbor::bech32::network::NetworkId;
 
-use crate::AppError;
 use crate::utilities::conversion::read_u32_be;
+use crate::AppError;
 
 const BIP32_REQUIRED_LEN: u8 = 6;
 const BIP32_LEAD_WORD_INDEX: usize = 0;

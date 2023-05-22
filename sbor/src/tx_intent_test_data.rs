@@ -618,21 +618,21 @@ pub mod tests {
 /*
 
 CALL_METHOD
-	Address("account_tdx_c_1p9j7zjlzzxfpc9w8dewfavme6tyl3lzl2sevfwtk0jlq70u8w9")
-	"lock_fee"
-	Decimal("10");
+    Address("account_tdx_c_1p9j7zjlzzxfpc9w8dewfavme6tyl3lzl2sevfwtk0jlq70u8w9")
+    "lock_fee"
+    Decimal("10");
 CALL_METHOD
-	Address("account_tdx_c_1p9j7zjlzzxfpc9w8dewfavme6tyl3lzl2sevfwtk0jlq70u8w9")
-	"withdraw"
-	Address("resource_tdx_c_1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq40v2wv")
-	Decimal("123");
+    Address("account_tdx_c_1p9j7zjlzzxfpc9w8dewfavme6tyl3lzl2sevfwtk0jlq70u8w9")
+    "withdraw"
+    Address("resource_tdx_c_1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq40v2wv")
+    Decimal("123");
 TAKE_FROM_WORKTOP_BY_AMOUNT
-	Decimal("123")
-	Address("resource_tdx_c_1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq40v2wv")
-	Bucket("bucket1");
+    Decimal("123")
+    Address("resource_tdx_c_1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq40v2wv")
+    Bucket("bucket1");
 CALL_METHOD
-	Address("account_tdx_c_1pxhyn798qaehnxz6qwyj6jx5qm296j4j5uuqh4av7h5sl3agk5")
-	"deposit"
-	Bucket("bucket1");
+    Address("account_tdx_c_1pxhyn798qaehnxz6qwyj6jx5qm296j4j5uuqh4av7h5sl3agk5")
+    "deposit"
+    Bucket("bucket1");
 
  */

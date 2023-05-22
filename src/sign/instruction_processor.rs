@@ -9,9 +9,9 @@ use crate::app_error::AppError;
 use crate::command_class::CommandClass;
 use crate::crypto::hash::Digest;
 use crate::ledger_display_io::LedgerTTY;
-use crate::sign::flow_state::SigningFlowState;
 use crate::sign::sign_outcome::SignOutcome;
 use crate::sign::sign_type::SignType;
+use crate::sign::signing_flow_state::SigningFlowState;
 
 pub struct InstructionProcessor {
     state: SigningFlowState,

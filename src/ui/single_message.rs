@@ -14,7 +14,7 @@ impl<'a> SingleMessage<'a> {
     pub fn new(message: &'a str) -> Self {
         SingleMessage {
             message,
-            bold : false,
+            bold: false,
             show_right_arrow: false,
         }
     }
@@ -35,8 +35,7 @@ impl<'a> SingleMessage<'a> {
             RIGHT_S_ARROW.display();
         }
     }
-    /// Display the message and wait
-    /// for any kind of button release
+
     pub fn show_and_wait(&self) {
         let mut buttons = ButtonsState::new();
 

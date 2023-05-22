@@ -157,7 +157,7 @@ impl TxState {
         MultilineMessageScroller::with_title(
             core::str::from_utf8(title).unwrap(),
             core::str::from_utf8(message).unwrap(),
-            true
+            true,
         )
         .event_loop();
     }

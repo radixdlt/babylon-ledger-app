@@ -1,3 +1,4 @@
+use crate::app_error::AppError;
 use nanos_sdk::io::ApduHeader;
 
 #[repr(u8)]
@@ -18,23 +19,25 @@ pub enum Command {
     BadCommand,
 }
 
-impl From<ApduHeader> for Command {
-    fn from(header: ApduHeader) -> Command {
+impl TryFrom<ApduHeader> for Command {
+    type Error = AppError;
+
+    fn try_from(header: ApduHeader) -> Result<Self, Self::Error> {
         match header.ins {
-            0x10 => Command::GetAppVersion,
-            0x11 => Command::GetDeviceModel,
-            0x12 => Command::GetDeviceId,
-            0x21 => Command::GetPubKeyEd25519,
-            0x22 => Command::GetPrivKeyEd25519,
-            0x31 => Command::GetPubKeySecp256k1,
-            0x32 => Command::GetPrivKeySecp256k1,
-            0x41 => Command::SignTxEd25519,
-            0x42 => Command::SignTxEd25519Summary,
-            0x51 => Command::SignTxSecp256k1,
-            0x52 => Command::SignTxSecp256k1Summary,
-            0x61 => Command::SignAuthEd25519,
-            0x71 => Command::SignAuthSecp256k1,
-            _ => Command::BadCommand,
+            0x10 => Ok(Command::GetAppVersion),
+            0x11 => Ok(Command::GetDeviceModel),
+            0x12 => Ok(Command::GetDeviceId),
+            0x21 => Ok(Command::GetPubKeyEd25519),
+            0x22 => Ok(Command::GetPrivKeyEd25519),
+            0x31 => Ok(Command::GetPubKeySecp256k1),
+            0x32 => Ok(Command::GetPrivKeySecp256k1),
+            0x41 => Ok(Command::SignTxEd25519),
+            0x42 => Ok(Command::SignTxEd25519Summary),
+            0x51 => Ok(Command::SignTxSecp256k1),
+            0x52 => Ok(Command::SignTxSecp256k1Summary),
+            0x61 => Ok(Command::SignAuthEd25519),
+            0x71 => Ok(Command::SignAuthSecp256k1),
+            _ => Err(AppError::NotImplemented),
         }
     }
 }

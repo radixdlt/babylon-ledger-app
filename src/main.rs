@@ -33,7 +33,7 @@ nanos_sdk::set_panic!(nanos_sdk::exiting_panic);
 const APPLICATION: &str = env!("CARGO_PKG_DESCRIPTION");
 const APPLICATION_ABOUT: &str = concat!(
     env!("CARGO_PKG_DESCRIPTION"),
-    "\n(c) 2022-2023\nRDX Works Ltd."
+    "\n(c) 2022-23\nRDX Works Ltd."
 );
 const APPLICATION_VERSION: &str = concat!("\n", env!("CARGO_PKG_VERSION"), "\n",);
 
@@ -57,7 +57,7 @@ fn quit_menu_action() {
 #[no_mangle]
 extern "C" fn sample_main() {
     let menu = [
-        MenuItem::new(&RADIX_LOGO_ICON, "\n Radix Babylon", app_menu_action),
+        MenuItem::new(&RADIX_LOGO_ICON, "\nRadix Babylon", app_menu_action),
         MenuItem::new(&PROCESSING_ICON, "\nVersion", version_menu_action),
         MenuItem::new(&CERTIFICATE_ICON, "\nAbout", about_menu_action),
         MenuItem::new(&DASHBOARD_X_ICON, "\nQuit", quit_menu_action),
@@ -82,14 +82,14 @@ extern "C" fn sample_main() {
                 ticker = 0;
             }
             Event::Ticker => {
-                if ticker == 5 {
+                if ticker >= 5 {
                     ticker = 0;
                     main_menu.display();
                 } else {
                     ticker += 1;
                 }
                 main_menu.display()
-            },
+            }
         }
     }
 }

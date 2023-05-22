@@ -3,13 +3,13 @@ use core::intrinsics::write_bytes;
 use core::ptr::null_mut;
 
 use nanos_sdk::bindings::{
-    CX_CURVE_Ed25519, CX_CURVE_SECP256K1, cx_curve_t, HDW_ED25519_SLIP10, HDW_NORMAL,
+    cx_curve_t, CX_CURVE_Ed25519, CX_CURVE_SECP256K1, HDW_ED25519_SLIP10, HDW_NORMAL,
 };
 pub use nanos_sdk::bindings::{
-    cx_ecfp_private_key_t, cx_ecfp_public_key_t, cx_err_t, cx_md_t, CX_SHA512, size_t,
+    cx_ecfp_private_key_t, cx_ecfp_public_key_t, cx_err_t, cx_md_t, size_t, CX_SHA512,
 };
 
-use crate::app_error::{AppError, to_result};
+use crate::app_error::{to_result, AppError};
 use crate::crypto::bip32::Bip32Path;
 use crate::crypto::key_pair::InternalKeyPair;
 
