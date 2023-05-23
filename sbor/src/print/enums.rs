@@ -7,22 +7,22 @@ pub struct EnumParameterPrinter {}
 
 pub const ENUM_PARAMETER_PRINTER: EnumParameterPrinter = EnumParameterPrinter {};
 
-impl ParameterPrinter for EnumParameterPrinter {
-    fn handle_data(&self, state: &mut ParameterPrinterState, event: SborEvent) {
+impl<T> ParameterPrinter<T> for EnumParameterPrinter {
+    fn handle_data(&self, state: &mut ParameterPrinterState<T>, event: SborEvent) {
         if let SborEvent::Discriminator(discriminator) = event {
             U8ParameterPrinter::print(state, discriminator);
         }
     }
 
-    fn start(&self, state: &mut ParameterPrinterState) {
+    fn start(&self, state: &mut ParameterPrinterState<T>) {
         state.print_text(b"Enum(");
     }
 
-    fn end(&self, state: &mut ParameterPrinterState) {
+    fn end(&self, state: &mut ParameterPrinterState<T>) {
         state.print_byte(b')');
     }
 
-    fn subcomponent_start(&self, state: &mut ParameterPrinterState) {
+    fn subcomponent_start(&self, state: &mut ParameterPrinterState<T>) {
         state.print_text(b", ");
     }
 }

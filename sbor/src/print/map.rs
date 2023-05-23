@@ -7,8 +7,8 @@ pub struct MapParameterPrinter {}
 
 pub const MAP_PARAMETER_PRINTER: MapParameterPrinter = MapParameterPrinter {};
 
-impl ParameterPrinter for MapParameterPrinter {
-    fn handle_data(&self, state: &mut ParameterPrinterState, event: SborEvent) {
+impl<T> ParameterPrinter<T> for MapParameterPrinter {
+    fn handle_data(&self, state: &mut ParameterPrinterState<T>, event: SborEvent) {
         if let SborEvent::ElementType { kind, type_id } = event {
             match kind {
                 SubTypeKind::Key => {
@@ -24,15 +24,15 @@ impl ParameterPrinter for MapParameterPrinter {
         }
     }
 
-    fn start(&self, state: &mut ParameterPrinterState) {
+    fn start(&self, state: &mut ParameterPrinterState<T>) {
         state.print_text(b"Map<");
     }
 
-    fn end(&self, state: &mut ParameterPrinterState) {
+    fn end(&self, state: &mut ParameterPrinterState<T>) {
         state.print_text(b")");
     }
 
-    fn subcomponent_start(&self, state: &mut ParameterPrinterState) {
+    fn subcomponent_start(&self, state: &mut ParameterPrinterState<T>) {
         state.active_state().flip_flop = !state.active_state().flip_flop;
 
         if state.active_state().flip_flop {
@@ -40,7 +40,7 @@ impl ParameterPrinter for MapParameterPrinter {
         }
     }
 
-    fn subcomponent_end(&self, state: &mut ParameterPrinterState) {
+    fn subcomponent_end(&self, state: &mut ParameterPrinterState<T>) {
         if !state.active_state().flip_flop {
             state.print_text(b"}, ");
         } else {

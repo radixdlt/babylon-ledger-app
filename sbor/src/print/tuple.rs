@@ -6,18 +6,18 @@ pub struct TupleParameterPrinter {}
 
 pub const TUPLE_PARAMETER_PRINTER: TupleParameterPrinter = TupleParameterPrinter {};
 
-impl ParameterPrinter for TupleParameterPrinter {
-    fn handle_data(&self, _state: &mut ParameterPrinterState, _event: SborEvent) {}
+impl<T> ParameterPrinter<T> for TupleParameterPrinter {
+    fn handle_data(&self, _state: &mut ParameterPrinterState<T>, _event: SborEvent) {}
 
-    fn start(&self, state: &mut ParameterPrinterState) {
+    fn start(&self, state: &mut ParameterPrinterState<T>) {
         state.print_text(b"Tuple(");
     }
 
-    fn end(&self, state: &mut ParameterPrinterState) {
+    fn end(&self, state: &mut ParameterPrinterState<T>) {
         state.print_text(b")");
     }
 
-    fn subcomponent_end(&self, state: &mut ParameterPrinterState) {
+    fn subcomponent_end(&self, state: &mut ParameterPrinterState<T>) {
         state.print_text(b", ");
     }
 }

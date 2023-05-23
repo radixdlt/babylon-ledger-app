@@ -7,8 +7,8 @@ pub struct NonFungibleLocalIdParameterPrinter {}
 pub const NON_FUNGIBLE_LOCAL_ID_PARAMETER_PRINTER: NonFungibleLocalIdParameterPrinter =
     NonFungibleLocalIdParameterPrinter {};
 
-impl ParameterPrinter for NonFungibleLocalIdParameterPrinter {
-    fn end(&self, state: &mut ParameterPrinterState) {
+impl<T> ParameterPrinter<T> for NonFungibleLocalIdParameterPrinter {
+    fn end(&self, state: &mut ParameterPrinterState<T>) {
         //See radix-engine-common/src/data/scrypto/model/non_fungible_local_id.rs
         match state.active_state().key_type_id {
             // String

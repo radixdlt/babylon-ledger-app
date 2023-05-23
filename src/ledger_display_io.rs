@@ -6,12 +6,13 @@ use sbor::print::tty::TTY;
 pub struct LedgerTTY;
 
 impl LedgerTTY {
-    pub const fn new_tty() -> TTY {
+    pub const fn new_tty() -> TTY<()> {
         TTY {
+            data: (),
             show_message: Self::show_message,
         }
     }
-    fn show_message(title: &[u8], message: &[u8]) {
+    fn show_message(_: &mut (), title: &[u8], message: &[u8]) {
         MultilineMessageScroller::with_title(
             from_utf8(title).unwrap(),
             from_utf8(message).unwrap(),

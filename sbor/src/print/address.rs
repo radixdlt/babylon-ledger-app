@@ -36,8 +36,8 @@ fn to_hrp_type(id: u8) -> Option<HrpType> {
     }
 }
 
-impl ParameterPrinter for AddressParameterPrinter {
-    fn end(&self, state: &mut ParameterPrinterState) {
+impl<T> ParameterPrinter<T> for AddressParameterPrinter {
+    fn end(&self, state: &mut ParameterPrinterState<T>) {
         if state.data.len() != (ADDRESS_LEN as usize) {
             state.print_text(b"Invalid address format");
             return;
@@ -51,7 +51,7 @@ impl ParameterPrinter for AddressParameterPrinter {
     }
 }
 
-fn format_address(state: &mut ParameterPrinterState, hrp_prefix: &str) {
+fn format_address<T>(state: &mut ParameterPrinterState<T>, hrp_prefix: &str) {
     let mut vec = StaticVec::<u8, { Bech32::MAX_LEN }>::new(0);
     vec.extend_from_slice(hrp_prefix.as_bytes());
     vec.extend_from_slice(hrp_suffix(state.network_id).as_bytes());

@@ -7,8 +7,8 @@ pub struct ArrayParameterPrinter {}
 
 pub const ARRAY_PARAMETER_PRINTER: ArrayParameterPrinter = ArrayParameterPrinter {};
 
-impl ParameterPrinter for ArrayParameterPrinter {
-    fn handle_data(&self, state: &mut ParameterPrinterState, event: SborEvent) {
+impl<T> ParameterPrinter<T> for ArrayParameterPrinter {
+    fn handle_data(&self, state: &mut ParameterPrinterState<T>, event: SborEvent) {
         let type_id = state.active_state().element_type_id;
 
         if let SborEvent::ElementType { .. } = event {
@@ -30,11 +30,11 @@ impl ParameterPrinter for ArrayParameterPrinter {
         }
     }
 
-    fn subcomponent_end(&self, state: &mut ParameterPrinterState) {
+    fn subcomponent_end(&self, state: &mut ParameterPrinterState<T>) {
         state.print_text(b", ");
     }
 
-    fn end(&self, state: &mut ParameterPrinterState) {
+    fn end(&self, state: &mut ParameterPrinterState<T>) {
         state.print_byte(b')');
     }
 }

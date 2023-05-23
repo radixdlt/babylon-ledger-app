@@ -73,6 +73,9 @@ pub mod type_info;
 
 pub mod debug;
 
+mod tx_features;
+
 #[cfg(test)]
 pub mod tx_intent_test_data;
+#[cfg(test)]
 pub mod tx_intent_test_data_gen;

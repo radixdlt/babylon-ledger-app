@@ -1,7 +1,11 @@
+use nanos_sdk::io::Comm;
+use sbor::decoder_error::DecoderError;
+use sbor::print::tty::TTY;
+use sbor::sbor_decoder::{DecodingOutcome, SborDecoder};
+
 use crate::app_error::AppError;
 use crate::command_class::CommandClass;
 use crate::crypto::hash::Digest;
-use crate::ledger_display_io::LedgerTTY;
 use crate::sign::instruction_processor::InstructionProcessor;
 use crate::sign::sign_outcome::SignOutcome;
 use crate::sign::sign_type::SignType;
@@ -9,21 +13,25 @@ use crate::ui::multiline_scroller::MultilineMessageScroller;
 use crate::ui::multipage_validator::MultipageValidator;
 use crate::ui::single_message::SingleMessage;
 use crate::utilities::conversion::{lower_as_hex, upper_as_hex};
-use nanos_sdk::io::Comm;
-use sbor::decoder_error::DecoderError;
-use sbor::sbor_decoder::{DecodingOutcome, SborDecoder};
 
-pub struct TxState {
+const NONCE_LENGTH: usize = 32;
+const DAPP_ADDRESS_LENGTH: usize = 70;
+const ORIGIN_LENGTH: usize = 150;
+const MIN_DAPP_ADDRESS_LENGTH: usize = 2; // 1 byte length + 1 byte address
+const MIN_ORIGIN_LENGTH: usize = 10; // 1 byte length + "https://a"
+const MIN_VALID_LENGTH: usize = NONCE_LENGTH + MIN_DAPP_ADDRESS_LENGTH + MIN_ORIGIN_LENGTH;
+
+pub struct TxState<T> {
     decoder: SborDecoder,
-    processor: InstructionProcessor,
+    processor: InstructionProcessor<T>,
     show_digest: bool,
 }
 
-impl TxState {
-    pub fn new() -> Self {
+impl<T> TxState<T> {
+    pub fn new(tty: TTY<T>) -> Self {
         Self {
             decoder: SborDecoder::new(true),
-            processor: InstructionProcessor::new(),
+            processor: InstructionProcessor::new(tty),
             show_digest: false,
         }
     }
@@ -31,7 +39,6 @@ impl TxState {
     pub fn reset(&mut self) {
         self.processor.reset();
         self.decoder.reset();
-        self.processor.set_tty(LedgerTTY::new_tty());
     }
 
     pub fn process_sign(
@@ -108,31 +115,23 @@ impl TxState {
         Ok(())
     }
 
-    const NONCE_LENGTH: usize = 32;
-    const DAPP_ADDRESS_LENGTH: usize = 70;
-    const ORIGIN_LENGTH: usize = 150;
-    const MIN_DAPP_ADDRESS_LENGTH: usize = 2; // 1 byte length + 1 byte address
-    const MIN_ORIGIN_LENGTH: usize = 10; // 1 byte length + "https://a"
-    const MIN_VALID_LENGTH: usize =
-        Self::NONCE_LENGTH + Self::MIN_DAPP_ADDRESS_LENGTH + Self::MIN_ORIGIN_LENGTH;
-
     fn process_sign_auth(
         &mut self,
         value: &[u8],
         tx_type: SignType,
     ) -> Result<SignOutcome, AppError> {
-        if value.len() < Self::MIN_VALID_LENGTH {
+        if value.len() < MIN_VALID_LENGTH {
             return Err(AppError::BadAuthSignRequest);
         }
 
-        let nonce = &value[..Self::NONCE_LENGTH];
-        let addr_start = Self::NONCE_LENGTH + 1;
-        let addr_end = addr_start + value[Self::NONCE_LENGTH] as usize;
+        let nonce = &value[..NONCE_LENGTH];
+        let addr_start = NONCE_LENGTH + 1;
+        let addr_end = addr_start + value[NONCE_LENGTH] as usize;
         let address = &value[addr_start..addr_end];
-        let hash_address = &value[Self::NONCE_LENGTH..addr_end];
+        let hash_address = &value[NONCE_LENGTH..addr_end];
         let origin = &value[addr_end..];
 
-        let mut nonce_hex = [0u8; Self::NONCE_LENGTH * 2];
+        let mut nonce_hex = [0u8; NONCE_LENGTH * 2];
 
         for (i, &byte) in nonce.iter().enumerate() {
             nonce_hex[i * 2] = upper_as_hex(byte);

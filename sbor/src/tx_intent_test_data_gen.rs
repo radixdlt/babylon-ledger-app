@@ -81,6 +81,10 @@ pub mod tests {
             name: "values",
             data: &TX_VALUES,
         },
+        Blob {
+            name: "simple_transfer",
+            data: &TX_SIMPLE_TRANSFER,
+        },
     ];
 
     #[test]

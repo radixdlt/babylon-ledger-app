@@ -13,55 +13,55 @@ pub const EXPRESSION_PARAMETER_PRINTER: ExpressionParameterPrinter = ExpressionP
 pub const BUCKET_PARAMETER_PRINTER: BucketParameterPrinter = BucketParameterPrinter {};
 pub const PROOF_PARAMETER_PRINTER: ProofParameterPrinter = ProofParameterPrinter {};
 
-impl ParameterPrinter for BlobParameterPrinter {
-    fn handle_data(&self, state: &mut ParameterPrinterState, event: SborEvent) {
+impl<T> ParameterPrinter<T> for BlobParameterPrinter {
+    fn handle_data(&self, state: &mut ParameterPrinterState<T>, event: SborEvent) {
         if let SborEvent::Data(byte) = event {
             state.print_hex_byte(byte);
         }
     }
 
-    fn start(&self, state: &mut ParameterPrinterState) {
+    fn start(&self, state: &mut ParameterPrinterState<T>) {
         state.print_text(b"Blob(");
     }
 
-    fn end(&self, state: &mut ParameterPrinterState) {
+    fn end(&self, state: &mut ParameterPrinterState<T>) {
         state.print_byte(b')');
     }
 }
 
-impl ParameterPrinter for ExpressionParameterPrinter {
-    fn handle_data(&self, state: &mut ParameterPrinterState, event: SborEvent) {
+impl<T> ParameterPrinter<T> for ExpressionParameterPrinter {
+    fn handle_data(&self, state: &mut ParameterPrinterState<T>, event: SborEvent) {
         if let SborEvent::Data(byte) = event {
             state.print_hex_byte(byte);
         }
     }
 
-    fn start(&self, state: &mut ParameterPrinterState) {
+    fn start(&self, state: &mut ParameterPrinterState<T>) {
         state.print_text(b"Expression(");
     }
 
-    fn end(&self, state: &mut ParameterPrinterState) {
+    fn end(&self, state: &mut ParameterPrinterState<T>) {
         state.print_byte(b')');
     }
 }
 
-impl ParameterPrinter for BucketParameterPrinter {
-    fn start(&self, state: &mut ParameterPrinterState) {
+impl<T> ParameterPrinter<T> for BucketParameterPrinter {
+    fn start(&self, state: &mut ParameterPrinterState<T>) {
         state.print_text(b"Bucket(");
     }
 
-    fn end(&self, state: &mut ParameterPrinterState) {
+    fn end(&self, state: &mut ParameterPrinterState<T>) {
         U32_PARAMETER_PRINTER.end(state);
         state.print_byte(b')');
     }
 }
 
-impl ParameterPrinter for ProofParameterPrinter {
-    fn start(&self, state: &mut ParameterPrinterState) {
+impl<T> ParameterPrinter<T> for ProofParameterPrinter {
+    fn start(&self, state: &mut ParameterPrinterState<T>) {
         state.print_text(b"Proof(");
     }
 
-    fn end(&self, state: &mut ParameterPrinterState) {
+    fn end(&self, state: &mut ParameterPrinterState<T>) {
         U32_PARAMETER_PRINTER.end(state);
         state.print_byte(b')');
     }
