@@ -1,3 +1,5 @@
+# Test GetDeviceModel instruction
+
 import sys
 import os
 

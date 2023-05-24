@@ -1,3 +1,5 @@
+# Test SignTxSecp256k1 instruction (mode: show digest)
+
 import sys
 import os
 

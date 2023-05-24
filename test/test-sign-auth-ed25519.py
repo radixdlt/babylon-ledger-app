@@ -1,3 +1,5 @@
+# Test SignAuthEd25519 instruction
+
 import sys
 import os
 

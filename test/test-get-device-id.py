@@ -1,3 +1,5 @@
+# Test GetDeviceId instruction
+
 import sys
 import os
 
