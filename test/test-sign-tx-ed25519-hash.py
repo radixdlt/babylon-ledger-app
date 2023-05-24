@@ -1,3 +1,5 @@
+# Test SignTxEd25519 instruction (mode: show digest)
+
 import sys
 import os
 

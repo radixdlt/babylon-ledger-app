@@ -1,3 +1,5 @@
+# Test GetAppVersion instruction
+
 import sys
 import os
 

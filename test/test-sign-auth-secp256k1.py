@@ -1,3 +1,5 @@
+# Test SignAuthSecp256k1 instruction
+
 import sys
 import os
 

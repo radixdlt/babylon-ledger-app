@@ -1,3 +1,7 @@
+# Test GetPrivKeyEd25519 instruction
+# WARNING: Available only in debug builds
+# WARNING: Requires device configured for development (see root README.md)
+
 import sys
 import os
 

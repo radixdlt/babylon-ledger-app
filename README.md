@@ -17,25 +17,26 @@ Docker builder image. Refer to builder image [documentation](./app-builder/READM
 
 #### Install ARM GCC, Binutils, cross-compilation headers:
 
-```
+```shell
 sudo apt-get install gcc-arm-none-eabi binutils-arm-none-eabi gcc-multilib
 ```
 
 #### Install Python 3 and Pip3
 
-```
+```shell
 sudo apt-get install python3 python3-pip
 ```
 
 #### Install Clang
 
-```
+```shell
 sudo apt-get install clang
 ```
 
 #### Install Rust
 
-```curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```shell
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 rustup default nightly
 rustup component add rust-src
 rustup target add thumbv6m-none-eabi
@@ -43,9 +44,10 @@ rustup target add thumbv6m-none-eabi
 
 #### Install Cargo Ledger, LedgerBlue and ledgerctl tools 
 
-`cargo install --git https://github.com/LedgerHQ/cargo-ledger`
-`python3 -m pip install ledgerblue`
-``
+```shell
+cargo install --git https://github.com/LedgerHQ/cargo-ledger
+python3 -m pip install ledgerblue
+```
 
 ## Build Commands
 
@@ -53,7 +55,7 @@ rustup target add thumbv6m-none-eabi
 
 For building binaries for all supported targets, use following script:
 
-```
+```shell
 prepare-binaries.sh
 ```
 
@@ -80,30 +82,21 @@ should be used in pairs and correspond to actual device.
 
 ### Individual Targets
 
-#### Prerequisite
-In order to work commands below require following environment variables to be set:
-```shell
-export LEDGER_TARGETS=./target-config
-export CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
-
-```
-
 Build commands for individual targets:
 
-```
-cargo build --release -Z build-std=core -Z build-std-features=compiler-builtins-mem --target=./target-config/nanos.json
-cargo build --release -Z build-std=core -Z build-std-features=compiler-builtins-mem --target=./target-config/nanosplus.json
-cargo build --release -Z build-std=core -Z build-std-features=compiler-builtins-mem --target=./target-config/nanox.json
+```shell
+./build-nanos.sh
+./build-nanos-plus.sh
 ```
 
-Note that these commands build application but do not prepare data necessary for flashing app to hardware wallet.
-To prepare necessary data, use one of the following commands:
+Flash commands for individual targets:
 
+```shell
+./flash-nanos.sh
+./flash-nanos-plus.sh
 ```
-cargo ledger nanos
-cargo ledger nanospus
-cargo ledger nanox
-```
+
+Note that there are no individual scripts for Nano X since it does not support sideloading.
 
 ### Development Device Setup (Nano S)
 
@@ -118,7 +111,7 @@ In order to reset device to factory defaults, follow steps below:
 
 - Plug device and enter PIN to unlock
 - Enter Setting
-    - Navigate to "Settings" menu and long press both buttons
+- Navigate to "Settings" menu and long press both buttons
 - Select Settings -> Security -> Reset device
 - Press right button until "Reset device" text appears
 - Press both buttons to confirm choice
@@ -136,7 +129,7 @@ In order to reset device to factory defaults, follow steps below:
 
 Use following command to load development seed phrase and set PIN on the development device to `5555`:
 
-```sh
+```shell
 python3 -m ledgerblue.hostOnboard --apdu --id 0 --prefix "" --passphrase "" --pin 5555 --words "equip will roof matter pink blind book anxiety banner elbow sun young"
 ```
 
@@ -144,8 +137,33 @@ The process takes some time (few minutes) to finish. Once process finishes, devi
 
 ### Testing
 
-For testing there are a number of test scripts provided in `test` directory. To run tests, use following command (inside test directory):
+For testing there are a number of test scripts provided in `test` directory. 
+To run tests, use following command (inside test directory):
 
-```sh
+```shell
 ./test-all-release.sh
 ```
+Debug builds have support for additional commands, so there are additional tests for them.
+To run tests for debug builds, use following command (inside test directory):
+
+```shell
+./test-all-debug.sh
+```
+
+There are also a number of tests which require user interaction. They should be run separately,
+using following commands (inside test directory):
+
+```shell
+python3 -m test-sign-auth-ed25519
+python3 -m test-sign-auth-secp256k1
+python3 -m test-sign-tx-ed25519
+python3 -m test-sign-tx-ed25519-hash
+python3 -m test-sign-tx-ed25519-summary
+python3 -m test-sign-tx-secp256k1 
+python3 -m test-sign-tx-secp256k1-hash
+python3 -m test-sign-tx-secp256k1-summary
+```
+
+## License
+
+This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.

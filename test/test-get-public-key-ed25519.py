@@ -1,3 +1,6 @@
+# Test GetPubKeyEd25519 instruction
+# WARNING: Requires device configured for development (see root README.md)
+
 import sys
 import os
 
