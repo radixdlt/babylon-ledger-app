@@ -78,7 +78,7 @@ def send_derivation_path(bip_path):
 
 
 for file_name in list_files():
-    if not file_name.endswith(".txn"):
+    if not file_name.endswith("fer.txn"):
         continue
     data = read_file(file_name)
     send_derivation_path("m/44H/1022H/12H/525H/1460H/0H")

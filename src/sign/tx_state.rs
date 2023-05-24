@@ -1,5 +1,7 @@
 use nanos_sdk::io::Comm;
 use sbor::decoder_error::DecoderError;
+use sbor::math::Decimal;
+use sbor::print::instruction_printer::DetectedTxType;
 use sbor::print::tty::TTY;
 use sbor::sbor_decoder::{DecodingOutcome, SborDecoder};
 
@@ -161,6 +163,13 @@ impl<T> TxState<T> {
         .event_loop();
     }
 
+    fn fee_info_message(&mut self, fee: &Decimal) {
+        let text = self.processor.format_decimal(fee);
+
+        MultilineMessageScroller::with_title("Fee:", core::str::from_utf8(text).unwrap(), true)
+            .event_loop();
+    }
+
     fn auth_digest(
         &mut self,
         nonce: &[u8],
@@ -172,10 +181,7 @@ impl<T> TxState<T> {
 
     fn finalize_sign_tx(&mut self, tx_type: SignType) -> Result<SignOutcome, AppError> {
         let digest = self.processor.finalize()?;
-
-        if self.show_digest {
-            self.info_message(b"Digest:", &digest.as_hex());
-        }
+        self.display_tx_info(tx_type, &digest);
 
         let rc = MultipageValidator::new(&[&"Sign TX?"], &[&"Sign"], &[&"Reject"]).ask();
 
@@ -183,6 +189,48 @@ impl<T> TxState<T> {
             self.processor.sign_tx(tx_type, digest)
         } else {
             return Ok(SignOutcome::SigningRejected);
+        }
+    }
+
+    fn show_transaction_fee(&mut self, detected_type: &DetectedTxType) {
+        match detected_type {
+            DetectedTxType::OtherWithFee(fee) | DetectedTxType::TransferWithFee(fee) => {
+                self.fee_info_message(fee);
+            }
+            _ => {
+                // Ignore remaining types as detection was not requested
+            }
+        }
+    }
+
+    fn show_detected_tx_type(&mut self, detected_type: &DetectedTxType) {
+        let text: &[u8] = match detected_type {
+            DetectedTxType::Other | DetectedTxType::OtherWithFee(..) => b"\nOther",
+            DetectedTxType::Transfer | DetectedTxType::TransferWithFee(..) => b"\nTransfer",
+        };
+        self.info_message(b"TX Type:", text);
+    }
+
+    fn show_digest(&mut self, digest: &Digest) {
+        if self.show_digest {
+            self.info_message(b"Digest:", &digest.as_hex());
+        }
+    }
+
+    fn display_tx_info(&mut self, tx_type: SignType, digest: &Digest) {
+        let detected_type = self.processor.get_detected_tx_type();
+
+        match tx_type {
+            SignType::Ed25519 | SignType::Secp256k1 => {
+                self.show_transaction_fee(&detected_type);
+                self.show_digest(digest);
+            }
+            SignType::Ed25519Summary | SignType::Secp256k1Summary => {
+                self.show_detected_tx_type(&detected_type);
+                self.show_transaction_fee(&detected_type);
+                self.show_digest(digest);
+            }
+            SignType::AuthEd25519 | SignType::AuthSecp256k1 => {}
         }
     }
 

@@ -3,7 +3,7 @@ use simple_bigint::bigint::{BigInt, BigIntError};
 use crate::math::format_big_int;
 use crate::static_vec::StaticVec;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Decimal(BigInt<256>);
 
 impl Decimal {
@@ -33,12 +33,26 @@ impl Decimal {
         0x8000_0000,
     ]));
 
+    pub fn new(value: u128) ->Self {
+        Self(BigInt::from(value))
+    }
+
+    pub fn whole(value: u128) -> Decimal {
+        Self(BigInt::from(value * 10000000000000000000u128))
+                                        //10000000000000000000u128
+    }
+
     pub fn is_negative(&self) -> bool {
         self.0.is_negative()
     }
 
     pub fn format<const N: usize>(&self, output: &mut StaticVec<u8, N>) {
         format_big_int::<256, { Self::SCALE }, N>(&self.0, output);
+    }
+
+    #[cfg(test)]
+    pub fn is_same(&self, other: &Decimal) -> bool {
+        self.0.is_same(&other.0)
     }
 }
 
@@ -77,9 +91,9 @@ mod tests {
         assert_eq!(Decimal(1000000000000000u128.into()).to_string(), "0.001");
         assert_eq!(Decimal(10000000000000000u128.into()).to_string(), "0.01");
         assert_eq!(Decimal(100000000000000000u128.into()).to_string(), "0.1");
-        assert_eq!(Decimal(001000000000000000000u128.into()).to_string(), "1");
-        assert_eq!(Decimal(001200000000000000000u128.into()).to_string(), "1.2");
-        assert_eq!(Decimal(012000000000000000000u128.into()).to_string(), "12");
+        assert_eq!(Decimal(1000000000000000000u128.into()).to_string(), "1");
+        assert_eq!(Decimal(1200000000000000000u128.into()).to_string(), "1.2");
+        assert_eq!(Decimal(12000000000000000000u128.into()).to_string(), "12");
         assert_eq!(
             Decimal(012300000000000000000u128.into()).to_string(),
             "12.3"

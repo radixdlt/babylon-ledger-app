@@ -1,7 +1,8 @@
 use nanos_sdk::io::Comm;
 use sbor::bech32::network::NetworkId;
 use sbor::instruction_extractor::InstructionExtractor;
-use sbor::print::instruction_printer::InstructionPrinter;
+use sbor::math::Decimal;
+use sbor::print::instruction_printer::{DetectedTxType, InstructionPrinter};
 use sbor::print::tty::TTY;
 use sbor::sbor_decoder::{SborEvent, SborEventHandler};
 
@@ -97,5 +98,13 @@ impl<T> InstructionProcessor<T> {
         tx_type: SignType,
     ) -> Result<(), AppError> {
         self.state.process_sign(comm, class, tx_type)
+    }
+
+    pub fn get_detected_tx_type(&self) -> DetectedTxType {
+        self.printer.get_detected_tx_type()
+    }
+
+    pub fn format_decimal(&mut self, value: &Decimal) -> &[u8] {
+        self.printer.format_decimal(value)
     }
 }
