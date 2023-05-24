@@ -2,7 +2,7 @@ use crate::bcd::BCD;
 use crate::ceil_div;
 
 // N - number of bits in the big integer
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct BigInt<const N: usize>
 where
     [(); ceil_div(N, u32::BITS as usize)]:,
@@ -36,12 +36,8 @@ where
         !self.is_negative()
     }
 
-    pub fn num_limbs(&self) -> usize {
-        self.limbs.len()
-    }
-
-    pub fn limb(&self, index: usize) -> u32 {
-        self.limbs[index]
+    pub fn is_same(&self, other: &Self) -> bool {
+        self.limbs == other.limbs
     }
 
     pub fn as_bcd(&self) -> BCD<N>
@@ -96,10 +92,10 @@ where
         }
     }
 
-    pub fn accumulate(&mut self, other: &BigInt<N>) {
+    pub fn accumulate(&mut self, other: &Self) {
         let mut carry = false;
 
-        for i in 0..N {
+        for i in 0..self.limbs.len() {
             let (sum, carry1) = self.limbs[i].carrying_add(other.limbs[i], carry);
             carry = carry1;
             self.limbs[i] = sum;

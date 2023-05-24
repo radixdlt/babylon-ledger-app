@@ -1,8 +1,9 @@
+use core::ops::Range;
+
 use crate::bech32::network::*;
 use crate::print::tty::TTY;
 use crate::sbor_decoder::STACK_DEPTH;
 use crate::static_vec::StaticVec;
-use core::ops::Range;
 
 #[repr(C, packed)]
 #[derive(Copy, Clone, Debug)]
@@ -51,7 +52,7 @@ pub const DISPLAY_SIZE: usize = 2048; // For testing on desktop
 
 pub const TITLE_SIZE: usize = 32;
 
-pub struct ParameterPrinterState {
+pub struct ParameterPrinterState<T> {
     pub display: StaticVec<u8, { DISPLAY_SIZE }>,
     pub data: StaticVec<u8, { PARAMETER_AREA_SIZE }>,
     pub title: StaticVec<u8, { TITLE_SIZE }>,
@@ -59,7 +60,7 @@ pub struct ParameterPrinterState {
     pub nesting_level: u8,
     pub network_id: NetworkId,
     pub show_instructions: bool,
-    tty: TTY,
+    tty: TTY<T>,
 }
 
 const HEX_DIGITS: [u8; 16] = *b"0123456789abcdef";
@@ -74,8 +75,8 @@ fn upper_as_hex(byte: u8) -> u8 {
     HEX_DIGITS[((byte >> 4) & 0x0F) as usize]
 }
 
-impl ParameterPrinterState {
-    pub fn new(network_id: NetworkId, tty: TTY) -> Self {
+impl<T> ParameterPrinterState<T> {
+    pub fn new(network_id: NetworkId, tty: TTY<T>) -> Self {
         Self {
             data: StaticVec::new(0),
             stack: StaticVec::new(ValueState::default()),
@@ -96,8 +97,12 @@ impl ParameterPrinterState {
         self.show_instructions = show;
     }
 
-    pub fn set_tty(&mut self, tty: TTY) {
+    pub fn set_tty(&mut self, tty: TTY<T>) {
         self.tty = tty;
+    }
+
+    pub fn get_tty(&self) -> &TTY<T> {
+        &self.tty
     }
 
     pub fn reset(&mut self) {
@@ -147,7 +152,11 @@ impl ParameterPrinterState {
 
     pub fn end(&mut self) {
         if self.show_instructions {
-            (self.tty.show_message)(self.title.as_slice(), self.display.as_slice());
+            (self.tty.show_message)(
+                &mut self.tty.data,
+                self.title.as_slice(),
+                self.display.as_slice(),
+            );
         }
     }
 

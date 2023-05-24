@@ -291,7 +291,7 @@ mod tests {
 
     impl SborEventHandler for InstructionProcessor {
         fn handle(&mut self, evt: SborEvent) {
-            // println!("{:?},", evt);
+            //            println!("{:?},", evt);
             self.extractor.handle_event(&mut self.handler, evt);
         }
     }
@@ -308,7 +308,7 @@ mod tests {
                     total
                 );
             } else {
-                //println!("Event: {:?}", event);
+                println!("Event: {:?}", event);
             }
         }
     }
@@ -522,6 +522,33 @@ mod tests {
             &[
                 Instruction::TakeFromWorktop,
                 Instruction::CreateProofFromAuthZone,
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+            ],
+        );
+    }
+
+    #[test]
+    pub fn test_simple_transfer() {
+        check_partial_decoding(
+            &TX_SIMPLE_TRANSFER,
+            &[
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+                Instruction::TakeFromWorktopByAmount,
+                Instruction::CallMethod,
+            ],
+        );
+    }
+
+    #[test]
+    pub fn test_simple_transfer_with_multiple_locked_fees() {
+        check_partial_decoding(
+            &TX_SIMPLE_TRANSFER_WITH_MULTIPLE_LOCKED_FEES,
+            &[
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+                Instruction::TakeFromWorktopByAmount,
                 Instruction::CallMethod,
                 Instruction::CallMethod,
             ],

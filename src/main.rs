@@ -13,6 +13,7 @@ use nanos_ui::ui::clear_screen;
 use handler::dispatcher;
 
 use crate::app_error::AppError;
+use crate::ledger_display_io::LedgerTTY;
 use crate::sign::tx_state::TxState;
 use crate::ui::menu::{Menu, MenuItem};
 use crate::ui::single_message::SingleMessage;
@@ -63,9 +64,9 @@ extern "C" fn sample_main() {
         MenuItem::new(&DASHBOARD_X_ICON, "\nQuit", quit_menu_action),
     ];
     let mut comm = Comm::new();
-    let mut state = TxState::new();
+    let mut state = TxState::new(LedgerTTY::new_tty());
     let mut main_menu = Menu::new(&menu);
-    let mut ticker = 0;
+    let mut ticker = 0i8;
 
     main_menu.display();
 
@@ -79,16 +80,16 @@ extern "C" fn sample_main() {
                     Ok(()) => comm.reply_ok(),
                     Err(app_error) => comm.reply(app_error),
                 };
-                ticker = 0;
+                ticker = 5;
             }
             Event::Ticker => {
-                if ticker >= 5 {
-                    ticker = 0;
-                    main_menu.display();
-                } else {
-                    ticker += 1;
+                if ticker >= 0 {
+                    ticker -= 1;
+
+                    if ticker == 0 {
+                        main_menu.display();
+                    }
                 }
-                main_menu.display()
             }
         }
     }

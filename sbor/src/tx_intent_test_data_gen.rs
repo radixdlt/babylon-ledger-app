@@ -81,6 +81,14 @@ pub mod tests {
             name: "values",
             data: &TX_VALUES,
         },
+        Blob {
+            name: "simple_transfer",
+            data: &TX_SIMPLE_TRANSFER,
+        },
+        Blob {
+            name: "simple_transfer_with_multiple_locked_fees",
+            data: &TX_SIMPLE_TRANSFER_WITH_MULTIPLE_LOCKED_FEES,
+        },
     ];
 
     #[test]

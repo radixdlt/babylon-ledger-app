@@ -4,6 +4,10 @@ pub struct StaticVec<T, const N: usize> {
     data: [T; N],
 }
 
+pub trait AsSlice<T> {
+    fn as_slice(&self) -> &[T];
+}
+
 impl<T: Copy, const N: usize> StaticVec<T, N> {
     pub const fn new(initial_value: T) -> Self {
         Self {
@@ -116,5 +120,12 @@ impl<T: Copy, const N: usize> StaticVec<T, N> {
         }
         self.length -= 1;
         Some(item)
+    }
+}
+
+impl<T, const N: usize> AsSlice<T> for StaticVec<T, N> {
+    #[inline]
+    fn as_slice(&self) -> &[T] {
+        &self.data[0..self.length]
     }
 }

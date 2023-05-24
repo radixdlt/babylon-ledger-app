@@ -1,36 +1,36 @@
 use nanos_sdk::io::Comm;
 use sbor::bech32::network::NetworkId;
 use sbor::instruction_extractor::InstructionExtractor;
-use sbor::print::instruction_printer::InstructionPrinter;
+use sbor::math::Decimal;
+use sbor::print::instruction_printer::{DetectedTxType, InstructionPrinter};
 use sbor::print::tty::TTY;
 use sbor::sbor_decoder::{SborEvent, SborEventHandler};
 
 use crate::app_error::AppError;
 use crate::command_class::CommandClass;
 use crate::crypto::hash::Digest;
-use crate::ledger_display_io::LedgerTTY;
 use crate::sign::sign_outcome::SignOutcome;
 use crate::sign::sign_type::SignType;
 use crate::sign::signing_flow_state::SigningFlowState;
 
-pub struct InstructionProcessor {
+pub struct InstructionProcessor<T> {
     state: SigningFlowState,
     extractor: InstructionExtractor,
-    printer: InstructionPrinter,
+    printer: InstructionPrinter<T>,
 }
 
-impl SborEventHandler for InstructionProcessor {
+impl<T> SborEventHandler for InstructionProcessor<T> {
     fn handle(&mut self, evt: SborEvent) {
         self.extractor.handle_event(&mut self.printer, evt);
     }
 }
 
-impl InstructionProcessor {
-    pub fn new() -> Self {
+impl<T> InstructionProcessor<T> {
+    pub fn new(tty: TTY<T>) -> Self {
         Self {
             state: SigningFlowState::new(),
             extractor: InstructionExtractor::new(),
-            printer: InstructionPrinter::new(NetworkId::LocalNet, LedgerTTY::new_tty()),
+            printer: InstructionPrinter::new(NetworkId::LocalNet, tty),
         }
     }
 
@@ -77,7 +77,7 @@ impl InstructionProcessor {
         };
     }
 
-    pub fn set_tty(&mut self, tty: TTY) {
+    pub fn set_tty(&mut self, tty: TTY<T>) {
         self.printer.set_tty(tty);
     }
 
@@ -98,5 +98,13 @@ impl InstructionProcessor {
         tx_type: SignType,
     ) -> Result<(), AppError> {
         self.state.process_sign(comm, class, tx_type)
+    }
+
+    pub fn get_detected_tx_type(&self) -> DetectedTxType {
+        self.printer.get_detected_tx_type()
+    }
+
+    pub fn format_decimal(&mut self, value: &Decimal) -> &[u8] {
+        self.printer.format_decimal(value)
     }
 }
