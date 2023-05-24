@@ -29,7 +29,7 @@ pub fn format_big_int<const N: usize, const SCALE: usize, const DISPLAY_WIDTH: u
     // Case when only Integer part is present
     if bcd.last_non_zero() >= SCALE {
         // Value
-        for i in (bcd.last_non_zero()..=bcd.first_non_zero()).rev() {
+        for i in (SCALE..=bcd.first_non_zero()).rev() {
             output.push(b'0' + bcd.digit(i as usize));
         }
 

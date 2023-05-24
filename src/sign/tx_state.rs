@@ -166,8 +166,12 @@ impl<T> TxState<T> {
     fn fee_info_message(&mut self, fee: &Decimal) {
         let text = self.processor.format_decimal(fee);
 
-        MultilineMessageScroller::with_title("Fee:", core::str::from_utf8(text).unwrap(), true)
-            .event_loop();
+        MultilineMessageScroller::with_title(
+            "Network Fee:",
+            core::str::from_utf8(text).unwrap(),
+            true,
+        )
+        .event_loop();
     }
 
     fn auth_digest(
@@ -205,8 +209,8 @@ impl<T> TxState<T> {
 
     fn show_detected_tx_type(&mut self, detected_type: &DetectedTxType) {
         let text: &[u8] = match detected_type {
-            DetectedTxType::Other | DetectedTxType::OtherWithFee(..) => b"\nOther",
-            DetectedTxType::Transfer | DetectedTxType::TransferWithFee(..) => b"\nTransfer",
+            DetectedTxType::Other | DetectedTxType::OtherWithFee(..) => b"Other",
+            DetectedTxType::Transfer | DetectedTxType::TransferWithFee(..) => b"Transfer",
         };
         self.info_message(b"TX Type:", text);
     }

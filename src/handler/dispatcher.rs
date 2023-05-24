@@ -6,7 +6,11 @@ use crate::command_class::CommandClass;
 use crate::handler::*;
 use crate::sign::tx_state::TxState;
 
-pub fn dispatcher<T>(comm: &mut Comm, ins: Command, state: &mut TxState<T>) -> Result<(), AppError> {
+pub fn dispatcher<T>(
+    comm: &mut Comm,
+    ins: Command,
+    state: &mut TxState<T>,
+) -> Result<(), AppError> {
     let class = CommandClass::from_comm(comm)?;
 
     match ins {

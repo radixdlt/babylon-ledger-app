@@ -92,10 +92,10 @@ where
         }
     }
 
-    pub fn accumulate(&mut self, other: &BigInt<N>) {
+    pub fn accumulate(&mut self, other: &Self) {
         let mut carry = false;
 
-        for i in 0..N {
+        for i in 0..self.limbs.len() {
             let (sum, carry1) = self.limbs[i].carrying_add(other.limbs[i], carry);
             carry = carry1;
             self.limbs[i] = sum;

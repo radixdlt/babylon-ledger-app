@@ -250,7 +250,11 @@ impl<T> InstructionPrinter<T> {
             }
             (CallDetectionState::TupleFirstField, 5) => {
                 let fee = Decimal::try_from(self.state.data.as_slice()).unwrap_or(Decimal::ZERO);
-                self.found_fee = Some(fee);
+
+                self.found_fee = match self.found_fee {
+                    None => Some(fee),
+                    Some(mut existing_fee) => Some(*existing_fee.accumulate(&fee)),
+                };
                 self.function_call_state = CallDetectionState::NotAMethodCall;
             }
             (_, _) => {}
@@ -268,7 +272,6 @@ impl<T> InstructionPrinter<T> {
 
     pub fn format_decimal(&mut self, value: &Decimal) -> &[u8] {
         self.state.data.clear();
-        self.state.data.push(b'\n');
         value.format(&mut self.state.data);
         self.state.data.extend_from_slice(b" XRD");
         self.state.data.as_slice()
@@ -628,19 +631,19 @@ br##"
     pub fn test_create_fungible_resource_with_initial_supply() {
         check_partial_decoding(&TX_CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY,
 br##"
-1 of 3: CallMethod Address(account_loc1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqs0a7v96) "lock_fee" Tuple(Decimal(1), )
+1 of 3: CallMethod Address(account_loc1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqs0a7v96) "lock_fee" Tuple(Decimal(10), )
 2 of 3: CallFunction Address(package_loc1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs092ash) "FungibleResourceManager" "create_with_initial_supply" Tuple(18u8, Map<String, String>({"description", "A very innovative and important resource"}, {"name", "MyResource"}, {"symbol", "RSRC"}, ), Map<Enum, Tuple>({Enum(4u8), Tuple(Enum(0u8), Enum(1u8), )}, {Enum(5u8), Tuple(Enum(0u8), Enum(1u8), )}, ), Decimal(12), )
 3 of 3: CallMethod Address(account_loc1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqs0a7v96) "deposit_batch" Tuple(Expression(00), )
-"##, &DetectedTxType::OtherWithFee(Decimal::whole(1)))
+"##, &DetectedTxType::OtherWithFee(Decimal::whole(10)))
     }
 
     #[test]
     pub fn test_create_fungible_resource_with_no_initial_supply() {
         check_partial_decoding(&TX_CREATE_FUNGIBLE_RESOURCE_WITH_NO_INITIAL_SUPPLY,
 br##"
-1 of 2: CallMethod Address(account_loc1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqs0a7v96) "lock_fee" Tuple(Decimal(1), )
+1 of 2: CallMethod Address(account_loc1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqs0a7v96) "lock_fee" Tuple(Decimal(10), )
 2 of 2: CallFunction Address(package_loc1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs092ash) "FungibleResourceManager" "create" Tuple(18u8, Map<String, String>({"description", "A very innovative and important resource"}, {"name", "MyResource"}, {"symbol", "RSRC"}, ), Map<Enum, Tuple>({Enum(4u8), Tuple(Enum(0u8), Enum(1u8), )}, {Enum(5u8), Tuple(Enum(0u8), Enum(1u8), )}, ), )
-"##, &DetectedTxType::OtherWithFee(Decimal::whole(1)))
+"##, &DetectedTxType::OtherWithFee(Decimal::whole(10)))
     }
 
     #[test]
@@ -656,9 +659,9 @@ br##"
     pub fn test_create_non_fungible_resource_with_no_initial_supply() {
         check_partial_decoding(&TX_CREATE_NON_FUNGIBLE_RESOURCE_WITH_NO_INITIAL_SUPPLY,
 br##"
-1 of 2: CallMethod Address(account_loc1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqs0a7v96) "lock_fee" Tuple(Decimal(1), )
+1 of 2: CallMethod Address(account_loc1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqs0a7v96) "lock_fee" Tuple(Decimal(10), )
 2 of 2: CallFunction Address(package_loc1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs092ash) "NonFungibleResourceManager" "create" Tuple(Enum(1u8), Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>(), ), Enum(0u8, 64u8), Array<String>(), ), Map<String, String>({"description", "A very innovative and important resource"}, {"name", "MyResource"}, ), Map<Enum, Tuple>({Enum(4u8), Tuple(Enum(0u8), Enum(1u8), )}, {Enum(5u8), Tuple(Enum(0u8), Enum(1u8), )}, ), )
-"##, &DetectedTxType::OtherWithFee(Decimal::whole(1)))
+"##, &DetectedTxType::OtherWithFee(Decimal::whole(10)))
     }
 
     #[test]
@@ -692,31 +695,31 @@ br##"
     pub fn test_mint_fungible() {
         check_partial_decoding(&TX_MINT_FUNGIBLE,
 br##"
-1 of 4: CallMethod Address(account_loc1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqs0a7v96) "lock_fee" Tuple(Decimal(1), )
+1 of 4: CallMethod Address(account_loc1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqs0a7v96) "lock_fee" Tuple(Decimal(10), )
 2 of 4: CallMethod Address(account_loc1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqs0a7v96) "create_proof_by_amount" Tuple(Address(resource_loc1q9g995jh0x0eaf3672kac6ruq9rr2jvwy4d82qw3cd3q3du4e4), Decimal(1), )
 3 of 4: MintFungible Address(resource_loc1qtvh6xzsalqrfn57w7tsn6n5jhs6h7tvmzc5a6ysypsquz4ut5) Decimal(12)
 4 of 4: CallMethod Address(account_loc1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqs0a7v96) "deposit_batch" Tuple(Expression(00), )
-"##, &DetectedTxType::OtherWithFee(Decimal::whole(1)))
+"##, &DetectedTxType::OtherWithFee(Decimal::whole(10)))
     }
 
     #[test]
     pub fn test_mint_non_fungible() {
         check_partial_decoding(&TX_MINT_NON_FUNGIBLE,
 br##"
-1 of 4: CallMethod Address(account_loc1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqs0a7v96) "lock_fee" Tuple(Decimal(1), )
+1 of 4: CallMethod Address(account_loc1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqs0a7v96) "lock_fee" Tuple(Decimal(10), )
 2 of 4: CallMethod Address(account_loc1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqs0a7v96) "create_proof_by_amount" Tuple(Address(resource_loc1q9g995jh0x0eaf3672kac6ruq9rr2jvwy4d82qw3cd3q3du4e4), Decimal(1), )
 3 of 4: MintNonFungible Address(resource_loc1qtvh6xzsalqrfn57w7tsn6n5jhs6h7tvmzc5a6ysypsquz4ut5) Tuple(Map<NonFungibleLocalId, Tuple>({#12u64#, Tuple(Tuple(), )}, ), )
 4 of 4: CallMethod Address(account_loc1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqs0a7v96) "deposit_batch" Tuple(Expression(00), )
-"##, &DetectedTxType::OtherWithFee(Decimal::whole(1)))
+"##, &DetectedTxType::OtherWithFee(Decimal::whole(10)))
     }
 
     #[test]
     pub fn test_publish_package() {
         check_partial_decoding(&TX_PUBLISH_PACKAGE,
 br##"
-1 of 2: CallMethod Address(account_loc1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqs0a7v96) "lock_fee" Tuple(Decimal(1), )
+1 of 2: CallMethod Address(account_loc1quxmes4pxzvw8mnz5zgsjmv0atudekp9gr2tmf7evlqs0a7v96) "lock_fee" Tuple(Decimal(10), )
 2 of 2: PublishPackageAdvanced Blob(a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0) Blob(554d6e3a49e90d3be279e7ff394a01d9603cc13aa701c11c1f291f6264aa5791) Map<String, Tuple>() Map<String, String>() Tuple(Map<Tuple, Enum>(), Map<Tuple, Enum>({Tuple(Enum(1u8), "claim_royalty", ), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, Tuple(Address(resource_loc1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczq3e98kv), #1u64#, ))))))}, {Tuple(Enum(1u8), "set_royalty_config", ), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, Tuple(Address(resource_loc1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczq3e98kv), #1u64#, ))))))}, {Tuple(Enum(2u8), "get", ), Enum(0u8, Enum(0u8))}, {Tuple(Enum(2u8), "set", ), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, Tuple(Address(resource_loc1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczq3e98kv), #1u64#, ))))))}, ), Map<String, Enum>(), Enum(0u8, Enum(1u8)), Map<Tuple, Enum>({Tuple(Enum(1u8), "claim_royalty", ), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, Tuple(Address(resource_loc1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczq3e98kv), #1u64#, ))))))}, {Tuple(Enum(1u8), "set_royalty_config", ), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, Tuple(Address(resource_loc1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczq3e98kv), #1u64#, ))))))}, {Tuple(Enum(2u8), "get", ), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, Tuple(Address(resource_loc1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczq3e98kv), #1u64#, ))))))}, {Tuple(Enum(2u8), "set", ), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, Tuple(Address(resource_loc1qgjfp996zpttrx4mcs2zlh5u6rym3q7f596qj9capczq3e98kv), #1u64#, ))))))}, ), Map<String, Enum>(), Enum(0u8, Enum(1u8)), )
-"##, &DetectedTxType::OtherWithFee(Decimal::whole(1)))
+"##, &DetectedTxType::OtherWithFee(Decimal::whole(10)))
     }
 
     #[test]
@@ -768,11 +771,23 @@ br##"
     #[test]
     pub fn test_simple_transfer() {
         check_partial_decoding(&TX_SIMPLE_TRANSFER,
-br##"
-1 of 4: CallMethod Address(component_loc1p9j7zjlzzxfpc9w8dewfavme6tyl3lzl2sevfwtk0jlqp2z0mf) "lock_fee" Tuple(Decimal(1), )
+                               br##"
+1 of 4: CallMethod Address(component_loc1p9j7zjlzzxfpc9w8dewfavme6tyl3lzl2sevfwtk0jlqp2z0mf) "lock_fee" Tuple(Decimal(10), )
 2 of 4: CallMethod Address(component_loc1p9j7zjlzzxfpc9w8dewfavme6tyl3lzl2sevfwtk0jlqp2z0mf) "withdraw" Tuple(Address(resource_loc1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq7qej9q), Decimal(123), )
 3 of 4: TakeFromWorktopByAmount Decimal(123) Address(resource_loc1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq7qej9q)
 4 of 4: CallMethod Address(component_loc1pxhyn798qaehnxz6qwyj6jx5qm296j4j5uuqh4av7h5sq5rqrc) "deposit" Tuple(Bucket(0u32), )
-"##, &DetectedTxType::TransferWithFee(Decimal::whole(1)))
+"##, &DetectedTxType::TransferWithFee(Decimal::whole(10)))
+    }
+
+    #[test]
+    pub fn test_simple_transfer_with_multiple_locked_fees() {
+        check_partial_decoding(&TX_SIMPLE_TRANSFER_WITH_MULTIPLE_LOCKED_FEES,
+                               br##"
+1 of 5: CallMethod Address(component_loc1p9j7zjlzzxfpc9w8dewfavme6tyl3lzl2sevfwtk0jlqp2z0mf) "lock_fee" Tuple(Decimal(1.2), )
+2 of 5: CallMethod Address(component_loc1p9j7zjlzzxfpc9w8dewfavme6tyl3lzl2sevfwtk0jlqp2z0mf) "withdraw" Tuple(Address(resource_loc1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq7qej9q), Decimal(123), )
+3 of 5: TakeFromWorktopByAmount Decimal(123) Address(resource_loc1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq7qej9q)
+4 of 5: CallMethod Address(component_loc1p9j7zjlzzxfpc9w8dewfavme6tyl3lzl2sevfwtk0jlqp2z0mf) "lock_fee" Tuple(Decimal(3.4), )
+5 of 5: CallMethod Address(component_loc1pxhyn798qaehnxz6qwyj6jx5qm296j4j5uuqh4av7h5sq5rqrc) "deposit" Tuple(Bucket(0u32), )
+"##, &DetectedTxType::TransferWithFee(Decimal::new(4600000000000000000u128)))
     }
 }

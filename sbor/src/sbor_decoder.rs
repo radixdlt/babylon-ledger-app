@@ -1387,4 +1387,14 @@ mod tests {
     pub fn test_values() {
         check_partial_decoding(&TX_VALUES);
     }
+
+    #[test]
+    pub fn test_simple_transfer() {
+        check_partial_decoding(&TX_SIMPLE_TRANSFER);
+    }
+
+    #[test]
+    pub fn test_simple_transfer_with_multiple_locked_fees() {
+        check_partial_decoding(&TX_SIMPLE_TRANSFER_WITH_MULTIPLE_LOCKED_FEES);
+    }
 }

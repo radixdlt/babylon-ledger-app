@@ -152,7 +152,11 @@ impl<T> ParameterPrinterState<T> {
 
     pub fn end(&mut self) {
         if self.show_instructions {
-            (self.tty.show_message)(&mut self.tty.data, self.title.as_slice(), self.display.as_slice());
+            (self.tty.show_message)(
+                &mut self.tty.data,
+                self.title.as_slice(),
+                self.display.as_slice(),
+            );
         }
     }
 
