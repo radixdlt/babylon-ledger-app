@@ -72,9 +72,9 @@ impl<T> TxState<T> {
         class: CommandClass,
         tx_type: SignType,
     ) -> Result<SignOutcome, AppError> {
-        self.processor.process_sign(comm, class, tx_type)?;
-
         if class == CommandClass::Regular {
+            self.reset();
+            self.processor.process_sign(comm, class, tx_type)?;
             self.processor.set_network()?;
             self.processor.set_show_instructions();
             self.show_digest = match tx_type {
@@ -84,6 +84,8 @@ impl<T> TxState<T> {
             };
             self.show_introductory_screen(tx_type)?;
         } else {
+            self.processor.process_sign(comm, class, tx_type)?;
+
             match tx_type {
                 SignType::AuthEd25519 | SignType::AuthSecp256k1 => {
                     return if class != CommandClass::LastData {
@@ -167,7 +169,7 @@ impl<T> TxState<T> {
         let text = self.processor.format_decimal(fee);
 
         MultilineMessageScroller::with_title(
-            "Network Fee:",
+            "Max TX Fee:",
             core::str::from_utf8(text).unwrap(),
             true,
         )

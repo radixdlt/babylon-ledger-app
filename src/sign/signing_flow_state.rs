@@ -116,14 +116,7 @@ impl SigningFlowState {
         self.path = Bip32Path::new(0);
     }
 
-    fn partial_reset(&mut self) {
-        self.hasher.reset();
-        self.tx_packet_count = 0;
-        self.tx_size = 0;
-    }
-
     fn start(&mut self, sign_type: SignType, path: Bip32Path) -> Result<(), AppError> {
-        self.partial_reset();
         self.sign_type = sign_type;
         self.path = path;
         self.hasher.init()
