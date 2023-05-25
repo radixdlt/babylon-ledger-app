@@ -167,7 +167,7 @@ impl<T> TxState<T> {
         let text = self.processor.format_decimal(fee);
 
         MultilineMessageScroller::with_title(
-            "Network Fee:",
+            "Max TX Fee:",
             core::str::from_utf8(text).unwrap(),
             true,
         )
