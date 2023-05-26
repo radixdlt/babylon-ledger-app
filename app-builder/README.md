@@ -63,14 +63,12 @@ Installing `ledgerctl` utility:
 ```shell
 python3 -m pip install --upgrade protobuf setuptools ecdsa
 python3 -m pip install ledgerwallet
+python3 -m pip install protobuf==3.20.3
 ```
 Installing `cargo-ledger`:
 
-__WARNING!!!__ At the moment of writing (April 10, 2023), `cargo-ledger` doesn't work properly with Babylon Ledger App. 
-To overcome this issue, use following repository instead of official one: https://github.com/siy/cargo-ledger.git
-
 ```shell
-cargo install --git https://github.com/LedgerHQ/cargo-ledger
+cargo install --git https://github.com/radixdlt/cargo-ledger.git
 ```
 Once necessary tools successfully installed, following command can be used to flash firmware into Ledger Nano S:
 ```shell
