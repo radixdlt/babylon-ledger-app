@@ -53,7 +53,8 @@ Run command. **NOTE!** at this point you are in the host shell.
 python3 -m pip install ledgerblue
 python3 -m pip install --upgrade protobuf setuptools ecdsa
 python3 -m pip install ledgerwallet
-cargo install --git  https://github.com/siy/cargo-ledger.git
+python3 -m pip install protobuf==3.20.3
+cargo install --git https://github.com/radixdlt/cargo-ledger.git
 ```
 
 Connect and unlock ledger nano S and run command. **NOTE!** at this point you are in the host shell.
