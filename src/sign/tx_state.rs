@@ -79,7 +79,7 @@ impl<T> TxState<T> {
             self.processor.set_show_instructions();
             self.show_digest = match tx_type {
                 SignType::Ed25519 | SignType::Secp256k1 => comm.get_apdu_metadata().p1 == 1,
-                SignType::Ed25519Summary | SignType::Secp256k1Summary => true,
+                SignType::Ed25519Summary | SignType::Secp256k1Summary => false,
                 SignType::AuthEd25519 | SignType::AuthSecp256k1 => false,
             };
             self.show_introductory_screen(tx_type)?;
@@ -219,7 +219,7 @@ impl<T> TxState<T> {
 
     fn show_digest(&mut self, digest: &Digest) {
         if self.show_digest {
-            self.info_message(b"Digest:", &digest.as_hex());
+            self.info_message(b"TX Hash:", &digest.as_hex());
         }
     }
 
@@ -234,6 +234,12 @@ impl<T> TxState<T> {
             SignType::Ed25519Summary | SignType::Secp256k1Summary => {
                 self.show_detected_tx_type(&detected_type);
                 self.show_transaction_fee(&detected_type);
+
+                self.show_digest = match detected_type {
+                    DetectedTxType::Transfer | DetectedTxType::TransferWithFee(..) => false,
+                    DetectedTxType::Other | DetectedTxType::OtherWithFee(..) => true,
+                };
+
                 self.show_digest(digest);
             }
             SignType::AuthEd25519 | SignType::AuthSecp256k1 => {}
