@@ -69,11 +69,10 @@ pub mod math;
 pub mod print;
 pub mod sbor_decoder;
 pub mod static_vec;
+pub mod tx_features;
 pub mod type_info;
 
 pub mod debug;
-
-mod tx_features;
 
 #[cfg(test)]
 pub mod tx_intent_test_data;

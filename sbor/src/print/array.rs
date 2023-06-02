@@ -7,7 +7,7 @@ pub struct ArrayParameterPrinter {}
 
 pub const ARRAY_PARAMETER_PRINTER: ArrayParameterPrinter = ArrayParameterPrinter {};
 
-impl<T> ParameterPrinter<T> for ArrayParameterPrinter {
+impl<T: Copy> ParameterPrinter<T> for ArrayParameterPrinter {
     fn handle_data(&self, state: &mut ParameterPrinterState<T>, event: SborEvent) {
         let type_id = state.active_state().element_type_id;
 

@@ -6,7 +6,7 @@ pub struct TupleParameterPrinter {}
 
 pub const TUPLE_PARAMETER_PRINTER: TupleParameterPrinter = TupleParameterPrinter {};
 
-impl<T> ParameterPrinter<T> for TupleParameterPrinter {
+impl<T: Copy> ParameterPrinter<T> for TupleParameterPrinter {
     fn handle_data(&self, _state: &mut ParameterPrinterState<T>, _event: SborEvent) {}
 
     fn start(&self, state: &mut ParameterPrinterState<T>) {

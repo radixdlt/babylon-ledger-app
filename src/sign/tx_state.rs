@@ -11,6 +11,7 @@ use crate::crypto::hash::Digest;
 use crate::sign::instruction_processor::InstructionProcessor;
 use crate::sign::sign_outcome::SignOutcome;
 use crate::sign::sign_type::SignType;
+use crate::sign::tx_intent_type::TxIntentType;
 use crate::ui::multiline_scroller::MultilineMessageScroller;
 use crate::ui::multipage_validator::MultipageValidator;
 use crate::ui::single_message::SingleMessage;
@@ -23,13 +24,13 @@ const MIN_DAPP_ADDRESS_LENGTH: usize = 2; // 1 byte length + 1 byte address
 const MIN_ORIGIN_LENGTH: usize = 10; // 1 byte length + "https://a"
 const MIN_VALID_LENGTH: usize = NONCE_LENGTH + MIN_DAPP_ADDRESS_LENGTH + MIN_ORIGIN_LENGTH;
 
-pub struct TxState<T> {
+pub struct TxState<T: Copy> {
     decoder: SborDecoder,
     processor: InstructionProcessor<T>,
     show_digest: bool,
 }
 
-impl<T> TxState<T> {
+impl<T: Copy> TxState<T> {
     pub fn new(tty: TTY<T>) -> Self {
         Self {
             decoder: SborDecoder::new(true),
@@ -49,7 +50,17 @@ impl<T> TxState<T> {
         class: CommandClass,
         tx_type: SignType,
     ) -> Result<SignOutcome, AppError> {
-        let result = self.process_sign_internal(comm, class, tx_type);
+        self.process_sign_summary(comm, class, tx_type, TxIntentType::General)
+    }
+
+    pub fn process_sign_summary(
+        &mut self,
+        comm: &mut Comm,
+        class: CommandClass,
+        tx_type: SignType,
+        intent_type: TxIntentType,
+    ) -> Result<SignOutcome, AppError> {
+        let result = self.process_sign_internal(comm, class, tx_type, intent_type);
 
         match result {
             Ok(outcome) => match outcome {
@@ -71,9 +82,11 @@ impl<T> TxState<T> {
         comm: &mut Comm,
         class: CommandClass,
         tx_type: SignType,
+        intent_type: TxIntentType,
     ) -> Result<SignOutcome, AppError> {
         if class == CommandClass::Regular {
             self.reset();
+            self.processor.set_intent_type(intent_type);
             self.processor.process_sign(comm, class, tx_type)?;
             self.processor.set_network()?;
             self.processor.set_show_instructions();

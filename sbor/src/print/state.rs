@@ -52,7 +52,7 @@ pub const DISPLAY_SIZE: usize = 2048; // For testing on desktop
 
 pub const TITLE_SIZE: usize = 32;
 
-pub struct ParameterPrinterState<T> {
+pub struct ParameterPrinterState<T: Copy> {
     pub display: StaticVec<u8, { DISPLAY_SIZE }>,
     pub data: StaticVec<u8, { PARAMETER_AREA_SIZE }>,
     pub title: StaticVec<u8, { TITLE_SIZE }>,
@@ -75,7 +75,7 @@ fn upper_as_hex(byte: u8) -> u8 {
     HEX_DIGITS[((byte >> 4) & 0x0F) as usize]
 }
 
-impl<T> ParameterPrinterState<T> {
+impl<T: Copy> ParameterPrinterState<T> {
     pub fn new(network_id: NetworkId, tty: TTY<T>) -> Self {
         Self {
             data: StaticVec::new(0),

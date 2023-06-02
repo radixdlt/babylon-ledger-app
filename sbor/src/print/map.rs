@@ -7,7 +7,7 @@ pub struct MapParameterPrinter {}
 
 pub const MAP_PARAMETER_PRINTER: MapParameterPrinter = MapParameterPrinter {};
 
-impl<T> ParameterPrinter<T> for MapParameterPrinter {
+impl<T: Copy> ParameterPrinter<T> for MapParameterPrinter {
     fn handle_data(&self, state: &mut ParameterPrinterState<T>, event: SborEvent) {
         if let SborEvent::ElementType { kind, type_id } = event {
             match kind {

@@ -54,7 +54,7 @@ pub enum CallDetectionState {
     TupleFirstField,
 }
 
-pub struct InstructionPrinter<T> {
+pub struct InstructionPrinter<T: Copy> {
     active_instruction: Option<InstructionInfo>,
     function_call_state: CallDetectionState,
     found_fee: Option<Decimal>,
@@ -62,7 +62,7 @@ pub struct InstructionPrinter<T> {
     pub state: ParameterPrinterState<T>,
 }
 
-impl<T> InstructionHandler for InstructionPrinter<T> {
+impl<T: Copy> InstructionHandler for InstructionPrinter<T> {
     fn handle(&mut self, event: ExtractorEvent) {
         match event {
             ExtractorEvent::InstructionStart(info, count, total) => {
@@ -80,7 +80,7 @@ impl<T> InstructionHandler for InstructionPrinter<T> {
     }
 }
 
-impl<T> InstructionPrinter<T> {
+impl<T: Copy> InstructionPrinter<T> {
     pub fn new(network_id: NetworkId, tty: TTY<T>) -> Self {
         Self {
             active_instruction: None,
@@ -282,7 +282,7 @@ struct Dispatcher;
 
 // Workaround for not working vtables
 impl Dispatcher {
-    pub fn handle_data<T>(state: &mut ParameterPrinterState<T>, event: SborEvent) {
+    pub fn handle_data<T: Copy>(state: &mut ParameterPrinterState<T>, event: SborEvent) {
         let discriminator = state.active_state().main_type_id;
         match discriminator {
             TYPE_BOOL => BOOL_PARAMETER_PRINTER.handle_data(state, event),
@@ -315,7 +315,7 @@ impl Dispatcher {
         };
     }
 
-    pub fn start<T>(state: &mut ParameterPrinterState<T>) {
+    pub fn start<T: Copy>(state: &mut ParameterPrinterState<T>) {
         let discriminator = state.active_state().main_type_id;
         match discriminator {
             TYPE_BOOL => BOOL_PARAMETER_PRINTER.start(state),
@@ -346,7 +346,7 @@ impl Dispatcher {
         };
     }
 
-    pub fn end<T>(state: &mut ParameterPrinterState<T>) {
+    pub fn end<T: Copy>(state: &mut ParameterPrinterState<T>) {
         let discriminator = state.active_state().main_type_id;
         match discriminator {
             TYPE_BOOL => BOOL_PARAMETER_PRINTER.end(state),
@@ -377,7 +377,7 @@ impl Dispatcher {
         };
     }
 
-    pub fn subcomponent_start<T>(state: &mut ParameterPrinterState<T>) {
+    pub fn subcomponent_start<T: Copy>(state: &mut ParameterPrinterState<T>) {
         let discriminator = state.active_state().main_type_id;
         match discriminator {
             TYPE_BOOL => BOOL_PARAMETER_PRINTER.subcomponent_start(state),
@@ -410,7 +410,7 @@ impl Dispatcher {
         };
     }
 
-    pub fn subcomponent_end<T>(state: &mut ParameterPrinterState<T>) {
+    pub fn subcomponent_end<T: Copy>(state: &mut ParameterPrinterState<T>) {
         let discriminator = state.active_state().main_type_id;
         match discriminator {
             TYPE_BOOL => BOOL_PARAMETER_PRINTER.subcomponent_end(state),

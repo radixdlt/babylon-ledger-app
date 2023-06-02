@@ -15,7 +15,7 @@ pub struct IgnoredParameter {}
 
 pub const IGNORED_PARAMETER_PRINTER: IgnoredParameter = IgnoredParameter {};
 
-impl<T> ParameterPrinter<T> for IgnoredParameter {
+impl<T: Copy> ParameterPrinter<T> for IgnoredParameter {
     fn handle_data(&self, _state: &mut ParameterPrinterState<T>, _event: SborEvent) {}
 
     fn end(&self, state: &mut ParameterPrinterState<T>) {
@@ -28,7 +28,7 @@ pub struct BoolParameterPrinter {}
 
 pub const BOOL_PARAMETER_PRINTER: BoolParameterPrinter = BoolParameterPrinter {};
 
-impl<T> ParameterPrinter<T> for BoolParameterPrinter {
+impl<T: Copy> ParameterPrinter<T> for BoolParameterPrinter {
     fn end(&self, state: &mut ParameterPrinterState<T>) {
         if state.data.len() != 1 {
             state.print_text(b"<Invalid bool encoding>");
@@ -50,7 +50,7 @@ pub struct StringParameterPrinter {}
 
 pub const STRING_PARAMETER_PRINTER: StringParameterPrinter = StringParameterPrinter {};
 
-impl<T> ParameterPrinter<T> for StringParameterPrinter {
+impl<T: Copy> ParameterPrinter<T> for StringParameterPrinter {
     fn end(&self, state: &mut ParameterPrinterState<T>) {
         state.print_byte(b'"');
         state.print_data_as_text();
@@ -150,7 +150,7 @@ macro_rules! printer_for_utype {
             pub const [<$type:upper _PARAMETER_PRINTER>] : [<$type:upper ParameterPrinter>] = [<$type:upper ParameterPrinter>] {};
 
             impl [<$type:upper ParameterPrinter>] {
-                pub fn print<T>(state: &mut ParameterPrinterState<T>, number: $type) {
+                pub fn print<T: Copy>(state: &mut ParameterPrinterState<T>, number: $type) {
                     let mut buf = [MaybeUninit::<u8>::uninit(); 40];
                     let bytes = uxx!(number, buf);
 
@@ -159,7 +159,7 @@ macro_rules! printer_for_utype {
                 }
             }
 
-            impl<T> ParameterPrinter<T> for [<$type:upper ParameterPrinter>] {
+            impl<T: Copy> ParameterPrinter<T> for [<$type:upper ParameterPrinter>] {
                 fn handle_data(
                     &self,
                     state: &mut ParameterPrinterState<T>,
@@ -193,7 +193,7 @@ macro_rules! printer_for_itype {
             pub const [<$type:upper _PARAMETER_PRINTER>] : [<$type:upper ParameterPrinter>] = [<$type:upper ParameterPrinter>] {};
 
             impl [<$type:upper ParameterPrinter>] {
-                pub fn print<T>(state: &mut ParameterPrinterState<T>, number: $type) {
+                pub fn print<T: Copy>(state: &mut ParameterPrinterState<T>, number: $type) {
                     let mut buf = [MaybeUninit::<u8>::uninit(); 40];
                     let bytes = ixx!($utype, number, buf);
 
@@ -202,7 +202,7 @@ macro_rules! printer_for_itype {
                 }
             }
 
-            impl<T> ParameterPrinter<T> for [<$type:upper ParameterPrinter>] {
+            impl<T: Copy> ParameterPrinter<T> for [<$type:upper ParameterPrinter>] {
                 fn handle_data(
                     &self,
                     state: &mut ParameterPrinterState<T>,
