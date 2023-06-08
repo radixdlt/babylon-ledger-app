@@ -6,15 +6,17 @@ enum Feature {
     Deposit = 0x02,
     Fee = 0x04,
     MixedTransaction = 0x08,
+    TxError = 0x10,
 }
 
 #[repr(u8)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum TxType {
     Transfer,
     TransferWithFee,
     Other,
     OtherWithFee,
+    Error,
 }
 
 impl TxFeatures {
@@ -46,8 +48,15 @@ impl TxFeatures {
         self.0 |= Feature::MixedTransaction as u8;
     }
 
+    pub fn record_error(&mut self) {
+        self.0 |= Feature::TxError as u8;
+    }
+
     pub fn detected_type(&self) -> TxType {
-        // TODO: do we need to check for mixed transaction?
+        if self.has(Feature::TxError) {
+            return TxType::Error;
+        }
+
         if self.has(Feature::Withdraw) && self.has(Feature::Deposit) {
             if self.has(Feature::Fee) {
                 TxType::TransferWithFee

@@ -1,5 +1,8 @@
 pub mod instruction_printer;
+pub mod tx_intent_type;
+pub mod tx_printer;
 pub mod tty;
+pub mod fanout;
 
 mod address;
 mod array;

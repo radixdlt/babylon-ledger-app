@@ -1,8 +1,10 @@
 use nanos_sdk::io::Comm;
 use sbor::bech32::network::NetworkId;
-use sbor::instruction_extractor::{ExtractorEvent, InstructionExtractor, InstructionHandler};
+use sbor::instruction_extractor::InstructionExtractor;
 use sbor::math::Decimal;
-use sbor::print::instruction_printer::{DetectedTxType, InstructionPrinter};
+use sbor::print::fanout::Fanout;
+use sbor::print::instruction_printer::InstructionPrinter;
+use sbor::print::tx_printer::DetectedTxType;
 use sbor::print::tty::TTY;
 use sbor::sbor_decoder::{SborEvent, SborEventHandler};
 
@@ -12,35 +14,19 @@ use crate::crypto::hash::Digest;
 use crate::sign::sign_outcome::SignOutcome;
 use crate::sign::sign_type::SignType;
 use crate::sign::signing_flow_state::SigningFlowState;
-use crate::sign::tx_intent_type::TxIntentType;
-use crate::sign::tx_printer::TransactionPrinter;
+use sbor::print::tx_intent_type::TxIntentType;
+use sbor::print::tx_printer::TxIntentPrinter;
 
 pub struct InstructionProcessor<T: Copy> {
     state: SigningFlowState,
     extractor: InstructionExtractor,
     ins_printer: InstructionPrinter<T>,
-    tx_printer: TransactionPrinter<T>,
-}
-
-struct Fanout<'a, T: Copy> {
-    ins_printer: &'a mut InstructionPrinter<T>,
-    tx_printer: &'a mut TransactionPrinter<T>,
-}
-
-impl<'a, T: Copy> InstructionHandler for Fanout<'a, T> {
-    fn handle(&mut self, evt: ExtractorEvent) {
-        self.ins_printer.handle(evt);
-        self.tx_printer.handle(evt);
-    }
+    tx_printer: TxIntentPrinter,
 }
 
 impl<T: Copy> SborEventHandler for InstructionProcessor<T> {
     fn handle(&mut self, evt: SborEvent) {
-        let mut fanout = Fanout {
-            ins_printer: &mut self.ins_printer,
-            tx_printer: &mut self.tx_printer,
-        };
-
+        let mut fanout = Fanout::new(&mut self.ins_printer, &mut self.tx_printer);
         self.extractor.handle_event(&mut fanout, evt);
     }
 }
@@ -50,8 +36,8 @@ impl<T: Copy> InstructionProcessor<T> {
         Self {
             state: SigningFlowState::new(),
             extractor: InstructionExtractor::new(),
-            ins_printer: InstructionPrinter::new(NetworkId::LocalNet, tty.clone()),
-            tx_printer: TransactionPrinter::new(NetworkId::LocalNet, tty),
+            ins_printer: InstructionPrinter::new(NetworkId::LocalNet, tty),
+            tx_printer: TxIntentPrinter::new(NetworkId::LocalNet),
         }
     }
 
@@ -130,7 +116,7 @@ impl<T: Copy> InstructionProcessor<T> {
     }
 
     pub fn get_detected_tx_type(&self) -> DetectedTxType {
-        self.ins_printer.get_detected_tx_type()
+        self.tx_printer.get_detected_tx_type()
     }
 
     pub fn format_decimal(&mut self, value: &Decimal) -> &[u8] {

@@ -7,6 +7,7 @@ use crate::static_vec::StaticVec;
 pub struct Decimal(BigInt<256>);
 
 impl Decimal {
+    pub const SIZE_IN_BYTES: usize = 32;
     pub const ZERO: Decimal = Decimal(BigInt::from_limbs([0, 0, 0, 0, 0, 0, 0, 0]));
     pub const SCALE: usize = 18;
     // 2ˆ256 = 1.1579209e+77, 78 digits + 1 decimal point + 1 sign = 80

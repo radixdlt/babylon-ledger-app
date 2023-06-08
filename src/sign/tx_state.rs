@@ -1,8 +1,9 @@
 use nanos_sdk::io::Comm;
 use sbor::decoder_error::DecoderError;
 use sbor::math::Decimal;
-use sbor::print::instruction_printer::DetectedTxType;
 use sbor::print::tty::TTY;
+use sbor::print::tx_intent_type::TxIntentType;
+use sbor::print::tx_printer::DetectedTxType;
 use sbor::sbor_decoder::{DecodingOutcome, SborDecoder};
 
 use crate::app_error::AppError;
@@ -11,7 +12,6 @@ use crate::crypto::hash::Digest;
 use crate::sign::instruction_processor::InstructionProcessor;
 use crate::sign::sign_outcome::SignOutcome;
 use crate::sign::sign_type::SignType;
-use crate::sign::tx_intent_type::TxIntentType;
 use crate::ui::multiline_scroller::MultilineMessageScroller;
 use crate::ui::multipage_validator::MultipageValidator;
 use crate::ui::single_message::SingleMessage;
@@ -226,6 +226,7 @@ impl<T: Copy> TxState<T> {
         let text: &[u8] = match detected_type {
             DetectedTxType::Other | DetectedTxType::OtherWithFee(..) => b"Other",
             DetectedTxType::Transfer | DetectedTxType::TransferWithFee(..) => b"Transfer",
+            DetectedTxType::Error => b"Decoding Error",
         };
         self.info_message(b"TX Type:", text);
     }
@@ -249,7 +250,9 @@ impl<T: Copy> TxState<T> {
                 self.show_transaction_fee(&detected_type);
 
                 self.show_digest = match detected_type {
-                    DetectedTxType::Transfer | DetectedTxType::TransferWithFee(..) => false,
+                    DetectedTxType::Transfer
+                    | DetectedTxType::TransferWithFee(..)
+                    | DetectedTxType::Error => false,
                     DetectedTxType::Other | DetectedTxType::OtherWithFee(..) => true,
                 };
 

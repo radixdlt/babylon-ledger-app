@@ -1,5 +1,4 @@
 use crate::bech32::network::*;
-use crate::instruction::Instruction;
 use crate::instruction::InstructionInfo;
 use crate::instruction_extractor::{ExtractorEvent, InstructionHandler};
 use crate::math::Decimal;
@@ -16,59 +15,27 @@ use crate::print::state::{ParameterPrinterState, ValueState};
 use crate::print::tty::TTY;
 use crate::print::tuple::TUPLE_PARAMETER_PRINTER;
 use crate::sbor_decoder::{SborEvent, SubTypeKind};
-use crate::tx_features::{TxFeatures, TxType};
 use crate::type_info::*;
-
-#[derive(Copy, Clone, Debug)]
-pub enum DetectedTxType {
-    Transfer,
-    TransferWithFee(Decimal),
-    Other,
-    OtherWithFee(Decimal),
-}
-
-#[cfg(test)]
-impl DetectedTxType {
-    pub fn is_same(&self, other: &DetectedTxType) -> bool {
-        match (self, other) {
-            (DetectedTxType::Transfer, DetectedTxType::Transfer) => true,
-            (DetectedTxType::Other, DetectedTxType::Other) => true,
-            (DetectedTxType::TransferWithFee(fee), DetectedTxType::TransferWithFee(other_fee)) => {
-                fee.is_same(&other_fee)
-            }
-            (DetectedTxType::OtherWithFee(fee), DetectedTxType::OtherWithFee(other_fee)) => {
-                fee.is_same(&other_fee)
-            }
-            _ => false,
-        }
-    }
-}
-
-#[derive(Copy, Clone, PartialEq)]
-pub enum CallDetectionState {
-    NotAMethodCall,
-    MethodCall,
-    Address,
-    Name,
-    Tuple,
-    TupleFirstField,
-}
 
 pub struct InstructionPrinter<T: Copy> {
     active_instruction: Option<InstructionInfo>,
-    function_call_state: CallDetectionState,
-    found_fee: Option<Decimal>,
-    found_features: TxFeatures,
     pub state: ParameterPrinterState<T>,
 }
 
-impl<T: Copy> InstructionHandler for InstructionPrinter<T> {
-    fn handle(&mut self, event: ExtractorEvent) {
+impl<T: Copy> InstructionPrinter<T> {
+    pub fn new(network_id: NetworkId, tty: TTY<T>) -> Self {
+        Self {
+            active_instruction: None,
+            state: ParameterPrinterState::new(network_id, tty),
+        }
+    }
+
+    pub fn handle(&mut self, event: ExtractorEvent) {
         match event {
             ExtractorEvent::InstructionStart(info, count, total) => {
                 self.start_instruction(info, count, total)
             }
-            ExtractorEvent::ParameterStart(event, count, ..) => self.parameter_start(event, count),
+            ExtractorEvent::ParameterStart(event, ..) => self.parameter_data(event),
             ExtractorEvent::ParameterData(data) => self.parameter_data(data),
             ExtractorEvent::ParameterEnd(event, ..) => self.parameter_end(event),
             ExtractorEvent::InstructionEnd => self.instruction_end(),
@@ -78,24 +45,10 @@ impl<T: Copy> InstructionHandler for InstructionPrinter<T> {
             | ExtractorEvent::UnknownParameterType(..) => self.handle_error(),
         };
     }
-}
-
-impl<T: Copy> InstructionPrinter<T> {
-    pub fn new(network_id: NetworkId, tty: TTY<T>) -> Self {
-        Self {
-            active_instruction: None,
-            function_call_state: CallDetectionState::NotAMethodCall,
-            found_fee: None,
-            found_features: TxFeatures::new(),
-            state: ParameterPrinterState::new(network_id, tty),
-        }
-    }
 
     pub fn reset(&mut self) {
         self.active_instruction = None;
         self.state.reset();
-        self.found_features.reset();
-        self.found_fee = None;
     }
 
     pub fn set_network(&mut self, network_id: NetworkId) {
@@ -110,17 +63,18 @@ impl<T: Copy> InstructionPrinter<T> {
         self.state.set_tty(tty);
     }
 
-    pub fn get_tty(&self) -> &TTY<T> {
+    #[cfg(test)]
+    fn get_tty(&self) -> &TTY<T> {
         self.state.get_tty()
     }
 
-    pub fn handle_error(&mut self) {
+    fn handle_error(&mut self) {
         self.state.start();
         self.state.print_text(b"Unable to decode transaction intent. Either, input is invalid or application is outdated.");
         self.state.end();
     }
 
-    pub fn start_instruction(&mut self, info: InstructionInfo, count: u32, total: u32) {
+    fn start_instruction(&mut self, info: InstructionInfo, count: u32, total: u32) {
         self.active_instruction = Some(info);
         self.state.start();
 
@@ -130,58 +84,21 @@ impl<T: Copy> InstructionPrinter<T> {
 
         self.state.print_text(info.name);
         self.state.print_space();
-
-        self.function_call_state = match info.instruction {
-            Instruction::TakeFromWorktopByAmount => CallDetectionState::NotAMethodCall,
-            Instruction::CallMethod => CallDetectionState::MethodCall,
-            _ => {
-                self.found_features.record_other();
-                CallDetectionState::NotAMethodCall
-            }
-        };
     }
 
-    pub fn get_detected_tx_type(&self) -> DetectedTxType {
-        let fee = self.found_fee.unwrap_or(Decimal::ZERO);
-
-        match self.found_features.detected_type() {
-            TxType::Transfer => DetectedTxType::Transfer,
-            TxType::TransferWithFee => DetectedTxType::TransferWithFee(fee),
-            TxType::Other => DetectedTxType::Other,
-            TxType::OtherWithFee => DetectedTxType::OtherWithFee(fee),
-        }
-    }
-
-    pub fn instruction_end(&mut self) {
+    fn instruction_end(&mut self) {
         if let Some(..) = self.active_instruction {
             self.state.end();
         }
     }
 
-    pub fn parameter_start(&mut self, event: SborEvent, param_count: u32) {
-        match (self.function_call_state, param_count) {
-            (CallDetectionState::MethodCall, 0) => {
-                self.function_call_state = CallDetectionState::Address
-            }
-            (CallDetectionState::Address, 1) => self.function_call_state = CallDetectionState::Name,
-            (_, _) => (),
-        };
-
-        self.parameter_data(event);
-    }
-
-    pub fn parameter_data(&mut self, source_event: SborEvent) {
+    fn parameter_data(&mut self, source_event: SborEvent) {
         match source_event {
             SborEvent::Start {
                 type_id,
                 nesting_level,
                 ..
             } => {
-                if self.function_call_state == CallDetectionState::Tuple && type_id == TYPE_DECIMAL
-                {
-                    self.function_call_state = CallDetectionState::TupleFirstField
-                }
-
                 if self.state.stack.is_not_empty() {
                     Dispatcher::subcomponent_start(&mut self.state);
                 }
@@ -206,7 +123,6 @@ impl<T: Copy> InstructionPrinter<T> {
                 type_id: _,
                 nesting_level,
             } => {
-                self.extract_call_parameters(nesting_level);
                 Dispatcher::end(&mut self.state);
                 self.state.nesting_level = nesting_level;
                 self.state.stack.pop().expect("Stack can't be empty");
@@ -225,47 +141,11 @@ impl<T: Copy> InstructionPrinter<T> {
         }
     }
 
-    fn extract_call_parameters(&mut self, nesting_level: u8) {
-        // At this point self.state contains extracted parameter value
-        match (self.function_call_state, nesting_level) {
-            (CallDetectionState::Name, 4) => {
-                self.function_call_state = match self.state.data.as_slice() {
-                    b"lock_fee" => {
-                        self.found_features.record_fee();
-                        CallDetectionState::Tuple
-                    }
-                    b"withdraw" => {
-                        self.found_features.record_withdraw();
-                        CallDetectionState::NotAMethodCall
-                    }
-                    b"deposit" => {
-                        self.found_features.record_deposit();
-                        CallDetectionState::NotAMethodCall
-                    }
-                    _ => {
-                        self.found_features.record_other();
-                        CallDetectionState::NotAMethodCall
-                    }
-                }
-            }
-            (CallDetectionState::TupleFirstField, 5) => {
-                let fee = Decimal::try_from(self.state.data.as_slice()).unwrap_or(Decimal::ZERO);
-
-                self.found_fee = match self.found_fee {
-                    None => Some(fee),
-                    Some(mut existing_fee) => Some(*existing_fee.accumulate(&fee)),
-                };
-                self.function_call_state = CallDetectionState::NotAMethodCall;
-            }
-            (_, _) => {}
-        }
-    }
-
     fn active_value_state(&mut self) -> &mut ValueState {
         self.state.active_state()
     }
 
-    pub fn parameter_end(&mut self, event: SborEvent) {
+    fn parameter_end(&mut self, event: SborEvent) {
         self.parameter_data(event);
         self.state.reset();
     }
@@ -451,9 +331,12 @@ mod tests {
 
     use crate::bech32::network::NetworkId;
     use crate::instruction_extractor::*;
+    use crate::print::fanout::Fanout;
     use crate::print::tty::TTY;
+    use crate::print::tx_printer::DetectedTxType;
+    use crate::print::tx_printer::TxIntentPrinter;
     use crate::sbor_decoder::*;
-    use crate::static_vec::{AsSlice, StaticVec};
+    use crate::static_vec::AsSlice;
     use crate::tx_intent_test_data::tests::*;
 
     use super::*;
@@ -464,16 +347,49 @@ mod tests {
     #[derive(Copy, Clone, Debug)]
     pub struct TestTTY;
 
+    #[derive(Copy, Clone, Debug)]
+    pub struct OutputContainer {
+        data: [u8; MAX_OUTPUT_SIZE],
+        counter: usize,
+    }
+
+    impl AsSlice<u8> for OutputContainer {
+        fn as_slice(&self) -> &[u8] {
+            &self.data[..self.counter]
+        }
+    }
+
+    impl OutputContainer {
+        pub const  fn new() -> Self {
+            Self {
+                data: [0; MAX_OUTPUT_SIZE],
+                counter: 0,
+            }
+        }
+
+        pub fn extend_from_slice(&mut self, data: &[u8]) {
+            for &byte in data {
+                self.data[self.counter] = byte;
+                self.counter += 1;
+            }
+        }
+
+        pub fn push(&mut self, byte: u8) {
+            self.data[self.counter] = byte;
+            self.counter += 1;
+        }
+    }
+
     impl TestTTY {
-        pub const fn new_tty() -> TTY<StaticVec<u8, { MAX_OUTPUT_SIZE }>> {
+        pub const fn new_tty() -> TTY<OutputContainer> {
             TTY {
-                data: StaticVec::new(0),
+                data: OutputContainer::new(),
                 show_message: Self::show_message,
             }
         }
 
         fn show_message(
-            data: &mut StaticVec<u8, { MAX_OUTPUT_SIZE }>,
+            data: &mut OutputContainer,
             title: &[u8],
             message: &[u8],
         ) {
@@ -485,28 +401,31 @@ mod tests {
         }
     }
 
-    pub struct InstructionProcessor<T: AsSlice<u8>> {
+    pub struct InstructionProcessor<T: Copy> {
         extractor: InstructionExtractor,
-        printer: InstructionPrinter<T>,
+        ins_printer: InstructionPrinter<T>,
+        tx_printer: TxIntentPrinter,
     }
 
-    impl<T: AsSlice<u8>> SborEventHandler for InstructionProcessor<T> {
+    impl<T: Copy> SborEventHandler for InstructionProcessor<T> {
         fn handle(&mut self, evt: SborEvent) {
-            self.extractor.handle_event(&mut self.printer, evt);
+            let mut fanout = Fanout::new(&mut self.ins_printer, &mut self.tx_printer);
+            self.extractor.handle_event(&mut fanout, evt);
         }
     }
 
-    impl<T: AsSlice<u8>> InstructionProcessor<T> {
+    impl<T: Copy + AsSlice<u8>> InstructionProcessor<T> {
         pub fn new(tty: TTY<T>) -> Self {
             Self {
                 extractor: InstructionExtractor::new(),
-                printer: InstructionPrinter::new(NetworkId::LocalNet, tty),
+                ins_printer: InstructionPrinter::new(NetworkId::LocalNet, tty),
+                tx_printer: TxIntentPrinter::new(NetworkId::LocalNet),
             }
         }
 
         pub fn verify(&self, expected: &[u8], expected_type: &DetectedTxType) {
             let mut cnt = 0;
-            let output = from_utf8(self.printer.get_tty().data.as_slice()).unwrap();
+            let output = from_utf8(self.ins_printer.get_tty().data.as_slice()).unwrap();
 
             if expected.len() < 10 {
                 println!("Output:\n|{}|", output);
@@ -534,7 +453,7 @@ mod tests {
                 _ => {}
             }
 
-            let detected = self.printer.get_detected_tx_type();
+            let detected = self.tx_printer.get_detected_tx_type();
 
             match detected {
                 DetectedTxType::TransferWithFee(fee) | DetectedTxType::OtherWithFee(fee) => {
