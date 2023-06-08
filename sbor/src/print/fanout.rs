@@ -22,6 +22,6 @@ impl<'a, T: Copy> Fanout<'a, T> {
 impl<'a, T: Copy> InstructionHandler for Fanout<'a, T> {
     fn handle(&mut self, evt: ExtractorEvent) {
         self.ins_printer.handle(evt);
-        self.tx_printer.handle_with_state(evt, &mut self.ins_printer.state);
+        self.tx_printer.handle(evt);
     }
 }

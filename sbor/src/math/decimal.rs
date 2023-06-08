@@ -55,7 +55,6 @@ impl Decimal {
         self
     }
 
-    #[cfg(test)]
     pub fn is_same(&self, other: &Self) -> bool {
         self.0.is_same(&other.0)
     }

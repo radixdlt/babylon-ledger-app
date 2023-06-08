@@ -1,54 +1,61 @@
 use crate::bech32::network::NetworkId;
 use crate::instruction::{Instruction, InstructionInfo};
-use crate::instruction_extractor::{ExtractorEvent, InstructionHandler};
+use crate::instruction_extractor::ExtractorEvent;
 use crate::math::Decimal;
-use crate::print::state::ParameterPrinterState;
-use crate::print::tty::TTY;
 use crate::print::tx_intent_type::TxIntentType;
 use crate::sbor_decoder::SborEvent;
 use crate::static_vec::StaticVec;
-use crate::tx_features::{TxFeatures, TxType};
 use crate::type_info::*;
 
-// State transition chains:
 // Lock_fee: CallMethod -> Address -> Name ("lock_fee") -> TupleLockFee -> (ValueLockFee) -> DoneLockFee
-// Withdraw: CallMethod -> Address -> Name ("withdraw") -> TupleWithdraw -> (AddressWithdraw, ValueWithdraw) -> DoneWithdraw
+#[derive(Copy, Clone, PartialEq)]
+#[repr(u8)]
+pub enum FeePhase {
+    Start,
+    CallMethod,
+    Address,
+    Name,
+    Tuple,
+    Value,
+}
+
+// State transition chains:
+// Withdraw: CallMethod -> Address -> Name ("withdraw") -> TupleWithdraw -> (AddressWithdraw..)
 // Deposit1: TakeFromWorktopByAmount -> ValueDeposit -> DoneDeposit1
 // Deposit2: CallMethod -> Address -> Name ("deposit") -> DoneDeposit2
+
+// Summary:
+// Start -> CallMethod -> AddressWithdraw -> ExpectWithdraw + ("withdraw") ->
+// WithdrawDone (+ TakeFromWorktopByAmount) -> ValueDeposit -> ValueDepositDone + end of instruction ->
+// ExpectDepositCall (+ CallMethod) -> AddressDeposit -> ExpectDeposit + ("deposit") -> DoneTransfer
 
 #[derive(Copy, Clone, PartialEq)]
 #[repr(u8)]
 pub enum DecodingPhase {
-    Dormant,
-
+    Start,
     CallMethod,
-    Name,
-    Address,
-
-    TupleLockFee,
-    ValueLockFee,
-    DoneLockFee,
-
-    TupleWithdraw,
-    AddessWithdraw,
-    ValueWithdraw,
-    DoneWithdraw,
-
-    TakeFromWorktopByAmount,
+    AddressWithdraw,
+    ExpectWithdraw,
+    WithdrawDone,
     ValueDeposit,
+    ValueDepositDone,
+    ExpectDepositCall,
     AddressDeposit,
-    DoneDeposit1,
-    DoneDeposit2,
-
-    DoneNothing,
+    ExpectDeposit,
+    DoneTransfer,
+    NonConformingTransaction,
+    DecodingError,
 }
 
 #[derive(Copy, Clone, Debug)]
 pub enum DetectedTxType {
-    Transfer,
-    TransferWithFee(Decimal),
-    Other,
-    OtherWithFee(Decimal),
+    Transfer {
+        fee: Option<Decimal>,
+        src_address: Address,
+        dst_address: Address,
+        amount: Decimal,
+    },
+    Other(Option<Decimal>),
     Error,
 }
 
@@ -56,14 +63,40 @@ pub enum DetectedTxType {
 impl DetectedTxType {
     pub fn is_same(&self, other: &DetectedTxType) -> bool {
         match (self, other) {
-            (DetectedTxType::Transfer, DetectedTxType::Transfer) => true,
-            (DetectedTxType::Other, DetectedTxType::Other) => true,
-            (DetectedTxType::TransferWithFee(fee), DetectedTxType::TransferWithFee(other_fee)) => {
-                fee.is_same(&other_fee)
+            (
+                DetectedTxType::Transfer {
+                    fee,
+                    src_address,
+                    dst_address,
+                    amount,
+                },
+                DetectedTxType::Transfer {
+                    fee: other_fee,
+                    src_address: other_src_address,
+                    dst_address: other_dst_address,
+                    amount: other_amount,
+                },
+            ) => {
+                let fee_match = match (fee, other_fee) {
+                    (None, None) => true,
+                    (Some(a), Some(b)) => a.is_same(&b),
+                    _ => false,
+                };
+                return fee_match
+                    && src_address.is_same(other_src_address)
+                    && dst_address.is_same(other_dst_address)
+                    && amount.is_same(other_amount);
             }
-            (DetectedTxType::OtherWithFee(fee), DetectedTxType::OtherWithFee(other_fee)) => {
-                fee.is_same(&other_fee)
+
+            (DetectedTxType::Other(fee), DetectedTxType::Other(other_fee)) => {
+                match (fee, other_fee) {
+                    (None, None) => true,
+                    (Some(a), Some(b)) => a.is_same(&b),
+                    _ => false,
+                }
             }
+
+            (DetectedTxType::Error, DetectedTxType::Error) => true,
             _ => false,
         }
     }
@@ -77,7 +110,7 @@ const fn max(a: usize, b: usize) -> usize {
 //Max of address length and decimal length
 const MAX_TX_DATA_SIZE: usize = max(Decimal::SIZE_IN_BYTES, ADDRESS_LEN as usize);
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Address {
     address: [u8; ADDRESS_LEN as usize],
     is_set: bool,
@@ -89,6 +122,10 @@ impl Address {
             address: [0; ADDRESS_LEN as usize],
             is_set: false,
         }
+    }
+
+    pub fn is_set(&self) -> bool {
+        self.is_set
     }
 
     pub fn copy_from_slice(&mut self, src: &[u8]) {
@@ -108,17 +145,24 @@ impl Address {
         self.is_set = false;
         self.address = [0; ADDRESS_LEN as usize];
     }
+
+    pub fn is_same(&self, other: &Address) -> bool {
+        if self.is_set && other.is_set {
+            self.address == other.address
+        } else {
+            false
+        }
+    }
 }
 
 pub struct TxIntentPrinter {
     network_id: NetworkId,
     intent_type: TxIntentType,
     decoding_phase: DecodingPhase,
-    features: TxFeatures,
+    fee_phase: FeePhase,
     data: StaticVec<u8, { MAX_TX_DATA_SIZE }>,
     fee: Decimal,
     amount: Decimal,
-    tmp_address: Address,
     src_address: Address,
     dst_address: Address,
 }
@@ -127,13 +171,12 @@ impl TxIntentPrinter {
     pub fn new(network_id: NetworkId) -> Self {
         Self {
             network_id,
-            features: TxFeatures::new(),
             intent_type: TxIntentType::General,
-            decoding_phase: DecodingPhase::Dormant,
+            decoding_phase: DecodingPhase::Start,
+            fee_phase: FeePhase::Start,
             data: StaticVec::new(0),
             fee: Decimal::ZERO,
             amount: Decimal::ZERO,
-            tmp_address: Address::new(),
             src_address: Address::new(),
             dst_address: Address::new(),
         }
@@ -144,14 +187,13 @@ impl TxIntentPrinter {
     }
 
     pub fn reset(&mut self) {
-        self.features.reset();
         self.intent_type = TxIntentType::General;
         self.network_id = NetworkId::LocalNet;
-        self.decoding_phase = DecodingPhase::Dormant;
+        self.decoding_phase = DecodingPhase::Start;
+        self.fee_phase = FeePhase::Start;
         self.data.clear();
         self.fee = Decimal::ZERO;
         self.amount = Decimal::ZERO;
-        self.tmp_address.reset();
         self.src_address.reset();
         self.dst_address.reset();
     }
@@ -161,97 +203,106 @@ impl TxIntentPrinter {
     }
 
     pub fn get_detected_tx_type(&self) -> DetectedTxType {
-        match self.features.detected_type() {
-            TxType::Transfer => DetectedTxType::Transfer,
-            TxType::TransferWithFee => DetectedTxType::TransferWithFee(self.fee),
-            TxType::Other => DetectedTxType::Other,
-            TxType::OtherWithFee => DetectedTxType::OtherWithFee(self.fee),
-            TxType::Error => DetectedTxType::Error,
+        let fee = if self.fee.is_same(&Decimal::ZERO) {
+            None
+        } else {
+            Some(self.fee)
+        };
+
+        if self.intent_type != TxIntentType::Transfer {
+            return DetectedTxType::Other(fee);
+        }
+
+        if !(self.src_address.is_set() && self.dst_address.is_set()) {
+            return DetectedTxType::Error;
+        }
+
+        match self.decoding_phase {
+            DecodingPhase::DoneTransfer => DetectedTxType::Transfer {
+                fee,
+                src_address: self.src_address,
+                dst_address: self.dst_address,
+                amount: self.amount,
+            },
+            DecodingPhase::Start => DetectedTxType::Other(fee),
+            _ => DetectedTxType::Error,
         }
     }
 
-    pub fn handle_with_state<T: Copy>(
-        &mut self,
-        event: ExtractorEvent,
-        state: &mut ParameterPrinterState<T>,
-    ) {
+    pub fn handle(&mut self, event: ExtractorEvent) {
+        if self.intent_type != TxIntentType::Transfer {
+            return;
+        }
+
         match event {
-            ExtractorEvent::InstructionStart(info, ..) => {
-                self.start_instruction(info)
-            }
+            ExtractorEvent::InstructionStart(info, ..) => self.instruction_start(info),
             ExtractorEvent::ParameterStart(_, count, ..) => self.parameter_start(count),
             ExtractorEvent::ParameterData(data) => self.parameter_data(data),
             ExtractorEvent::ParameterEnd(..) => self.parameter_end(),
-            ExtractorEvent::InstructionEnd => self.instruction_end(state),
+            ExtractorEvent::InstructionEnd => self.instruction_end(),
             _ => self.handle_error(),
         };
     }
 
-    fn start_instruction(&mut self, info: InstructionInfo) {
-        self.decoding_phase = match info.instruction {
-            Instruction::CallMethod => DecodingPhase::CallMethod,
-            Instruction::TakeFromWorktopByAmount => DecodingPhase::TakeFromWorktopByAmount,
-            _ => DecodingPhase::DoneNothing,
-        };
+    fn instruction_start(&mut self, info: InstructionInfo) {
+        match (self.decoding_phase, info.instruction) {
+            (DecodingPhase::Start, Instruction::CallMethod) => {
+                self.decoding_phase = DecodingPhase::CallMethod;
+            }
+            (DecodingPhase::WithdrawDone, Instruction::TakeFromWorktopByAmount) => {
+                self.decoding_phase = DecodingPhase::ValueDeposit;
+            }
+            (DecodingPhase::ExpectDepositCall, Instruction::CallMethod) => {
+                self.decoding_phase = DecodingPhase::AddressDeposit;
+            }
+            // TODO: How to reliably detect nonconforming transaction here?
+            (_, _) => {}
+        }
 
-        self.amount = Decimal::ZERO;
-        self.tmp_address.reset();
+        match (self.fee_phase, info.instruction) {
+            (FeePhase::Start, Instruction::CallMethod) => {
+                self.fee_phase = FeePhase::Address;
+            }
+            (_, _) => {}
+        }
     }
 
-    fn instruction_end<T: Copy>(&mut self, state: &mut ParameterPrinterState<T>) {
-        if self.intent_type != TxIntentType::Transfer {
-            // So far we can decode/print only transfers
-            return;
-        }
-
-        // Print intermediate state, if transaction is still Transfer or TransferWithFee
-        if self.features.detected_type() == TxType::Transfer
-            || self.features.detected_type() == TxType::TransferWithFee
-        {
-            match self.decoding_phase {
-                DecodingPhase::DoneWithdraw => {
-                    //TODO: display "From: <address>, Amount: <amount>"
-                }
-                DecodingPhase::DoneDeposit => {
-                    //TODO: display "To: <address>, Amount: <amount>"
-                }
-                _ => {}
+    fn instruction_end(&mut self) {
+        match self.decoding_phase {
+            DecodingPhase::ValueDepositDone => {
+                self.decoding_phase = DecodingPhase::ExpectDepositCall;
             }
+            _ => {}
         }
+        self.fee_phase = FeePhase::Start;
     }
 
     fn parameter_start(&mut self, param_count: u32) {
-// State transition chains:
-// Lock_fee: CallMethod -> Address -> Name ("lock_fee") -> TupleLockFee -> (ValueLockFee) -> DoneLockFee
-// Withdraw: CallMethod -> Address -> Name ("withdraw") -> TupleWithdraw -> (AddressWithdraw, ValueWithdraw) -> DoneWithdraw
-// Deposit1: TakeFromWorktopByAmount -> ValueDeposit -> DoneDeposit1
-// Deposit2: CallMethod -> Address -> Name ("deposit") -> DoneDeposit2
+        self.data.clear();
+
         match (self.decoding_phase, param_count) {
-            // CallMethod -> Address
-            (DecodingPhase::CallMethod, 0) => self.decoding_phase = DecodingPhase::Address,
-            // CallMethod -> Name
-            (DecodingPhase::Address, 1) => self.decoding_phase = DecodingPhase::Name,
-
-            // TakeFromWorktopByAmount -> ValueDeposit -> AddressDeposit
-            (DecodingPhase::TakeFromWorktopByAmount, 0) => {
-                self.decoding_phase = DecodingPhase::ValueDeposit
+            (DecodingPhase::CallMethod, 0) => {
+                self.decoding_phase = DecodingPhase::AddressWithdraw;
             }
-            (DecodingPhase::ValueDeposit, 1) => self.decoding_phase = DecodingPhase::AddressDeposit,
-
-            // TupleLockFee -> ValueLockFee
-            (DecodingPhase::TupleLockFee, 0) => self.decoding_phase = DecodingPhase::ValueLockFee,
-
-            // TupleWithdraw -> AddressWithdraw -> ValueWithdraw
-            (DecodingPhase::TupleWithdraw, 0) => {
-                self.decoding_phase = DecodingPhase::AddessWithdraw
+            (DecodingPhase::AddressWithdraw, 1) => {
+                self.decoding_phase = DecodingPhase::ExpectWithdraw;
             }
-            (DecodingPhase::AddessWithdraw, 1) => {
-                self.decoding_phase = DecodingPhase::ValueWithdraw
+            (DecodingPhase::ExpectDepositCall, 0) => {
+                self.decoding_phase = DecodingPhase::AddressDeposit;
             }
 
             (_, _) => {}
         };
-        self.data.clear();
+
+        match (self.fee_phase, param_count) {
+            (FeePhase::Address, 1) => {
+                self.fee_phase = FeePhase::Name;
+            }
+            (FeePhase::Tuple, 0) => {
+                self.fee_phase = FeePhase::Value;
+            }
+            (_, _) => {}
+        }
     }
 
     fn parameter_data(&mut self, source_event: SborEvent) {
@@ -265,64 +316,62 @@ impl TxIntentPrinter {
         Decimal::try_from(self.data.as_slice()).unwrap_or(Decimal::ZERO)
     }
 
-    fn extract_address(&mut self) {
-        self.tmp_address.copy_from_slice(self.data.as_slice());
-    }
-
     fn parameter_end(&mut self) {
         match self.decoding_phase {
-            DecodingPhase::Name => {
-                self.decoding_phase = match self.data.as_slice() {
-                    b"lock_fee" => {
-                        self.features.record_fee();
-                        DecodingPhase::TupleLockFee
-                    }
-                    b"withdraw" => {
-                        self.features.record_withdraw();
-                        DecodingPhase::TupleWithdraw
-                    }
-                    b"deposit" => {
-                        // Note that call method "deposit" we just record,
-                        // but information is already displayed
-                        self.features.record_deposit();
-                        DecodingPhase::DoneNothing
-                    }
-                    _ => {
-                        self.features.record_other();
-                        DecodingPhase::DoneNothing
-                    }
+            DecodingPhase::ExpectWithdraw => {
+                if self.data.as_slice() == b"withdraw" {
+                    self.decoding_phase = DecodingPhase::WithdrawDone;
+                } else {
+                    // Restart decoding
+                    self.decoding_phase = DecodingPhase::Start;
                 }
             }
 
-            DecodingPhase::ValueLockFee => {
-                let amount = Decimal::try_from(self.data.as_slice()).unwrap_or(Decimal::ZERO);
-                self.fee.accumulate(&amount);
-                self.decoding_phase = DecodingPhase::DoneLockFee;
+            DecodingPhase::ExpectDeposit => {
+                if self.data.as_slice() == b"deposit" {
+                    self.decoding_phase = DecodingPhase::DoneTransfer;
+                } else {
+                    self.decoding_phase = DecodingPhase::NonConformingTransaction;
+                }
             }
 
-            DecodingPhase::AddessWithdraw => {
-                self.extract_address();
-            }
-
-            DecodingPhase::ValueWithdraw => {
-                self.amount = self.extract_decimal();
-                self.decoding_phase = DecodingPhase::DoneWithdraw;
+            DecodingPhase::AddressWithdraw => {
+                self.src_address.copy_from_slice(self.data.as_slice());
+                self.decoding_phase = DecodingPhase::ExpectWithdraw;
             }
 
             DecodingPhase::ValueDeposit => {
                 self.amount = self.extract_decimal();
+                self.decoding_phase = DecodingPhase::ValueDepositDone;
             }
 
             DecodingPhase::AddressDeposit => {
-                self.extract_address();
-                self.decoding_phase = DecodingPhase::DoneDeposit;
+                self.dst_address.copy_from_slice(self.data.as_slice());
+                self.decoding_phase = DecodingPhase::ExpectDeposit;
             }
 
+            _ => {}
+        }
+
+        match self.fee_phase {
+            FeePhase::Name => {
+                if self.data.as_slice() == b"lock_fee" {
+                    self.fee_phase = FeePhase::Value;
+                } else {
+                    self.fee_phase = FeePhase::Start;
+                }
+            }
+            FeePhase::Value => {
+                let fee = self.extract_decimal();
+
+                self.fee.accumulate(&fee);
+                self.fee_phase = FeePhase::Start;
+            }
             _ => {}
         }
     }
 
     fn handle_error(&mut self) {
-        self.features.record_error();
+        self.decoding_phase = DecodingPhase::DecodingError;
     }
 }
