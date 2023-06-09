@@ -1,23 +1,5 @@
 use crate::bech32::network::NetworkId;
 
-#[repr(u8)]
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub enum HrpType {
-    Package,
-    Resource,
-    Component,
-    Account,
-    Identity,
-    EpochManager,
-    Clock,
-    Validator,
-    AccessController,
-    InternalVault,
-    InternalAccount,
-    InternalComponent,
-    InternalKeyValueStore,
-}
-
 pub fn hrp_suffix(net_id: NetworkId) -> &'static str {
     match net_id {
         NetworkId::OlympiaMainNet => "rdx",
@@ -38,20 +20,18 @@ pub fn hrp_suffix(net_id: NetworkId) -> &'static str {
     }
 }
 
-pub fn hrp_prefix(hrp_type: HrpType) -> &'static str {
+pub fn hrp_prefix(hrp_type: u8) -> Option<&'static str> {
     match hrp_type {
-        HrpType::Package => "package_",
-        HrpType::Resource => "resource_",
-        HrpType::Component => "component_",
-        HrpType::Account => "account_",
-        HrpType::Identity => "identity_",
-        HrpType::EpochManager => "epochmanager_",
-        HrpType::Clock => "clock_",
-        HrpType::Validator => "validator_",
-        HrpType::AccessController => "accesscontroller_",
-        HrpType::InternalVault => "internal_vault_",
-        HrpType::InternalAccount => "internal_account_",
-        HrpType::InternalComponent => "internal_component_",
-        HrpType::InternalKeyValueStore => "internal_keyvaluestore_",
+        0x00 => Some("package_"),
+        0x01 | 0x02 => Some("resource_"),
+        0x03 => Some("component_"),
+        0x04 | 0x08 | 0x09 => Some("account_"),
+        0x0A | 0x0B | 0x0C => Some("identity_"),
+        0x05 => Some("epochmanager_"),
+        0x06 => Some("validator_"),
+        0x07 => Some("clock_"),
+        0x0D => Some("accesscontroller_"),
+
+        _ => None,
     }
 }

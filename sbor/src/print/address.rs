@@ -10,32 +10,6 @@ pub struct AddressParameterPrinter {}
 
 pub const ADDRESS_PARAMETER_PRINTER: AddressParameterPrinter = AddressParameterPrinter {};
 
-fn to_hrp_type(id: u8) -> Option<HrpType> {
-    // Depends on EntityType enum
-    match id {
-        0 => Some(HrpType::Package),
-        1 => Some(HrpType::Resource),
-        2 => Some(HrpType::Resource),
-        3 => Some(HrpType::EpochManager),
-        4 => Some(HrpType::Validator),
-        5 => Some(HrpType::Clock),
-        6 => Some(HrpType::AccessController),
-        7 => Some(HrpType::Account),
-        8 => Some(HrpType::Identity),
-        9 => Some(HrpType::Component),
-        10 => Some(HrpType::Account),
-        11 => Some(HrpType::Account),
-        12 => Some(HrpType::Identity),
-        13 => Some(HrpType::Identity),
-        14 => Some(HrpType::InternalVault),
-        15 => Some(HrpType::InternalVault),
-        16 => Some(HrpType::InternalAccount),
-        17 => Some(HrpType::InternalKeyValueStore),
-        18 => Some(HrpType::InternalComponent),
-        _ => None,
-    }
-}
-
 impl<T: Copy> ParameterPrinter<T> for AddressParameterPrinter {
     fn end(&self, state: &mut ParameterPrinterState<T>) {
         if state.data.len() != (ADDRESS_LEN as usize) {
@@ -44,8 +18,8 @@ impl<T: Copy> ParameterPrinter<T> for AddressParameterPrinter {
         }
 
         // Unwrap is safe because we checked the length
-        match to_hrp_type(state.data.first().unwrap()) {
-            Some(hrp_type) => format_address(state, hrp_prefix(hrp_type)),
+        match hrp_prefix(state.data.first().unwrap()) {
+            Some(prefix) => format_address(state, prefix),
             None => state.print_text(b"Address(unknown type)"),
         }
     }

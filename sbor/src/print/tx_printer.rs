@@ -124,6 +124,13 @@ impl Address {
         }
     }
 
+    pub fn from_array(src: [u8; ADDRESS_LEN as usize]) -> Self {
+        Self {
+            address: src,
+            is_set: true,
+        }
+    }
+
     pub fn is_set(&self) -> bool {
         self.is_set
     }
@@ -230,10 +237,6 @@ impl TxIntentPrinter {
     }
 
     pub fn handle(&mut self, event: ExtractorEvent) {
-        if self.intent_type != TxIntentType::Transfer {
-            return;
-        }
-
         match event {
             ExtractorEvent::InstructionStart(info, ..) => self.instruction_start(info),
             ExtractorEvent::ParameterStart(_, count, ..) => self.parameter_start(count),
@@ -245,6 +248,17 @@ impl TxIntentPrinter {
     }
 
     fn instruction_start(&mut self, info: InstructionInfo) {
+        match (self.fee_phase, info.instruction) {
+            (FeePhase::Start, Instruction::CallMethod) => {
+                self.fee_phase = FeePhase::Address;
+            }
+            (_, _) => {}
+        }
+
+        if self.intent_type != TxIntentType::Transfer {
+            return;
+        }
+
         match (self.decoding_phase, info.instruction) {
             (DecodingPhase::Start, Instruction::CallMethod) => {
                 self.decoding_phase = DecodingPhase::CallMethod;
@@ -256,13 +270,6 @@ impl TxIntentPrinter {
                 self.decoding_phase = DecodingPhase::AddressDeposit;
             }
             // TODO: How to reliably detect nonconforming transaction here?
-            (_, _) => {}
-        }
-
-        match (self.fee_phase, info.instruction) {
-            (FeePhase::Start, Instruction::CallMethod) => {
-                self.fee_phase = FeePhase::Address;
-            }
             (_, _) => {}
         }
     }
@@ -320,6 +327,8 @@ impl TxIntentPrinter {
         match self.decoding_phase {
             DecodingPhase::ExpectWithdraw => {
                 if self.data.as_slice() == b"withdraw" {
+                    self.decoding_phase = DecodingPhase::WithdrawDone;
+                } else if self.data.as_slice() == b"withdraw_non_fungibles" {
                     self.decoding_phase = DecodingPhase::WithdrawDone;
                 } else {
                     // Restart decoding
