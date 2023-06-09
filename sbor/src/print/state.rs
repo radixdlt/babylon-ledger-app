@@ -43,7 +43,7 @@ pub const PARAMETER_AREA_SIZE: usize = 160; // Used for PreciseDecimal formattin
 pub const PARAMETER_AREA_SIZE: usize = 256;
 
 #[cfg(target_os = "nanos")]
-pub const DISPLAY_SIZE: usize = 256; // Use smaller buffer for Nano S
+pub const DISPLAY_SIZE: usize = 128; // Use smaller buffer for Nano S
 #[cfg(target_os = "nanosplus")]
 pub const DISPLAY_SIZE: usize = 1024; // Nano S+ and Nano X have larger screens and more memory
 #[cfg(target_os = "nanox")]
