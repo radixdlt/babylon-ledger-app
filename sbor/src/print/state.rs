@@ -2,6 +2,7 @@ use core::ops::Range;
 
 use crate::bech32::network::*;
 use crate::print::tty::TTY;
+use crate::print::tx_printer::Address;
 use crate::sbor_decoder::STACK_DEPTH;
 use crate::static_vec::StaticVec;
 
@@ -42,7 +43,7 @@ pub const PARAMETER_AREA_SIZE: usize = 160; // Used for PreciseDecimal formattin
 pub const PARAMETER_AREA_SIZE: usize = 256;
 
 #[cfg(target_os = "nanos")]
-pub const DISPLAY_SIZE: usize = 256; // Use smaller buffer for Nano S
+pub const DISPLAY_SIZE: usize = 128; // Use smaller buffer for Nano S
 #[cfg(target_os = "nanosplus")]
 pub const DISPLAY_SIZE: usize = 1024; // Nano S+ and Nano X have larger screens and more memory
 #[cfg(target_os = "nanox")]
@@ -52,7 +53,7 @@ pub const DISPLAY_SIZE: usize = 2048; // For testing on desktop
 
 pub const TITLE_SIZE: usize = 32;
 
-pub struct ParameterPrinterState<T> {
+pub struct ParameterPrinterState<T: Copy> {
     pub display: StaticVec<u8, { DISPLAY_SIZE }>,
     pub data: StaticVec<u8, { PARAMETER_AREA_SIZE }>,
     pub title: StaticVec<u8, { TITLE_SIZE }>,
@@ -75,7 +76,7 @@ fn upper_as_hex(byte: u8) -> u8 {
     HEX_DIGITS[((byte >> 4) & 0x0F) as usize]
 }
 
-impl<T> ParameterPrinterState<T> {
+impl<T: Copy> ParameterPrinterState<T> {
     pub fn new(network_id: NetworkId, tty: TTY<T>) -> Self {
         Self {
             data: StaticVec::new(0),
@@ -166,5 +167,23 @@ impl<T> ParameterPrinterState<T> {
 
     pub fn print_text(&mut self, text: &[u8]) {
         self.display.extend_from_slice(text);
+    }
+
+    pub fn print_address(&mut self) {
+        let mut address = Address::new();
+        address.copy_from_slice(&self.data.as_slice());
+        self.data.clear();
+
+        address.format(&mut self.data, self.network_id);
+
+        self.display.extend_from_slice(b"Address(");
+        self.display.extend_from_slice(self.data.as_slice());
+        self.display.push(b')');
+    }
+
+    pub fn format_address(&mut self, address: &Address) -> &[u8] {
+        self.data.clear();
+        address.format(&mut self.data, self.network_id);
+        self.data.as_slice()
     }
 }

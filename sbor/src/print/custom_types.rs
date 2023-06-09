@@ -13,7 +13,7 @@ pub const EXPRESSION_PARAMETER_PRINTER: ExpressionParameterPrinter = ExpressionP
 pub const BUCKET_PARAMETER_PRINTER: BucketParameterPrinter = BucketParameterPrinter {};
 pub const PROOF_PARAMETER_PRINTER: ProofParameterPrinter = ProofParameterPrinter {};
 
-impl<T> ParameterPrinter<T> for BlobParameterPrinter {
+impl<T: Copy> ParameterPrinter<T> for BlobParameterPrinter {
     fn handle_data(&self, state: &mut ParameterPrinterState<T>, event: SborEvent) {
         if let SborEvent::Data(byte) = event {
             state.print_hex_byte(byte);
@@ -29,7 +29,7 @@ impl<T> ParameterPrinter<T> for BlobParameterPrinter {
     }
 }
 
-impl<T> ParameterPrinter<T> for ExpressionParameterPrinter {
+impl<T: Copy> ParameterPrinter<T> for ExpressionParameterPrinter {
     fn handle_data(&self, state: &mut ParameterPrinterState<T>, event: SborEvent) {
         if let SborEvent::Data(byte) = event {
             state.print_hex_byte(byte);
@@ -45,7 +45,7 @@ impl<T> ParameterPrinter<T> for ExpressionParameterPrinter {
     }
 }
 
-impl<T> ParameterPrinter<T> for BucketParameterPrinter {
+impl<T: Copy> ParameterPrinter<T> for BucketParameterPrinter {
     fn start(&self, state: &mut ParameterPrinterState<T>) {
         state.print_text(b"Bucket(");
     }
@@ -56,7 +56,7 @@ impl<T> ParameterPrinter<T> for BucketParameterPrinter {
     }
 }
 
-impl<T> ParameterPrinter<T> for ProofParameterPrinter {
+impl<T: Copy> ParameterPrinter<T> for ProofParameterPrinter {
     fn start(&self, state: &mut ParameterPrinterState<T>) {
         state.print_text(b"Proof(");
     }

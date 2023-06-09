@@ -1,7 +1,7 @@
 use crate::print::state::ParameterPrinterState;
 use crate::sbor_decoder::SborEvent;
 
-pub trait ParameterPrinter<T> {
+pub trait ParameterPrinter<T: Copy> {
     fn handle_data(&self, state: &mut ParameterPrinterState<T>, event: SborEvent) {
         if let SborEvent::Data(byte) = event {
             state.push_byte(byte);

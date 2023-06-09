@@ -374,10 +374,7 @@ mod tests {
 
     #[test]
     pub fn test_create_account() {
-        check_partial_decoding(
-            &TX_CREATE_ACCOUNT,
-            &[Instruction::CallFunction, Instruction::CallFunction],
-        );
+        check_partial_decoding(&TX_CREATE_ACCOUNT, &[Instruction::CallFunction]);
     }
 
     #[test]
@@ -402,10 +399,7 @@ mod tests {
 
     #[test]
     pub fn test_create_identity() {
-        check_partial_decoding(
-            &TX_CREATE_IDENTITY,
-            &[Instruction::CallFunction, Instruction::CallFunction],
-        );
+        check_partial_decoding(&TX_CREATE_IDENTITY, &[Instruction::CallFunction]);
     }
 
     #[test]

@@ -7,7 +7,7 @@ pub struct DecimalParameterPrinter {}
 
 pub const DECIMAL_PARAMETER_PRINTER: DecimalParameterPrinter = DecimalParameterPrinter {};
 
-impl<T> ParameterPrinter<T> for DecimalParameterPrinter {
+impl<T: Copy> ParameterPrinter<T> for DecimalParameterPrinter {
     fn end(&self, state: &mut ParameterPrinterState<T>) {
         match Decimal::try_from(state.data.as_slice()) {
             Ok(value) => {
@@ -28,7 +28,7 @@ pub struct PreciseDecimalParameterPrinter {}
 pub const PRECISE_DECIMAL_PARAMETER_PRINTER: PreciseDecimalParameterPrinter =
     PreciseDecimalParameterPrinter {};
 
-impl<T> ParameterPrinter<T> for PreciseDecimalParameterPrinter {
+impl<T: Copy> ParameterPrinter<T> for PreciseDecimalParameterPrinter {
     fn end(&self, state: &mut ParameterPrinterState<T>) {
         match PreciseDecimal::try_from(state.data.as_slice()) {
             Ok(value) => {

@@ -21,19 +21,19 @@ const DROP_PROOF: u8 = 15;
 const DROP_ALL_PROOFS: u8 = 16;
 const CLEAR_SIGNATURE_PROOFS: u8 = 17;
 const PUBLISH_PACKAGE: u8 = 18;
-const PUBLISH_PACKAGE_ADVANCED: u8 = 19;
-const BURN_RESOURCE: u8 = 20;
-const RECALL_RESOURCE: u8 = 21;
-const SET_METADATA: u8 = 22;
-const REMOVE_METADATA: u8 = 23;
-const SET_PACKAGE_ROYALTY_CONFIG: u8 = 24;
-const SET_COMPONENT_ROYALTY_CONFIG: u8 = 25;
-const CLAIM_PACKAGE_ROYALTY: u8 = 26;
-const CLAIM_COMPONENT_ROYALTY: u8 = 27;
-const SET_METHOD_ACCESS_RULE: u8 = 28;
-const MINT_FUNGIBLE: u8 = 29;
-const MINT_NON_FUNGIBLE: u8 = 30;
-const MINT_UUID_NON_FUNGIBLE: u8 = 31;
+const BURN_RESOURCE: u8 = 19;
+const RECALL_RESOURCE: u8 = 20;
+const SET_METADATA: u8 = 21;
+const REMOVE_METADATA: u8 = 22;
+const SET_PACKAGE_ROYALTY_CONFIG: u8 = 23;
+const SET_COMPONENT_ROYALTY_CONFIG: u8 = 24;
+const CLAIM_PACKAGE_ROYALTY: u8 = 25;
+const CLAIM_COMPONENT_ROYALTY: u8 = 26;
+const SET_METHOD_ACCESS_RULE: u8 = 27;
+const MINT_FUNGIBLE: u8 = 28;
+const MINT_NON_FUNGIBLE: u8 = 29;
+const MINT_UUID_NON_FUNGIBLE: u8 = 30;
+const ASSERT_ACCESS_RULE: u8 = 31;
 const CALL_FUNCTION: u8 = 32;
 const CALL_METHOD: u8 = 33;
 
@@ -59,11 +59,10 @@ pub enum Instruction {
     DropAllProofs,
     ClearSignatureProofs,
     PublishPackage, // { code: ManifestBlobRef, schema: ManifestBlobRef, royalty_config: BTreeMap<String, RoyaltyConfig>, metadata: BTreeMap<String, String>, },
-    PublishPackageAdvanced, // { code: ManifestBlobRef, schema: ManifestBlobRef, royalty_config: BTreeMap<String, RoyaltyConfig>, metadata: BTreeMap<String, String>, access_rules: AccessRulesConfig, },
-    BurnResource,           // { bucket_id: ManifestBucket, },
-    RecallResource,         // { vault_id: ObjectId, amount: Decimal, },
-    SetMetadata,            // { entity_address: ManifestAddress, key: String, value: String, },
-    RemoveMetadata,         // { entity_address: ManifestAddress, key: String, },
+    BurnResource,   // { bucket_id: ManifestBucket, },
+    RecallResource, // { vault_id: ObjectId, amount: Decimal, },
+    SetMetadata,    // { entity_address: ManifestAddress, key: String, value: String, },
+    RemoveMetadata, // { entity_address: ManifestAddress, key: String, },
     SetPackageRoyaltyConfig, // { package_address: PackageAddress, royalty_config: BTreeMap<String, RoyaltyConfig>, },
     SetComponentRoyaltyConfig, // { component_address: ComponentAddress, royalty_config: RoyaltyConfig, },
     ClaimPackageRoyalty,       // { package_address: PackageAddress, },
@@ -72,6 +71,7 @@ pub enum Instruction {
     MintFungible,        // { resource_address: ResourceAddress, amount: Decimal, },
     MintNonFungible,     // { resource_address: ResourceAddress, args: ManifestValue, },
     MintUuidNonFungible, // { resource_address: ResourceAddress, args: ManifestValue, },
+    AsserAccessRule,     // { access_rule, AccessRule, },
     CallFunction, // { package_address: PackageAddress, blueprint_name: String, function_name: String, args: ManifestValue, },
     CallMethod, // { component_address: ComponentAddress, method_name: String, args: ManifestValue, },
 }
@@ -160,10 +160,6 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
             instruction: Instruction::PublishPackage,
             name: b"PublishPackage",
         }),
-        PUBLISH_PACKAGE_ADVANCED => Some(InstructionInfo {
-            instruction: Instruction::PublishPackage,
-            name: b"PublishPackageAdvanced",
-        }),
         BURN_RESOURCE => Some(InstructionInfo {
             instruction: Instruction::BurnResource,
             name: b"BurnResource",
@@ -211,6 +207,10 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
         MINT_UUID_NON_FUNGIBLE => Some(InstructionInfo {
             instruction: Instruction::MintUuidNonFungible,
             name: b"MintUuidNonFungible",
+        }),
+        ASSERT_ACCESS_RULE => Some(InstructionInfo {
+            instruction: Instruction::AsserAccessRule,
+            name: b"AsserAccessRule",
         }),
         CALL_FUNCTION => Some(InstructionInfo {
             instruction: Instruction::CallFunction,

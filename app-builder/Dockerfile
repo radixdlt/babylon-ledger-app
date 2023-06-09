@@ -32,8 +32,7 @@ RUN /root/.cargo/bin/rustup default nightly-2023-05-28
 RUN /root/.cargo/bin/rustup target install thumbv7m-none-eabi
 RUN /root/.cargo/bin/rustup component add rust-src
 RUN /root/.cargo/bin/cargo install --git https://github.com/radixdlt/cargo-ledger.git
-RUN pip3 install --upgrade protobuf setuptools ecdsa && pip3 install ledgerwallet && pip3 install protobuf==3.20.3
-
+RUN pip3 install --upgrade protobuf==3.20.3 setuptools ecdsa && pip3 install ledgerwallet
 
 WORKDIR /app
 

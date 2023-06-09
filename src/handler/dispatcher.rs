@@ -6,7 +6,7 @@ use crate::command_class::CommandClass;
 use crate::handler::*;
 use crate::sign::tx_state::TxState;
 
-pub fn dispatcher<T>(
+pub fn dispatcher<T: Copy>(
     comm: &mut Comm,
     ins: Command,
     state: &mut TxState<T>,
