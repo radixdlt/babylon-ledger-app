@@ -483,10 +483,20 @@ mod tests {
     }
 
     fn check_partial_decoding(input: &[u8], expected_text: &[u8], expected_type: &DetectedTxType) {
-        check_partial_decoding_with_type(input, expected_text, expected_type, TxIntentType::General);
+        check_partial_decoding_with_type(
+            input,
+            expected_text,
+            expected_type,
+            TxIntentType::General,
+        );
     }
 
-    fn check_partial_decoding_with_type(input: &[u8], expected_text: &[u8], expected_type: &DetectedTxType, intent_type: TxIntentType) {
+    fn check_partial_decoding_with_type(
+        input: &[u8],
+        expected_text: &[u8],
+        expected_type: &DetectedTxType,
+        intent_type: TxIntentType,
+    ) {
         let mut decoder = SborDecoder::new(true);
         let mut processor = InstructionProcessor::new(TestTTY::new_tty());
 
@@ -735,9 +745,6 @@ br##"
                 amount: Decimal::whole(2)
             }, TxIntentType::Transfer)
     }
-
-
-
 
     #[test]
     pub fn test_simple_transfer_with_multiple_locked_fees() {

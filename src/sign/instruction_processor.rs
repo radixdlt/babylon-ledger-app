@@ -4,8 +4,8 @@ use sbor::instruction_extractor::InstructionExtractor;
 use sbor::math::Decimal;
 use sbor::print::fanout::Fanout;
 use sbor::print::instruction_printer::InstructionPrinter;
-use sbor::print::tx_printer::{Address, DetectedTxType};
 use sbor::print::tty::TTY;
+use sbor::print::tx_printer::{Address, DetectedTxType};
 use sbor::sbor_decoder::{SborEvent, SborEventHandler};
 
 use crate::app_error::AppError;
