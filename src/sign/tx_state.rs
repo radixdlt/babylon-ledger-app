@@ -3,7 +3,7 @@ use sbor::decoder_error::DecoderError;
 use sbor::math::Decimal;
 use sbor::print::tty::TTY;
 use sbor::print::tx_intent_type::TxIntentType;
-use sbor::print::tx_printer::DetectedTxType;
+use sbor::print::tx_printer::{Address, DetectedTxType};
 use sbor::sbor_decoder::{DecodingOutcome, SborDecoder};
 
 use crate::app_error::AppError;
@@ -16,6 +16,15 @@ use crate::ui::multiline_scroller::MultilineMessageScroller;
 use crate::ui::multipage_validator::MultipageValidator;
 use crate::ui::single_message::SingleMessage;
 use crate::utilities::conversion::{lower_as_hex, upper_as_hex};
+
+fn info_message(title: &[u8], message: &[u8]) {
+    MultilineMessageScroller::with_title(
+        core::str::from_utf8(title).unwrap(),
+        core::str::from_utf8(message).unwrap(),
+        true,
+    )
+    .event_loop();
+}
 
 const NONCE_LENGTH: usize = 32;
 const DAPP_ADDRESS_LENGTH: usize = 70;
@@ -155,9 +164,9 @@ impl<T: Copy> TxState<T> {
             nonce_hex[i * 2 + 1] = lower_as_hex(byte);
         }
 
-        self.info_message(b"Origin:", origin);
-        self.info_message(b"dApp Address:", address);
-        self.info_message(b"Nonce:", &nonce_hex);
+        info_message(b"Origin:", origin);
+        info_message(b"dApp Address:", address);
+        info_message(b"Nonce:", &nonce_hex);
 
         let rc = MultipageValidator::new(&[&"Sign Proof?"], &[&"Sign"], &[&"Reject"]).ask();
 
@@ -169,17 +178,8 @@ impl<T: Copy> TxState<T> {
         }
     }
 
-    fn info_message(&mut self, title: &[u8], message: &[u8]) {
-        MultilineMessageScroller::with_title(
-            core::str::from_utf8(title).unwrap(),
-            core::str::from_utf8(message).unwrap(),
-            true,
-        )
-        .event_loop();
-    }
-
     fn fee_info_message(&mut self, fee: &Decimal) {
-        let text = self.processor.format_decimal(fee);
+        let text = self.processor.format_decimal(fee, b" XRD");
 
         MultilineMessageScroller::with_title(
             "Max TX Fee:",
@@ -213,27 +213,27 @@ impl<T: Copy> TxState<T> {
 
     fn show_transaction_fee(&mut self, detected_type: &DetectedTxType) {
         match detected_type {
-            DetectedTxType::OtherWithFee(fee) | DetectedTxType::TransferWithFee(fee) => {
-                self.fee_info_message(fee);
-            }
-            _ => {
-                // Ignore remaining types as detection was not requested
-            }
+            DetectedTxType::Other(fee)
+            | DetectedTxType::Transfer { fee, .. }
+            | DetectedTxType::Error(fee) => match fee {
+                Some(fee) => self.fee_info_message(fee),
+                None => {}
+            },
         }
     }
 
     fn show_detected_tx_type(&mut self, detected_type: &DetectedTxType) {
         let text: &[u8] = match detected_type {
-            DetectedTxType::Other | DetectedTxType::OtherWithFee(..) => b"Other",
-            DetectedTxType::Transfer | DetectedTxType::TransferWithFee(..) => b"Transfer",
-            DetectedTxType::Error => b"Decoding Error",
+            DetectedTxType::Other(..) => b"Other",
+            DetectedTxType::Transfer { .. } => b"Transfer",
+            DetectedTxType::Error(..) => b"Summary Failed",
         };
-        self.info_message(b"TX Type:", text);
+        info_message(b"TX Type:", text);
     }
 
     fn show_digest(&mut self, digest: &Digest) {
         if self.show_digest {
-            self.info_message(b"TX Hash:", &digest.as_hex());
+            info_message(b"TX Hash:", &digest.as_hex());
         }
     }
 
@@ -247,18 +247,51 @@ impl<T: Copy> TxState<T> {
             }
             SignType::Ed25519Summary | SignType::Secp256k1Summary => {
                 self.show_detected_tx_type(&detected_type);
+
+                if let DetectedTxType::Transfer {
+                    fee: _,
+                    src_address,
+                    dst_address,
+                    res_address,
+                    amount,
+                } = detected_type
+                {
+                    self.display_transfer_details(
+                        &src_address,
+                        &dst_address,
+                        &res_address,
+                        &amount,
+                    );
+                }
+
                 self.show_transaction_fee(&detected_type);
 
                 self.show_digest = match detected_type {
-                    DetectedTxType::Transfer
-                    | DetectedTxType::TransferWithFee(..)
-                    | DetectedTxType::Error => false,
-                    DetectedTxType::Other | DetectedTxType::OtherWithFee(..) => true,
+                    DetectedTxType::Transfer { .. } => false,
+                    DetectedTxType::Other(..) | DetectedTxType::Error(..) => true,
                 };
 
                 self.show_digest(digest);
             }
             SignType::AuthEd25519 | SignType::AuthSecp256k1 => {}
+        }
+    }
+
+    fn display_transfer_details(
+        &mut self,
+        src_address: &Address,
+        dst_address: &Address,
+        res_address: &Address,
+        amount: &Decimal,
+    ) {
+        info_message(b"From:", self.processor.format_address(src_address));
+        info_message(b"To:", self.processor.format_address(dst_address));
+
+        if res_address.is_xrd() {
+            info_message(b"Amount:", self.processor.format_decimal(amount, b" XRD"));
+        } else {
+            info_message(b"Resource:", self.processor.format_address(res_address));
+            info_message(b"Amount:", self.processor.format_decimal(amount, b""));
         }
     }
 

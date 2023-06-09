@@ -2,6 +2,7 @@ use core::ops::Range;
 
 use crate::bech32::network::*;
 use crate::print::tty::TTY;
+use crate::print::tx_printer::Address;
 use crate::sbor_decoder::STACK_DEPTH;
 use crate::static_vec::StaticVec;
 
@@ -166,5 +167,23 @@ impl<T: Copy> ParameterPrinterState<T> {
 
     pub fn print_text(&mut self, text: &[u8]) {
         self.display.extend_from_slice(text);
+    }
+
+    pub fn print_address(&mut self) {
+        let mut address = Address::new();
+        address.copy_from_slice(&self.data.as_slice());
+        self.data.clear();
+
+        address.format(&mut self.data, self.network_id);
+
+        self.display.extend_from_slice(b"Address(");
+        self.display.extend_from_slice(self.data.as_slice());
+        self.display.push(b')');
+    }
+
+    pub fn format_address(&mut self, address: &Address) -> &[u8] {
+        self.data.clear();
+        address.format(&mut self.data, self.network_id);
+        self.data.as_slice()
     }
 }

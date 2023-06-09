@@ -1,3 +1,5 @@
+use crate::bech32::encoder::*;
+use crate::bech32::hrp::*;
 use crate::bech32::network::NetworkId;
 use crate::instruction::{Instruction, InstructionInfo};
 use crate::instruction_extractor::ExtractorEvent;
@@ -26,7 +28,7 @@ pub enum FeePhase {
 
 // Summary:
 // Start -> CallMethod -> AddressWithdraw -> ExpectWithdraw + ("withdraw") ->
-// WithdrawDone (+ TakeFromWorktopByAmount) -> ValueDeposit -> ValueDepositDone + end of instruction ->
+// WithdrawDone (+ TakeFromWorktopByAmount) -> ValueDeposit -> Resource -> ResourceDone + end of instruction ->
 // ExpectDepositCall (+ CallMethod) -> AddressDeposit -> ExpectDeposit + ("deposit") -> DoneTransfer
 
 #[derive(Copy, Clone, PartialEq)]
@@ -38,7 +40,8 @@ pub enum DecodingPhase {
     ExpectWithdraw,
     WithdrawDone,
     ValueDeposit,
-    ValueDepositDone,
+    Resource,
+    ResourceDone,
     ExpectDepositCall,
     AddressDeposit,
     ExpectDeposit,
@@ -53,10 +56,11 @@ pub enum DetectedTxType {
         fee: Option<Decimal>,
         src_address: Address,
         dst_address: Address,
+        res_address: Address,
         amount: Decimal,
     },
     Other(Option<Decimal>),
-    Error,
+    Error(Option<Decimal>),
 }
 
 #[cfg(test)]
@@ -68,12 +72,14 @@ impl DetectedTxType {
                     fee,
                     src_address,
                     dst_address,
+                    res_address,
                     amount,
                 },
                 DetectedTxType::Transfer {
                     fee: other_fee,
                     src_address: other_src_address,
                     dst_address: other_dst_address,
+                    res_address: other_res_address,
                     amount: other_amount,
                 },
             ) => {
@@ -85,6 +91,7 @@ impl DetectedTxType {
                 return fee_match
                     && src_address.is_same(other_src_address)
                     && dst_address.is_same(other_dst_address)
+                    && res_address.is_same(other_res_address)
                     && amount.is_same(other_amount);
             }
 
@@ -96,7 +103,14 @@ impl DetectedTxType {
                 }
             }
 
-            (DetectedTxType::Error, DetectedTxType::Error) => true,
+            (DetectedTxType::Error(fee), DetectedTxType::Error(other_fee)) => {
+                match (fee, other_fee) {
+                    (None, None) => true,
+                    (Some(a), Some(b)) => a.is_same(&b),
+                    _ => false,
+                }
+            }
+
             _ => false,
         }
     }
@@ -131,8 +145,30 @@ impl Address {
         }
     }
 
+    pub fn as_ref(&self) -> &[u8] {
+        &self.address
+    }
+
     pub fn is_set(&self) -> bool {
         self.is_set
+    }
+
+    pub fn is_xrd(&self) -> bool {
+        if !self.is_set {
+            return false;
+        }
+
+        if self.address[0] != 0x01 {
+            return false;
+        }
+
+        for i in 1..ADDRESS_LEN as usize {
+            if self.address[i] != 0x00 {
+                return false;
+            }
+        }
+
+        true
     }
 
     pub fn copy_from_slice(&mut self, src: &[u8]) {
@@ -160,10 +196,34 @@ impl Address {
             false
         }
     }
+
+    pub fn prefix(&self) -> Option<&'static str> {
+        if self.is_set {
+            hrp_prefix(self.address[0])
+        } else {
+            None
+        }
+    }
+
+    pub fn format<const N: usize>(&self, data: &mut StaticVec<u8, N>, network_id: NetworkId) {
+        match self.prefix() {
+            Some(prefix) => {
+                data.extend_from_slice(prefix.as_bytes());
+                data.extend_from_slice(hrp_suffix(network_id).as_bytes());
+
+                let encoding_result = Bech32::encode(data.as_slice(), self.as_ref());
+
+                match encoding_result {
+                    Ok(encoder) => data.extend_from_slice(encoder.encoded()),
+                    Err(..) => data.extend_from_slice(b"<bech32 error>"), // unlikely, just for completeness
+                }
+            }
+            None => data.extend_from_slice(b"unknown address type"),
+        }
+    }
 }
 
 pub struct TxIntentPrinter {
-    network_id: NetworkId,
     intent_type: TxIntentType,
     decoding_phase: DecodingPhase,
     fee_phase: FeePhase,
@@ -172,12 +232,12 @@ pub struct TxIntentPrinter {
     amount: Decimal,
     src_address: Address,
     dst_address: Address,
+    res_address: Address,
 }
 
 impl TxIntentPrinter {
-    pub fn new(network_id: NetworkId) -> Self {
+    pub fn new() -> Self {
         Self {
-            network_id,
             intent_type: TxIntentType::General,
             decoding_phase: DecodingPhase::Start,
             fee_phase: FeePhase::Start,
@@ -186,6 +246,7 @@ impl TxIntentPrinter {
             amount: Decimal::ZERO,
             src_address: Address::new(),
             dst_address: Address::new(),
+            res_address: Address::new(),
         }
     }
 
@@ -195,7 +256,6 @@ impl TxIntentPrinter {
 
     pub fn reset(&mut self) {
         self.intent_type = TxIntentType::General;
-        self.network_id = NetworkId::LocalNet;
         self.decoding_phase = DecodingPhase::Start;
         self.fee_phase = FeePhase::Start;
         self.data.clear();
@@ -203,10 +263,7 @@ impl TxIntentPrinter {
         self.amount = Decimal::ZERO;
         self.src_address.reset();
         self.dst_address.reset();
-    }
-
-    pub fn set_network(&mut self, network_id: NetworkId) {
-        self.network_id = network_id;
+        self.res_address.reset();
     }
 
     pub fn get_detected_tx_type(&self) -> DetectedTxType {
@@ -220,8 +277,8 @@ impl TxIntentPrinter {
             return DetectedTxType::Other(fee);
         }
 
-        if !(self.src_address.is_set() && self.dst_address.is_set()) {
-            return DetectedTxType::Error;
+        if !(self.src_address.is_set() && self.dst_address.is_set() && self.res_address.is_set()) {
+            return DetectedTxType::Error(fee);
         }
 
         match self.decoding_phase {
@@ -229,10 +286,11 @@ impl TxIntentPrinter {
                 fee,
                 src_address: self.src_address,
                 dst_address: self.dst_address,
+                res_address: self.res_address,
                 amount: self.amount,
             },
-            DecodingPhase::Start => DetectedTxType::Other(fee),
-            _ => DetectedTxType::Error,
+            DecodingPhase::DecodingError => DetectedTxType::Error(fee),
+            _ => DetectedTxType::Other(fee),
         }
     }
 
@@ -276,7 +334,7 @@ impl TxIntentPrinter {
 
     fn instruction_end(&mut self) {
         match self.decoding_phase {
-            DecodingPhase::ValueDepositDone => {
+            DecodingPhase::ResourceDone => {
                 self.decoding_phase = DecodingPhase::ExpectDepositCall;
             }
             _ => {}
@@ -351,7 +409,12 @@ impl TxIntentPrinter {
 
             DecodingPhase::ValueDeposit => {
                 self.amount = self.extract_decimal();
-                self.decoding_phase = DecodingPhase::ValueDepositDone;
+                self.decoding_phase = DecodingPhase::Resource;
+            }
+
+            DecodingPhase::Resource => {
+                self.res_address.copy_from_slice(self.data.as_slice());
+                self.decoding_phase = DecodingPhase::ResourceDone;
             }
 
             DecodingPhase::AddressDeposit => {

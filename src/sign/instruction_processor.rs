@@ -4,7 +4,7 @@ use sbor::instruction_extractor::InstructionExtractor;
 use sbor::math::Decimal;
 use sbor::print::fanout::Fanout;
 use sbor::print::instruction_printer::InstructionPrinter;
-use sbor::print::tx_printer::DetectedTxType;
+use sbor::print::tx_printer::{Address, DetectedTxType};
 use sbor::print::tty::TTY;
 use sbor::sbor_decoder::{SborEvent, SborEventHandler};
 
@@ -37,7 +37,7 @@ impl<T: Copy> InstructionProcessor<T> {
             state: SigningFlowState::new(),
             extractor: InstructionExtractor::new(),
             ins_printer: InstructionPrinter::new(NetworkId::LocalNet, tty),
-            tx_printer: TxIntentPrinter::new(NetworkId::LocalNet),
+            tx_printer: TxIntentPrinter::new(),
         }
     }
 
@@ -67,11 +67,9 @@ impl<T: Copy> InstructionProcessor<T> {
             SignType::Ed25519 | SignType::Ed25519Summary | SignType::AuthEd25519 => {
                 let network_id = self.state.network_id()?;
                 self.ins_printer.set_network(network_id);
-                self.tx_printer.set_network(network_id);
             }
             SignType::Secp256k1 | SignType::Secp256k1Summary | SignType::AuthSecp256k1 => {
                 self.ins_printer.set_network(NetworkId::OlympiaMainNet);
-                self.tx_printer.set_network(NetworkId::OlympiaMainNet);
             }
         };
         Ok(())
@@ -119,7 +117,11 @@ impl<T: Copy> InstructionProcessor<T> {
         self.tx_printer.get_detected_tx_type()
     }
 
-    pub fn format_decimal(&mut self, value: &Decimal) -> &[u8] {
-        self.ins_printer.format_decimal(value)
+    pub fn format_decimal(&mut self, value: &Decimal, suffix: &[u8]) -> &[u8] {
+        self.ins_printer.format_decimal(value, suffix)
+    }
+
+    pub fn format_address(&mut self, address: &Address) -> &[u8] {
+        self.ins_printer.format_address(address)
     }
 }
