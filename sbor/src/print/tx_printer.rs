@@ -212,6 +212,7 @@ impl Address {
                 data.extend_from_slice(hrp_suffix(network_id).as_bytes());
 
                 let encoding_result = Bech32::encode(data.as_slice(), self.as_ref());
+                data.clear();
 
                 match encoding_result {
                     Ok(encoder) => data.extend_from_slice(encoder.encoded()),
