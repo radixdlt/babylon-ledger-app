@@ -90,6 +90,10 @@ pub mod tests {
             data: &TX_SIMPLE_TRANSFER_NFT,
         },
         Blob {
+            name: "simple_transfer_nft_by_id",
+            data: &TX_SIMPLE_TRANSFER_NFT_BY_ID,
+        },
+        Blob {
             name: "simple_transfer_with_multiple_locked_fees",
             data: &TX_SIMPLE_TRANSFER_WITH_MULTIPLE_LOCKED_FEES,
         },
