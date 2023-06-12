@@ -28,7 +28,8 @@ pub enum FeePhase {
 
 // Summary:
 // Start -> CallMethod -> AddressWithdraw -> ExpectWithdraw + ("withdraw") ->
-// WithdrawDone (+ TakeFromWorktopByAmount) -> ValueDeposit -> Resource -> ResourceDone + end of instruction ->
+// /- WithdrawDone (+ TakeFromWorktopByAmount) -> ValueDeposit -> Resource -> ResourceDone + end of instruction ->
+// \- WithdrawDone (+ TakeFromWorktopByIds) -> ValueCountDeposit -> ValueCountDepositIds -> ValueCountDone -> Resource -> ResourceDone + end of instruction ->
 // ExpectDepositCall (+ CallMethod) -> AddressDeposit -> ExpectDeposit + ("deposit") -> DoneTransfer
 
 #[derive(Copy, Clone, PartialEq)]
@@ -39,6 +40,9 @@ pub enum DecodingPhase {
     AddressWithdraw,
     ExpectWithdraw,
     WithdrawDone,
+    ValueCountDeposit,
+    ValueCountDepositIds,
+    ValueCountDone,
     ValueDeposit,
     Resource,
     ResourceDone,
@@ -325,6 +329,9 @@ impl TxIntentPrinter {
             (DecodingPhase::WithdrawDone, Instruction::TakeFromWorktopByAmount) => {
                 self.decoding_phase = DecodingPhase::ValueDeposit;
             }
+            (DecodingPhase::WithdrawDone, Instruction::TakeFromWorktopByIds) => {
+                self.decoding_phase = DecodingPhase::ValueCountDeposit;
+            }
             (DecodingPhase::ExpectDepositCall, Instruction::CallMethod) => {
                 self.decoding_phase = DecodingPhase::AddressDeposit;
             }
@@ -353,8 +360,14 @@ impl TxIntentPrinter {
             (DecodingPhase::AddressWithdraw, 1) => {
                 self.decoding_phase = DecodingPhase::ExpectWithdraw;
             }
+            (DecodingPhase::ValueCountDeposit, 0) => {
+                self.decoding_phase = DecodingPhase::ValueCountDepositIds;
+            }
             (DecodingPhase::ExpectDepositCall, 0) => {
                 self.decoding_phase = DecodingPhase::AddressDeposit;
+            }
+            (DecodingPhase::ValueCountDone, 1) => {
+                self.decoding_phase = DecodingPhase::Resource;
             }
 
             (_, _) => {}
@@ -374,6 +387,10 @@ impl TxIntentPrinter {
     fn parameter_data(&mut self, source_event: SborEvent) {
         match source_event {
             SborEvent::Data(data) => self.data.push(data),
+            SborEvent::Len(len) if self.decoding_phase == DecodingPhase::ValueCountDepositIds => {
+                self.amount = Decimal::whole(len.into());
+                self.decoding_phase = DecodingPhase::ValueCountDone;
+            }
             _ => {}
         }
     }
