@@ -215,6 +215,7 @@ impl SborDecoder {
             DecoderPhase::ReadingData => self.read_data(handler, byte),
             DecoderPhase::ReadingDiscriminator => self.read_discriminator(handler, byte),
             DecoderPhase::ReadingNFLDiscriminator => self.read_nfl_discriminator(handler, byte),
+            DecoderPhase::ReadingAddressDiscriminator => self.read_address_discriminator(handler, byte),
         }
     }
 
@@ -242,6 +243,20 @@ impl SborDecoder {
         }
 
         self.advance_phase(handler)
+    }
+
+    fn read_address_discriminator(
+        &mut self,
+        handler: &mut impl SborEventHandler,
+        byte: u8,
+    ) -> Result<(), DecoderError> {
+        handler.handle(SborEvent::Discriminator(byte));
+
+        match byte {
+            ADDRESS_STATIC => self.read_len(handler, ADDRESS_STATIC_LEN),
+            ADDRESS_NAMED => self.read_len(handler, ADDRESS_NAMED_LEN),
+            _ => Err(DecoderError::UnknownDiscriminator(self.byte_count, byte)),
+        }
     }
 
     fn decoding_outcome(&mut self) -> DecodingOutcome {
@@ -625,7 +640,7 @@ mod tests {
     }
 
     impl EventCollector {
-        pub const LENGTH: usize = 1800;
+        pub const LENGTH: usize = 3500;
 
         pub fn new() -> Self {
             Self {
@@ -1389,8 +1404,38 @@ mod tests {
     }
 
     #[test]
+    pub fn test_address_allocation() {
+        check_partial_decoding(&TX_ADDRESS_ALLOCATION);
+    }
+
+    #[test]
+    pub fn test_create_non_fungible_resource_with_initial_supply() {
+        check_partial_decoding(&TX_CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY);
+    }
+
+    #[test]
+    pub fn test_create_validator() {
+        check_partial_decoding(&TX_CREATE_VALIDATOR);
+    }
+
+    #[test]
+    pub fn test_resource_auth_zone() {
+        check_partial_decoding(&TX_RESOURCE_AUTH_ZONE);
+    }
+
+    #[test]
     pub fn test_simple_transfer() {
         check_partial_decoding(&TX_SIMPLE_TRANSFER);
+    }
+
+    #[test]
+    pub fn test_simple_transfer_nft() {
+        check_partial_decoding(&TX_SIMPLE_TRANSFER_NFT);
+    }
+
+    #[test]
+    pub fn test_simple_transfer_nft_by_id() {
+        check_partial_decoding(&TX_SIMPLE_TRANSFER_NFT_BY_ID);
     }
 
     #[test]

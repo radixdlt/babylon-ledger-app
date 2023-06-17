@@ -126,23 +126,23 @@ const fn max(a: usize, b: usize) -> usize {
 }
 
 //Max of address length and decimal length
-const MAX_TX_DATA_SIZE: usize = max(Decimal::SIZE_IN_BYTES, ADDRESS_LEN as usize);
+const MAX_TX_DATA_SIZE: usize = max(Decimal::SIZE_IN_BYTES, ADDRESS_STATIC_LEN as usize);
 
 #[derive(Copy, Clone, Debug)]
 pub struct Address {
-    address: [u8; ADDRESS_LEN as usize],
+    address: [u8; ADDRESS_STATIC_LEN as usize],
     is_set: bool,
 }
 
 impl Address {
     pub fn new() -> Self {
         Self {
-            address: [0; ADDRESS_LEN as usize],
+            address: [0; ADDRESS_STATIC_LEN as usize],
             is_set: false,
         }
     }
 
-    pub fn from_array(src: [u8; ADDRESS_LEN as usize]) -> Self {
+    pub fn from_array(src: [u8; ADDRESS_STATIC_LEN as usize]) -> Self {
         Self {
             address: src,
             is_set: true,
@@ -166,7 +166,7 @@ impl Address {
             return false;
         }
 
-        for i in 1..ADDRESS_LEN as usize {
+        for i in 1..ADDRESS_STATIC_LEN as usize {
             if self.address[i] != 0x00 {
                 return false;
             }
@@ -190,7 +190,7 @@ impl Address {
 
     pub fn reset(&mut self) {
         self.is_set = false;
-        self.address = [0; ADDRESS_LEN as usize];
+        self.address = [0; ADDRESS_STATIC_LEN as usize];
     }
 
     pub fn is_same(&self, other: &Address) -> bool {
@@ -326,10 +326,10 @@ impl TxIntentPrinter {
             (DecodingPhase::Start, Instruction::CallMethod) => {
                 self.decoding_phase = DecodingPhase::CallMethod;
             }
-            (DecodingPhase::WithdrawDone, Instruction::TakeFromWorktopByAmount) => {
+            (DecodingPhase::WithdrawDone, Instruction::TakeFromWorktop) => {
                 self.decoding_phase = DecodingPhase::ValueDeposit;
             }
-            (DecodingPhase::WithdrawDone, Instruction::TakeFromWorktopByIds) => {
+            (DecodingPhase::WithdrawDone, Instruction::TakeNonFungiblesFromWorktop) => {
                 self.decoding_phase = DecodingPhase::ValueCountDeposit;
             }
             (DecodingPhase::ExpectDepositCall, Instruction::CallMethod) => {

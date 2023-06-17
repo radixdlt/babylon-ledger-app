@@ -33,6 +33,7 @@ pub const TYPE_BLOB: u8 = 0x84;
 pub const TYPE_DECIMAL: u8 = 0x85;
 pub const TYPE_PRECISE_DECIMAL: u8 = 0x86;
 pub const TYPE_NON_FUNGIBLE_LOCAL_ID: u8 = 0x87;
+pub const TYPE_ADDRESS_RESERVATION: u8 = 0x88;
 
 pub const SIMPLE_TYPES: [u8; 20] = [
     TYPE_BOOL,
@@ -58,7 +59,8 @@ pub const SIMPLE_TYPES: [u8; 20] = [
 ];
 
 // end of custom types
-pub const ADDRESS_LEN: u8 = 27; // 1 byte discriminator + 26 bytes address
+pub const ADDRESS_STATIC_LEN: u8 = 30; // 1 byte discriminator + 29 bytes address
+pub const ADDRESS_NAMED_LEN: u8 = 4;
 pub const COMPONENT_LEN: u8 = 36;
 
 pub const INTEGER_LEN: u8 = 8;
@@ -79,6 +81,10 @@ pub const NFL_INTEGER: u8 = 1;
 pub const NFL_BYTES: u8 = 2;
 pub const NFL_UUID: u8 = 3;
 
+// Address discriminators
+pub const ADDRESS_STATIC: u8 = 0;
+pub const ADDRESS_NAMED: u8 = 1;
+
 #[repr(u8)]
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum DecoderPhase {
@@ -90,6 +96,7 @@ pub enum DecoderPhase {
     ReadingData,
     ReadingDiscriminator,
     ReadingNFLDiscriminator,
+    ReadingAddressDiscriminator,
 }
 
 #[repr(C, align(4))]
@@ -138,6 +145,12 @@ const NON_FUNGIBLE_LOCAL_ID_ENCODING: [DecoderPhase; 4] = [
     DecoderPhase::ReadingTypeId,
     DecoderPhase::ReadingNFLDiscriminator,
     DecoderPhase::ReadingLen,
+    DecoderPhase::ReadingData,
+];
+
+const ADDRESS_ENCODING: [DecoderPhase; 3] = [
+    DecoderPhase::ReadingTypeId,
+    DecoderPhase::ReadingAddressDiscriminator,
     DecoderPhase::ReadingData,
 ];
 
@@ -232,8 +245,8 @@ pub fn to_type_info(byte: u8) -> Option<TypeInfo> {
 
         TYPE_ADDRESS => Some(TypeInfo {
             type_id: TYPE_ADDRESS,
-            next_phases: &FIXED_LEN_DECODING,
-            fixed_len: ADDRESS_LEN,
+            next_phases: &ADDRESS_ENCODING,
+            fixed_len: 0,
         }),
 
         TYPE_BUCKET => Some(TypeInfo {
@@ -270,6 +283,11 @@ pub fn to_type_info(byte: u8) -> Option<TypeInfo> {
             type_id: TYPE_NON_FUNGIBLE_LOCAL_ID,
             next_phases: &NON_FUNGIBLE_LOCAL_ID_ENCODING, // Mix of fixed/variable len encoding
             fixed_len: 0,
+        }),
+        TYPE_ADDRESS_RESERVATION => Some(TypeInfo {
+            type_id: TYPE_ADDRESS_RESERVATION,
+            next_phases: &FIXED_LEN_DECODING, // Mix of fixed/variable len encoding
+            fixed_len: 4,
         }),
         _ => None,
     }

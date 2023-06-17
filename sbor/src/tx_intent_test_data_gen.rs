@@ -97,6 +97,18 @@ pub mod tests {
             name: "simple_transfer_with_multiple_locked_fees",
             data: &TX_SIMPLE_TRANSFER_WITH_MULTIPLE_LOCKED_FEES,
         },
+        Blob {
+            name: "address_allocation",
+            data: &TX_ADDRESS_ALLOCATION,
+        },
+        Blob {
+            name: "create_non_fungible_resource_with_initial_supply",
+            data: &TX_CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY,
+        },
+        Blob {
+            name: "create_validator",
+            data: &TX_CREATE_VALIDATOR,
+        },
     ];
 
     #[test]

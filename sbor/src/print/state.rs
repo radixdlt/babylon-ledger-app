@@ -169,9 +169,22 @@ impl<T: Copy> ParameterPrinterState<T> {
         self.display.extend_from_slice(text);
     }
 
-    pub fn print_address(&mut self) {
+    pub fn print_static_address(&mut self) {
         let mut address = Address::new();
-        address.copy_from_slice(&self.data.as_slice());
+        address.copy_from_slice(&self.data.as_slice()[1..]);
+        self.data.clear();
+
+        address.format(&mut self.data, self.network_id);
+
+        self.display.extend_from_slice(b"Address(");
+        self.display.extend_from_slice(self.data.as_slice());
+        self.display.push(b')');
+    }
+
+    pub fn print_named_address(&mut self) {
+        let mut address = Address::new();
+        address.copy_from_slice(&self.data.as_slice()[1..]);
+
         self.data.clear();
 
         address.format(&mut self.data, self.network_id);

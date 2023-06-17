@@ -351,7 +351,7 @@ mod tests {
 
     #[test]
     pub fn test_access_rule() {
-        check_partial_decoding(&TX_ACCESS_RULE, &[Instruction::SetMethodAccessRule]);
+        check_partial_decoding(&TX_ACCESS_RULE, &[Instruction::CallMethod]);
     }
 
     #[test]
@@ -415,26 +415,26 @@ mod tests {
         check_partial_decoding(
             &TX_METADATA,
             &[
-                Instruction::SetMetadata,
-                Instruction::SetMetadata,
-                Instruction::SetMetadata,
-                Instruction::SetMetadata,
-                Instruction::SetMetadata,
-                Instruction::SetMetadata,
-                Instruction::SetMetadata,
-                Instruction::SetMetadata,
-                Instruction::SetMetadata,
-                Instruction::SetMetadata,
-                Instruction::SetMetadata,
-                Instruction::SetMetadata,
-                Instruction::SetMetadata,
-                Instruction::SetMetadata,
-                Instruction::SetMetadata,
-                Instruction::SetMetadata,
-                Instruction::SetMetadata,
-                Instruction::RemoveMetadata,
-                Instruction::RemoveMetadata,
-                Instruction::RemoveMetadata,
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+                Instruction::CallMethod,
             ],
         );
     }
@@ -446,7 +446,7 @@ mod tests {
             &[
                 Instruction::CallMethod,
                 Instruction::CallMethod,
-                Instruction::MintFungible,
+                Instruction::CallMethod,
                 Instruction::CallMethod,
             ],
         );
@@ -459,7 +459,7 @@ mod tests {
             &[
                 Instruction::CallMethod,
                 Instruction::CallMethod,
-                Instruction::MintNonFungible,
+                Instruction::CallMethod,
                 Instruction::CallMethod,
             ],
         );
@@ -469,13 +469,13 @@ mod tests {
     pub fn test_publish_package() {
         check_partial_decoding(
             &TX_PUBLISH_PACKAGE,
-            &[Instruction::CallMethod, Instruction::PublishPackage],
+            &[Instruction::CallMethod, Instruction::CallMethod],
         );
     }
 
     #[test]
     pub fn test_resource_recall() {
-        check_partial_decoding(&TX_RESOURCE_RECALL, &[Instruction::RecallResource]);
+        check_partial_decoding(&TX_RESOURCE_RECALL, &[Instruction::CallMethod]);
     }
 
     #[test]
@@ -484,13 +484,13 @@ mod tests {
             &TX_RESOURCE_WORKTOP,
             &[
                 Instruction::CallMethod,
-                Instruction::TakeFromWorktopByAmount,
+                Instruction::TakeFromWorktop,
                 Instruction::CallMethod,
-                Instruction::AssertWorktopContainsByAmount,
+                Instruction::AssertWorktopContains,
                 Instruction::AssertWorktopContains,
                 Instruction::TakeFromWorktop,
                 Instruction::ReturnToWorktop,
-                Instruction::TakeFromWorktopByIds,
+                Instruction::TakeNonFungiblesFromWorktop,
                 Instruction::CallMethod,
             ],
         );
@@ -501,10 +501,10 @@ mod tests {
         check_partial_decoding(
             &TX_ROYALTY,
             &[
-                Instruction::SetPackageRoyaltyConfig,
-                Instruction::SetComponentRoyaltyConfig,
-                Instruction::ClaimPackageRoyalty,
-                Instruction::ClaimComponentRoyalty,
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+                Instruction::CallMethod,
             ],
         );
     }
@@ -523,14 +523,68 @@ mod tests {
     }
 
     #[test]
+    pub fn test_address_allocation() {
+        check_partial_decoding(
+            &TX_ADDRESS_ALLOCATION,
+            &[
+            ],
+        );
+    }
+
+    #[test]
+    pub fn test_create_non_fungible_resource_with_initial_supply() {
+        check_partial_decoding(
+            &TX_CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY,
+            &[
+            ],
+        );
+    }
+
+    #[test]
+    pub fn test_create_validator() {
+        check_partial_decoding(
+            &TX_CREATE_VALIDATOR,
+            &[
+            ],
+        );
+    }
+
+    #[test]
+    pub fn test_resource_auth_zone() {
+        check_partial_decoding(
+            &TX_RESOURCE_AUTH_ZONE,
+            &[
+            ],
+        );
+    }
+
+    #[test]
     pub fn test_simple_transfer() {
         check_partial_decoding(
             &TX_SIMPLE_TRANSFER,
             &[
                 Instruction::CallMethod,
                 Instruction::CallMethod,
-                Instruction::TakeFromWorktopByAmount,
+                Instruction::TakeFromWorktop,
                 Instruction::CallMethod,
+            ],
+        );
+    }
+
+    #[test]
+    pub fn test_simple_transfer_nft() {
+        check_partial_decoding(
+            &TX_SIMPLE_TRANSFER_NFT,
+            &[
+            ],
+        );
+    }
+
+    #[test]
+    pub fn test_simple_transfer_nft_by_id() {
+        check_partial_decoding(
+            &TX_SIMPLE_TRANSFER_NFT_BY_ID,
+            &[
             ],
         );
     }
@@ -542,7 +596,7 @@ mod tests {
             &[
                 Instruction::CallMethod,
                 Instruction::CallMethod,
-                Instruction::TakeFromWorktopByAmount,
+                Instruction::TakeFromWorktop,
                 Instruction::CallMethod,
                 Instruction::CallMethod,
             ],
