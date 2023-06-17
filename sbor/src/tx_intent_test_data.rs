@@ -866,27 +866,27 @@ pub mod tests {
         0x22, // Enum
         0x01, // Discriminator - 1 - V1 intent
         0x04, // 4 fields
-            0x21, // field 0 - tuple
-            0x07, // 7 fields
-                0x07, 0xf2, // field 0; u8 - network 0xf2
-                0x0a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // field 1; u64 - start epoch 17
-                0x0a, 0xe8, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // field 2; u64 - end epoch   26
-                0x09, 0x05, 0x00, 0x00, 0x00, // field 3; u32 - nonce                               31
-                0x22, // field 4; Enum                                                              32
-                    0x01, // Discriminator - 1 - PublicKey::Ed25519 + 32 bytes payload              33
-                        0x01, // 1 subfield                                                         34
-                        0x20, // Array                                                              35
-                        0x07, // u8                                                                 36
-                        0x20, // 32 bytes                                                           37
-                        // Payload
-                        0xf3, 0x81, 0x62, 0x6e, 0x41, 0xe7, 0x02, 0x7e, 0xa4, 0x31, 0xbf, 0xe3, 0x00, 0x9e, 0x94, 0xbd,
-                        0xd2, 0x5a, 0x74, 0x6b, 0xee, 0xc4, 0x68, 0x94, 0x8d, 0x6c, 0x3c, 0x7c, 0x5d, 0xc9, 0xa5, 0x4b, //69
-                0x01, 0x00, // field 5; bool false  // 71
-                0x08, 0x03, 0x00, // field 6; u16   // 74
-        0x20, // Array (instructions)
-        0x22, // Enum
-        0x01, // 1 element
-            0x44, // Enum discriminator - access_rules
+1            0x21, // field 0 - tuple
+1            0x07, // 7 fields
+2                0x07, 0xf2, // field 0; u8 - network 0xf2
+2                0x0a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // field 1; u64 - start epoch 17
+2                0x0a, 0xe8, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // field 2; u64 - end epoch   26
+2                0x09, 0x05, 0x00, 0x00, 0x00, // field 3; u32 - nonce                               31
+2                0x22, // field 4; Enum                                                              32
+3                    0x01, // Discriminator - 1 - PublicKey::Ed25519 + 32 bytes payload              33
+3                        0x01, // 1 subfield                                                         34
+3                        0x20, // Array                                                              35
+3                        0x07, // u8                                                                 36
+3                        0x20, // 32 bytes                                                           37
+3                        // Payload
+3                        0xf3, 0x81, 0x62, 0x6e, 0x41, 0xe7, 0x02, 0x7e, 0xa4, 0x31, 0xbf, 0xe3, 0x00, 0x9e, 0x94, 0xbd,
+3                        0xd2, 0x5a, 0x74, 0x6b, 0xee, 0xc4, 0x68, 0x94, 0x8d, 0x6c, 0x3c, 0x7c, 0x5d, 0xc9, 0xa5, 0x4b, //69
+2                0x01, 0x00, // field 5; bool false  // 71
+2                0x08, 0x03, 0x00, // field 6; u16   // 74
+1        0x20, // Array (instructions)
+1        0x22, // Enum
+1        0x01, // 1 element
+2            0x44, // Enum discriminator - access_rules
             0x03, // 3 fields
                 0x22, // Field 0 - Enum
                     0x00, // Discriminator 0 - dynamic global address
