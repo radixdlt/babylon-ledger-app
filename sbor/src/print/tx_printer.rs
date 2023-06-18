@@ -302,7 +302,7 @@ impl TxIntentPrinter {
     pub fn handle(&mut self, event: ExtractorEvent) {
         match event {
             ExtractorEvent::InstructionStart(info, ..) => self.instruction_start(info),
-            ExtractorEvent::ParameterStart(_, count, ..) => self.parameter_start(count),
+            ExtractorEvent::ParameterStart(event, count, ..) => self.parameter_start(event, count),
             ExtractorEvent::ParameterData(data) => self.parameter_data(data),
             ExtractorEvent::ParameterEnd(..) => self.parameter_end(),
             ExtractorEvent::InstructionEnd => self.instruction_end(),
@@ -350,15 +350,23 @@ impl TxIntentPrinter {
         self.fee_phase = FeePhase::Start;
     }
 
-    fn parameter_start(&mut self, param_count: u32) {
+    fn parameter_start(&mut self, event: SborEvent, param_count: u32) {
         self.data.clear();
 
         match (self.decoding_phase, param_count) {
             (DecodingPhase::CallMethod, 0) => {
-                self.decoding_phase = DecodingPhase::AddressWithdraw;
+                if let SborEvent::Start {type_id, ..} = event {
+                    if type_id == TYPE_ADDRESS {
+                        self.decoding_phase = DecodingPhase::AddressWithdraw;
+                    }
+                }
             }
             (DecodingPhase::AddressWithdraw, 1) => {
-                self.decoding_phase = DecodingPhase::ExpectWithdraw;
+                if let SborEvent::Start {type_id, ..} = event {
+                    if type_id == TYPE_ADDRESS {
+                        self.decoding_phase = DecodingPhase::ExpectWithdraw;
+                    }
+                }
             }
             (DecodingPhase::ValueCountDeposit, 0) => {
                 self.decoding_phase = DecodingPhase::ValueCountDepositIds;
@@ -391,6 +399,7 @@ impl TxIntentPrinter {
                 self.amount = Decimal::whole(len.into());
                 self.decoding_phase = DecodingPhase::ValueCountDone;
             }
+            SborEvent::Start {..} => self.data.clear(),
             _ => {}
         }
     }

@@ -408,9 +408,34 @@ mod tests {
         tx_printer: TxIntentPrinter,
     }
 
+    pub struct DebugFanout<'a, T: Copy> {
+        ins_printer: &'a mut InstructionPrinter<T>,
+        tx_printer: &'a mut TxIntentPrinter,
+    }
+
+    impl<'a, T: Copy> DebugFanout<'a, T> {
+        pub fn new(
+            ins_printer: &'a mut InstructionPrinter<T>,
+            tx_printer: &'a mut TxIntentPrinter,
+        ) -> Self {
+            Self {
+                ins_printer,
+                tx_printer,
+            }
+        }
+    }
+
+    impl<'a, T: Copy> InstructionHandler for DebugFanout<'a, T> {
+        fn handle(&mut self, evt: ExtractorEvent) {
+            //println!("Event: {:?}", evt);
+            self.ins_printer.handle(evt);
+            self.tx_printer.handle(evt);
+        }
+    }
+
     impl<T: Copy> SborEventHandler for InstructionProcessor<T> {
         fn handle(&mut self, evt: SborEvent) {
-            let mut fanout = Fanout::new(&mut self.ins_printer, &mut self.tx_printer);
+            let mut fanout = DebugFanout::new(&mut self.ins_printer, &mut self.tx_printer);
             self.extractor.handle_event(&mut fanout, evt);
         }
     }
@@ -714,40 +739,51 @@ br##"
 
     #[test]
     pub fn test_address_allocation() {
-        check_partial_decoding(&TX_ADDRESS_ALLOCATION,
-                               br##"
-"##, &DetectedTxType::Other(None))
+        check_partial_decoding(
+            &TX_ADDRESS_ALLOCATION,
+            br##"
+"##,
+            &DetectedTxType::Other(None),
+        )
     }
 
     #[test]
     pub fn test_create_non_fungible_resource_with_initial_supply() {
-        check_partial_decoding(&TX_CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY,
-                               br##"
-"##, &DetectedTxType::Other(None))
+        check_partial_decoding(
+            &TX_CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY,
+            br##"
+"##,
+            &DetectedTxType::Other(None),
+        )
     }
 
     #[test]
     pub fn test_create_validator() {
-        check_partial_decoding(&TX_CREATE_VALIDATOR,
-                               br##"
-"##, &DetectedTxType::Other(None))
+        check_partial_decoding(
+            &TX_CREATE_VALIDATOR,
+            br##"
+"##,
+            &DetectedTxType::Other(None),
+        )
     }
 
     #[test]
     pub fn test_resource_auth_zone() {
-        check_partial_decoding(&TX_RESOURCE_AUTH_ZONE,
-                               br##"
-"##, &DetectedTxType::Other(None))
+        check_partial_decoding(
+            &TX_RESOURCE_AUTH_ZONE,
+            br##"
+"##,
+            &DetectedTxType::Other(None),
+        )
     }
-
     #[test]
     pub fn test_simple_transfer() {
         check_partial_decoding_with_type(&TX_SIMPLE_TRANSFER,
                                br##"
-1 of 4: CallMethod Address(account_loc1p9j7zjlzzxfpc9w8dewfavme6tyl3lzl2sevfwtk0jlqu600lh) "lock_fee" Tuple(Decimal(10), )
-2 of 4: CallMethod Address(account_loc1p9j7zjlzzxfpc9w8dewfavme6tyl3lzl2sevfwtk0jlqu600lh) "withdraw" Tuple(Address(resource_loc1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq7qej9q), Decimal(123), )
-3 of 4: TakeFromWorktopByAmount Decimal(123) Address(resource_loc1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq7qej9q)
-4 of 4: CallMethod Address(account_loc1pxhyn798qaehnxz6qwyj6jx5qm296j4j5uuqh4av7h5saywq8x) "deposit" Tuple(Bucket(0u32), )
+1 of 4: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "lock_fee" Tuple(Decimal(10), )
+2 of 4: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "withdraw" Tuple(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), Decimal(123), )
+3 of 4: TakeFromWorktop Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al) Decimal(123)
+4 of 4: CallMethod Enum<0u8>(Address(account_loc1cyzfj6p254jy6lhr237s7pcp8qqz6c8ahq9mn6nkdjxxxat5pjq9xc), ) "try_deposit_or_abort" Tuple(Bucket(0u32), )
 "##, &DetectedTxType::Transfer {
                 fee: Some(Decimal::whole(10)),
                 src_address: Address::from_array([0x09, 0x65, 0xe1, 0x4b, 0xe2, 0x11, 0x92, 0x1c, 0x15, 0xc7, 0x6e, 0x5c, 0x9e, 0xb3, 0x79, 0xd2, 0xc9, 0xf8, 0xfc, 0x5f, 0x54, 0x32, 0xc4, 0xb9, 0x76, 0x7c, 0xbe, 0x00, 0x00, 0x00,]),
@@ -761,10 +797,10 @@ br##"
     pub fn test_simple_transfer_nft() {
         check_partial_decoding_with_type(&TX_SIMPLE_TRANSFER_NFT,
                                          br##"
-1 of 4: CallMethod Address(account_loc1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqsshmat9) "lock_fee" Tuple(Decimal(10), )
-2 of 4: CallMethod Address(account_loc1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqsshmat9) "withdraw_non_fungibles" Tuple(Address(resource_loc1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpwwehl), Array<NonFungibleLocalId>(#1u64#, #2u64#, ), )
-3 of 4: TakeFromWorktopByAmount Decimal(2) Address(resource_loc1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpwwehl)
-4 of 4: CallMethod Address(account_loc1pxhyn798qaehnxz6qwyj6jx5qm296j4j5uuqh4av7h5saywq8x) "deposit" Tuple(Bucket(0u32), )
+1 of 4: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "lock_fee" Tuple(Decimal(10), )
+2 of 4: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "withdraw_non_fungibles" Tuple(Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq), Array<NonFungibleLocalId>(#1u64#, #2u64#, ), )
+3 of 4: TakeFromWorktop Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq) Decimal(2)
+4 of 4: CallMethod Enum<0u8>(Address(account_loc1cyzfj6p254jy6lhr237s7pcp8qqz6c8ahq9mn6nkdjxxxat5pjq9xc), ) "try_deposit_or_abort" Tuple(Bucket(0u32), )
 "##, &DetectedTxType::Transfer {
                 fee: Some(Decimal::whole(10)),
                 src_address: Address::from_array([0x04, 0x89, 0x44, 0xf6, 0xce, 0x22, 0x31, 0x5a, 0x26, 0xc4, 0xb9, 0x0c, 0x6e, 0x7e, 0x09, 0xa0, 0x93, 0xdc, 0xbc, 0x98, 0xc8, 0x9e, 0x67, 0xd3, 0x2b, 0x2d, 0xc1, 0x00, 0x00, 0x00,]),
@@ -778,10 +814,10 @@ br##"
     pub fn test_simple_transfer_nft_by_id() {
         check_partial_decoding_with_type(&TX_SIMPLE_TRANSFER_NFT_BY_ID,
                                          br##"
-1 of 4: CallMethod Address(account_loc1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqsshmat9) "lock_fee" Tuple(Decimal(10), )
-2 of 4: CallMethod Address(account_loc1qjy5fakwygc45fkyhyxxulsf5zfae0ycez0x05et9hqsshmat9) "withdraw_non_fungibles" Tuple(Address(resource_loc1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpwwehl), Array<NonFungibleLocalId>(#1u64#, #2u64#, #3u64#, ), )
-3 of 4: TakeFromWorktopByIds Array<NonFungibleLocalId>(#1u64#, #2u64#, #3u64#, ) Address(resource_loc1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpwwehl)
-4 of 4: CallMethod Address(account_loc1pxhyn798qaehnxz6qwyj6jx5qm296j4j5uuqh4av7h5saywq8x) "deposit" Tuple(Bucket(0u32), )
+1 of 4: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "lock_fee" Tuple(Decimal(10), )
+2 of 4: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "withdraw_non_fungibles" Tuple(Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq), Array<NonFungibleLocalId>(#1u64#, #2u64#, #3u64#, ), )
+3 of 4: TakeNonFungiblesFromWorktop Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq) Array<NonFungibleLocalId>(#1u64#, #2u64#, #3u64#, )
+4 of 4: CallMethod Enum<0u8>(Address(account_loc1cyzfj6p254jy6lhr237s7pcp8qqz6c8ahq9mn6nkdjxxxat5pjq9xc), ) "try_deposit_or_abort" Tuple(Bucket(0u32), )
 "##, &DetectedTxType::Transfer {
                 fee: Some(Decimal::whole(10)),
                 src_address: Address::from_array([0x04, 0x89, 0x44, 0xf6, 0xce, 0x22, 0x31, 0x5a, 0x26, 0xc4, 0xb9, 0x0c, 0x6e, 0x7e, 0x09, 0xa0, 0x93, 0xdc, 0xbc, 0x98, 0xc8, 0x9e, 0x67, 0xd3, 0x2b, 0x2d, 0xc1, 0x00, 0x00, 0x00,]),
@@ -795,11 +831,11 @@ br##"
     pub fn test_simple_transfer_with_multiple_locked_fees() {
         check_partial_decoding_with_type(&TX_SIMPLE_TRANSFER_WITH_MULTIPLE_LOCKED_FEES,
                                br##"
-1 of 5: CallMethod Address(account_loc1p9j7zjlzzxfpc9w8dewfavme6tyl3lzl2sevfwtk0jlqu600lh) "lock_fee" Tuple(Decimal(1.2), )
-2 of 5: CallMethod Address(account_loc1p9j7zjlzzxfpc9w8dewfavme6tyl3lzl2sevfwtk0jlqu600lh) "withdraw" Tuple(Address(resource_loc1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq7qej9q), Decimal(123), )
-3 of 5: TakeFromWorktopByAmount Decimal(123) Address(resource_loc1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq7qej9q)
-4 of 5: CallMethod Address(account_loc1pxhyn798qaehnxz6qwyj6jx5qm296j4j5uuqh4av7h5saywq8x) "deposit" Tuple(Bucket(0u32), )
-5 of 5: CallMethod Address(account_loc1p9j7zjlzzxfpc9w8dewfavme6tyl3lzl2sevfwtk0jlqu600lh) "lock_fee" Tuple(Decimal(3.4), )
+1 of 5: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "lock_fee" Tuple(Decimal(1.2), )
+2 of 5: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "withdraw" Tuple(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), Decimal(123), )
+3 of 5: TakeFromWorktop Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al) Decimal(123)
+4 of 5: CallMethod Enum<0u8>(Address(account_loc1cyzfj6p254jy6lhr237s7pcp8qqz6c8ahq9mn6nkdjxxxat5pjq9xc), ) "try_deposit_or_abort" Tuple(Bucket(0u32), )
+5 of 5: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "lock_fee" Tuple(Decimal(3.4), )
 "##, &DetectedTxType::Transfer {
                 fee: Some(Decimal::new(4600000000000000000u128)),
                 src_address: Address::from_array([0x09, 0x65, 0xe1, 0x4b, 0xe2, 0x11, 0x92, 0x1c, 0x15, 0xc7, 0x6e, 0x5c, 0x9e, 0xb3, 0x79, 0xd2, 0xc9, 0xf8, 0xfc, 0x5f, 0x54, 0x32, 0xc4, 0xb9, 0x76, 0x7c, 0xbe, 0x00, 0x00, 0x00,]),
