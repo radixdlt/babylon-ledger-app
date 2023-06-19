@@ -67,11 +67,11 @@ pub const INTEGER_LEN: u8 = 8;
 pub const UUID_LEN: u8 = 16;
 
 pub const ID_LEN: u8 = 4;
-const BUCKET_LEN: u8 = ID_LEN;
-const PROOF_LEN: u8 = ID_LEN;
-const BLOB_LEN: u8 = 32;
-const DECIMAL_LEN: u8 = 32; // 256 bits
-const PRECISE_DECIMAL_LEN: u8 = 64; // 512 bits
+pub const BUCKET_LEN: u8 = ID_LEN;
+pub const PROOF_LEN: u8 = ID_LEN;
+pub const BLOB_LEN: u8 = 32;
+pub const DECIMAL_LEN: u8 = 32; // 256 bits
+pub const PRECISE_DECIMAL_LEN: u8 = 64; // 512 bits
 
 pub const TYPE_DATA_BUFFER_SIZE: usize = 256;
 

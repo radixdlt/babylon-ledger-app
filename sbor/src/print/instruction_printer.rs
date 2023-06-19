@@ -786,9 +786,9 @@ br##"
 4 of 4: CallMethod Enum<0u8>(Address(account_loc1cyzfj6p254jy6lhr237s7pcp8qqz6c8ahq9mn6nkdjxxxat5pjq9xc), ) "try_deposit_or_abort" Tuple(Bucket(0u32), )
 "##, &DetectedTxType::Transfer {
                 fee: Some(Decimal::whole(10)),
-                src_address: Address::from_array([0x09, 0x65, 0xe1, 0x4b, 0xe2, 0x11, 0x92, 0x1c, 0x15, 0xc7, 0x6e, 0x5c, 0x9e, 0xb3, 0x79, 0xd2, 0xc9, 0xf8, 0xfc, 0x5f, 0x54, 0x32, 0xc4, 0xb9, 0x76, 0x7c, 0xbe, 0x00, 0x00, 0x00,]),
-                dst_address: Address::from_array([0x09, 0xae, 0x49, 0xf8, 0xa7, 0x07, 0x73, 0x79, 0x98, 0x5a, 0x03, 0x89, 0x2d, 0x48, 0xd4, 0x06, 0xd4, 0x5d, 0x4a, 0xb2, 0xa7, 0x38, 0x0b, 0xd7, 0xac, 0xf5, 0xe9, 0x00, 0x00, 0x00,]),
-                res_address: Address::from_array([0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,]),
+                src_address: Address::from_array([0xc1, 0x18, 0x83, 0x46, 0x2f, 0x39, 0x79, 0x6d, 0xa8, 0x3f, 0x2f, 0x82, 0xca, 0xef, 0xa6, 0x79, 0xaa, 0xf1, 0xf1, 0x89, 0x25, 0x7e, 0xbd, 0x3c, 0x8c, 0x27, 0x7d, 0x5a, 0xe1, 0x99,]),
+                dst_address: Address::from_array([0xc1, 0x04, 0x99, 0x68, 0x2a, 0xa5, 0x64, 0x4d, 0x7e, 0xe3, 0x54, 0x7d, 0x0f, 0x07, 0x01, 0x38, 0x00, 0x2d, 0x60, 0xfd, 0xb8, 0x0b, 0xb9, 0xea, 0x76, 0x6c, 0x8c, 0x63, 0x75, 0x74,]),
+                res_address: Address::from_array([0x5d, 0xd8, 0xee, 0x1d, 0xb7, 0xd7, 0xed, 0x52, 0x17, 0x73, 0x5e, 0x77, 0x66, 0x49, 0x54, 0x77, 0xfe, 0x03, 0xf5, 0xa0, 0xaa, 0xa1, 0x61, 0x71, 0x21, 0xae, 0xce, 0xe3, 0x1b, 0x99,]),
                 amount: Decimal::whole(123)
             }, TxIntentType::Transfer)
     }
@@ -832,16 +832,22 @@ br##"
         check_partial_decoding_with_type(&TX_SIMPLE_TRANSFER_WITH_MULTIPLE_LOCKED_FEES,
                                br##"
 1 of 5: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "lock_fee" Tuple(Decimal(1.2), )
-2 of 5: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "withdraw" Tuple(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), Decimal(123), )
-3 of 5: TakeFromWorktop Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al) Decimal(123)
+2 of 5: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "withdraw" Tuple(Address(resource_loc1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxvq32hv), Decimal(123), )
+3 of 5: TakeFromWorktop Address(resource_loc1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxvq32hv) Decimal(123)
 4 of 5: CallMethod Enum<0u8>(Address(account_loc1cyzfj6p254jy6lhr237s7pcp8qqz6c8ahq9mn6nkdjxxxat5pjq9xc), ) "try_deposit_or_abort" Tuple(Bucket(0u32), )
 5 of 5: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "lock_fee" Tuple(Decimal(3.4), )
 "##, &DetectedTxType::Transfer {
                 fee: Some(Decimal::new(4600000000000000000u128)),
-                src_address: Address::from_array([0x09, 0x65, 0xe1, 0x4b, 0xe2, 0x11, 0x92, 0x1c, 0x15, 0xc7, 0x6e, 0x5c, 0x9e, 0xb3, 0x79, 0xd2, 0xc9, 0xf8, 0xfc, 0x5f, 0x54, 0x32, 0xc4, 0xb9, 0x76, 0x7c, 0xbe, 0x00, 0x00, 0x00,]),
-                dst_address: Address::from_array([0x09, 0xae, 0x49, 0xf8, 0xa7, 0x07, 0x73, 0x79, 0x98, 0x5a, 0x03, 0x89, 0x2d, 0x48, 0xd4, 0x06, 0xd4, 0x5d, 0x4a, 0xb2, 0xa7, 0x38, 0x0b, 0xd7, 0xac, 0xf5, 0xe9, 0x00, 0x00, 0x00,]),
+                src_address: Address::from_array([0xc1, 0x18, 0x83, 0x46, 0x2f, 0x39, 0x79, 0x6d, 0xa8, 0x3f, 0x2f, 0x82, 0xca, 0xef, 0xa6, 0x79, 0xaa, 0xf1, 0xf1, 0x89, 0x25, 0x7e, 0xbd, 0x3c, 0x8c, 0x27, 0x7d, 0x5a, 0xe1, 0x99,]),
+                dst_address: Address::from_array([0xc1, 0x04, 0x99, 0x68, 0x2a, 0xa5, 0x64, 0x4d, 0x7e, 0xe3, 0x54, 0x7d, 0x0f, 0x07, 0x01, 0x38, 0x00, 0x2d, 0x60, 0xfd, 0xb8, 0x0b, 0xb9, 0xea, 0x76, 0x6c, 0x8c, 0x63, 0x75, 0x74,]),
                 res_address: Address::from_array([0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,]),
                 amount: Decimal::whole(123)
             }, TxIntentType::Transfer)
     }
 }
+/*
+Detected tx type
+Transfer { fee: Some(Decimal(BigInt { limbs: [3469475840, 1071020960, 0, 0, 0, 0, 0, 0] })), src_address: Address { address: [193, 24, 131, 70, 47, 57, 121, 109, 168, 63, 47, 130, 202, 239, 166, 121, 170, 241, 241, 137, 37, 126, 189, 60, 140, 39, 125, 90, 225, 153], is_set: true }, dst_address: Address { address: [193, 4, 153, 104, 42, 165, 100, 77, 126, 227, 84, 125, 15, 7, 1, 56, 0, 45, 96, 253, 184, 11, 185, 234, 118, 108, 140, 99, 117, 116], is_set: true }, res_address: Address { address: [93, 166, 99, 24, 198, 49, 140, 97, 245, 166, 27, 76, 99, 24, 198, 49, 140, 247, 148, 170, 141, 41, 95, 20, 230, 49, 140, 99, 24, 198], is_set: true }, amount: Decimal(BigInt { limbs: [1829502976, 2868365393, 6, 0, 0, 0, 0, 0] }) } does not match expected
+Transfer { fee: Some(Decimal(BigInt { limbs: [3469475840, 1071020960, 0, 0, 0, 0, 0, 0] })), src_address: Address { address: [193, 24, 131, 70, 47, 57, 121, 109, 168, 63, 47, 130, 202, 239, 166, 121, 170, 241, 241, 137, 37, 126, 189, 60, 140, 39, 125, 90, 225, 153], is_set: true }, dst_address: Address { address: [193, 4, 153, 104, 42, 165, 100, 77, 126, 227, 84, 125, 15, 7, 1, 56, 0, 45, 96, 253, 184, 11, 185, 234, 118, 108, 140, 99, 117, 116], is_set: true }, res_address: Address { address: [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], is_set: true }, amount: Decimal(BigInt { limbs: [1829502976, 2868365393, 6, 0, 0, 0, 0, 0] }) }thread 'print::instruction_printer::tests::test_simple_transfer_with_multiple_locked_fees' panicked at 'Detected tx type Transfer { fee: Some(Decimal(BigInt { limbs: [3469475840, 1071020960, 0, 0, 0, 0, 0, 0] })), src_address: Address { address: [193, 24, 131, 70, 47, 57, 121, 109, 168, 63, 47, 130, 202, 239, 166, 121, 170, 241, 241, 137, 37, 126, 189, 60, 140, 39, 125, 90, 225, 153], is_set: true }, dst_address: Address { address: [193, 4, 153, 104, 42, 165, 100, 77, 126, 227, 84, 125, 15, 7, 1, 56, 0, 45, 96, 253, 184, 11, 185, 234, 118, 108, 140, 99, 117, 116], is_set: true }, res_address: Address { address: [93, 166, 99, 24, 198, 49, 140, 97, 245, 166, 27, 76, 99, 24, 198, 49, 140, 247, 148, 170, 141, 41, 95, 20, 230, 49, 140, 99, 24, 198], is_set: true }, amount: Decimal(BigInt { limbs: [1829502976, 2868365393, 6, 0, 0, 0, 0, 0] }) } does not match expected Transfer { fee: Some(Decimal(BigInt { limbs: [3469475840, 1071020960, 0, 0, 0, 0, 0, 0] })), src_address: Address { address: [193, 24, 131, 70, 47, 57, 121, 109, 168, 63, 47, 130, 202, 239, 166, 121, 170, 241, 241, 137, 37, 126, 189, 60, 140, 39, 125, 90, 225, 153], is_set: true }, dst_address: Address { address: [193, 4, 153, 104, 42, 165, 100, 77, 126, 227, 84, 125, 15, 7, 1, 56, 0, 45, 96, 253, 184, 11, 185, 234, 118, 108, 140, 99, 117, 116], is_set: true }, res_address: Address { address: [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], is_set: true }, amount: Decimal(BigInt { limbs: [1829502976, 2868365393, 6, 0, 0, 0, 0, 0] }) }', src/print/instruction_printer.rs:501:13
+
+ */
