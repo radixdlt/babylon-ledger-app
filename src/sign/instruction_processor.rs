@@ -5,7 +5,7 @@ use sbor::math::Decimal;
 use sbor::print::fanout::Fanout;
 use sbor::print::instruction_printer::InstructionPrinter;
 use sbor::print::tty::TTY;
-use sbor::print::tx_printer::{Address, DetectedTxType};
+use sbor::print::tx_summary_detector::{Address, DetectedTxType};
 use sbor::sbor_decoder::{SborEvent, SborEventHandler};
 
 use crate::app_error::AppError;
@@ -15,13 +15,13 @@ use crate::sign::sign_outcome::SignOutcome;
 use crate::sign::sign_type::SignType;
 use crate::sign::signing_flow_state::SigningFlowState;
 use sbor::print::tx_intent_type::TxIntentType;
-use sbor::print::tx_printer::TxIntentPrinter;
+use sbor::print::tx_summary_detector::TxSummaryDetector;
 
 pub struct InstructionProcessor<T: Copy> {
     state: SigningFlowState,
     extractor: InstructionExtractor,
     ins_printer: InstructionPrinter<T>,
-    tx_printer: TxIntentPrinter,
+    tx_printer: TxSummaryDetector,
 }
 
 impl<T: Copy> SborEventHandler for InstructionProcessor<T> {
@@ -37,7 +37,7 @@ impl<T: Copy> InstructionProcessor<T> {
             state: SigningFlowState::new(),
             extractor: InstructionExtractor::new(),
             ins_printer: InstructionPrinter::new(NetworkId::LocalNet, tty),
-            tx_printer: TxIntentPrinter::new(),
+            tx_printer: TxSummaryDetector::new(),
         }
     }
 

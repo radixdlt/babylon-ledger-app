@@ -3,7 +3,7 @@ use sbor::decoder_error::DecoderError;
 use sbor::math::Decimal;
 use sbor::print::tty::TTY;
 use sbor::print::tx_intent_type::TxIntentType;
-use sbor::print::tx_printer::{Address, DetectedTxType};
+use sbor::print::tx_summary_detector::{Address, DetectedTxType};
 use sbor::sbor_decoder::{DecodingOutcome, SborDecoder};
 
 use crate::app_error::AppError;

@@ -21,17 +21,6 @@ pub enum FeePhase {
     Value,
 }
 
-// State transition chains:
-// Withdraw: CallMethod -> Address -> Name ("withdraw") -> TupleWithdraw -> (AddressWithdraw..)
-// Deposit1: TakeFromWorktopByAmount -> ValueDeposit -> DoneDeposit1
-// Deposit2: CallMethod -> Address -> Name ("deposit") -> DoneDeposit2
-
-// Summary:
-// Start -> CallMethod -> AddressWithdraw -> ExpectWithdraw + ("withdraw") ->
-// /- WithdrawDone (+ TakeFromWorktopByAmount) -> Resource -> ValueDeposit -> ValueDepositDone + end of instruction ->
-// \- WithdrawDone (+ TakeFromWorktopByIds) -> ValueCountDeposit -> ValueCountDepositIds -> ValueCountDone -> Resource -> ResourceDone + end of instruction ->
-// ExpectDepositCall (+ CallMethod) -> AddressDeposit -> ExpectDeposit + ("deposit") -> DoneTransfer
-
 #[derive(Copy, Clone, PartialEq)]
 #[repr(u8)]
 pub enum DecodingPhase {
@@ -42,10 +31,10 @@ pub enum DecodingPhase {
     AddressWithdrawEnd,
     ExpectWithdraw,
     WithdrawDone,
-    ValueCountDeposit,
-    ValueCountDepositIds,
-    ValueCountDone,
+    ValueDepositCount,  //Outer array
+    ValueDepositCountIds,
     Resource,
+    NonFungibleResource,
     ValueDeposit,
     ValueDepositDone,
     ExpectDepositCall,
@@ -140,6 +129,14 @@ pub struct Address {
 }
 
 impl Address {
+    const XRD_ADDRESS: Address = Self {
+        address: [
+            93, 166, 99, 24, 198, 49, 140, 97, 245, 166, 27, 76, 99, 24, 198, 49, 140, 247, 148,
+            170, 141, 41, 95, 20, 230, 49, 140, 99, 24, 198,
+        ],
+        is_set: true,
+    };
+
     pub fn new() -> Self {
         Self {
             address: [0; ADDRESS_STATIC_LEN as usize],
@@ -163,21 +160,7 @@ impl Address {
     }
 
     pub fn is_xrd(&self) -> bool {
-        if !self.is_set {
-            return false;
-        }
-
-        if self.address[0] != 0x01 {
-            return false;
-        }
-
-        for i in 1..ADDRESS_STATIC_LEN as usize {
-            if self.address[i] != 0x00 {
-                return false;
-            }
-        }
-
-        true
+        self.is_same(&Self::XRD_ADDRESS)
     }
 
     pub fn copy_from_slice(&mut self, src: &[u8]) {
@@ -233,7 +216,7 @@ impl Address {
     }
 }
 
-pub struct TxIntentPrinter {
+pub struct TxSummaryDetector {
     intent_type: TxIntentType,
     decoding_phase: DecodingPhase,
     fee_phase: FeePhase,
@@ -245,7 +228,7 @@ pub struct TxIntentPrinter {
     res_address: Address,
 }
 
-impl TxIntentPrinter {
+impl TxSummaryDetector {
     pub fn new() -> Self {
         Self {
             intent_type: TxIntentType::General,
@@ -311,7 +294,7 @@ impl TxIntentPrinter {
             ExtractorEvent::ParameterData(data) => self.parameter_data(data),
             ExtractorEvent::ParameterEnd(..) => self.parameter_end(),
             ExtractorEvent::InstructionEnd => self.instruction_end(),
-            _ => self.handle_error(),
+            _ => self.decoding_phase = DecodingPhase::DecodingError,
         };
     }
 
@@ -332,11 +315,10 @@ impl TxIntentPrinter {
                 self.decoding_phase = DecodingPhase::CallMethod;
             }
             (DecodingPhase::WithdrawDone, Instruction::TakeFromWorktop) => {
-                //self.decoding_phase = DecodingPhase::ValueDeposit;
                 self.decoding_phase = DecodingPhase::Resource;
             }
             (DecodingPhase::WithdrawDone, Instruction::TakeNonFungiblesFromWorktop) => {
-                self.decoding_phase = DecodingPhase::ValueCountDeposit;
+                self.decoding_phase = DecodingPhase::NonFungibleResource;
             }
             (DecodingPhase::ExpectDepositCall, Instruction::CallMethod) => {
                 self.decoding_phase = DecodingPhase::ExpectAddressDeposit;
@@ -374,9 +356,6 @@ impl TxIntentPrinter {
                     }
                 }
             }
-            (DecodingPhase::ValueCountDeposit, 0) => {
-                self.decoding_phase = DecodingPhase::ValueCountDepositIds;
-            }
             (DecodingPhase::ExpectAddressDeposit, 0) => {
                 if let SborEvent::Start { type_id, .. } = event {
                     if type_id == TYPE_ENUM {
@@ -384,8 +363,12 @@ impl TxIntentPrinter {
                     }
                 }
             }
-            (DecodingPhase::ValueCountDone, 1) => {
-                self.decoding_phase = DecodingPhase::Resource;
+            (DecodingPhase::ValueDepositCount, 1) => {
+                if let SborEvent::Start { type_id, .. } = event {
+                    if type_id == TYPE_ARRAY {
+                        self.decoding_phase = DecodingPhase::ValueDepositCountIds;
+                    }
+                }
             }
 
             (_, _) => {}
@@ -405,9 +388,9 @@ impl TxIntentPrinter {
     fn parameter_data(&mut self, source_event: SborEvent) {
         match source_event {
             SborEvent::Data(data) => self.data.push(data),
-            SborEvent::Len(len) if self.decoding_phase == DecodingPhase::ValueCountDepositIds => {
+            SborEvent::Len(len) if self.decoding_phase == DecodingPhase::ValueDepositCountIds => {
                 self.amount = Decimal::whole(len.into());
-                self.decoding_phase = DecodingPhase::ValueCountDone;
+                self.decoding_phase = DecodingPhase::ValueDepositDone;
             }
             SborEvent::Start { type_id, .. } => {
                 self.data.clear();
@@ -501,6 +484,15 @@ impl TxIntentPrinter {
                 }
             }
 
+            DecodingPhase::NonFungibleResource => {
+                if self.data.len() == ADDRESS_STATIC_LEN as usize {
+                    self.res_address.copy_from_slice(self.data.as_slice());
+                    self.decoding_phase = DecodingPhase::ValueDepositCount;
+                } else {
+                    self.decoding_phase = DecodingPhase::DecodingError;
+                }
+            }
+
             _ => {}
         }
 
@@ -523,9 +515,5 @@ impl TxIntentPrinter {
             }
             _ => {}
         }
-    }
-
-    fn handle_error(&mut self) {
-        self.decoding_phase = DecodingPhase::DecodingError;
     }
 }
