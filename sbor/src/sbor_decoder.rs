@@ -215,7 +215,9 @@ impl SborDecoder {
             DecoderPhase::ReadingData => self.read_data(handler, byte),
             DecoderPhase::ReadingDiscriminator => self.read_discriminator(handler, byte),
             DecoderPhase::ReadingNFLDiscriminator => self.read_nfl_discriminator(handler, byte),
-            DecoderPhase::ReadingAddressDiscriminator => self.read_address_discriminator(handler, byte),
+            DecoderPhase::ReadingAddressDiscriminator => {
+                self.read_address_discriminator(handler, byte)
+            }
         }
     }
 

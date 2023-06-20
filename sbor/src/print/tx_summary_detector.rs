@@ -31,7 +31,7 @@ pub enum DecodingPhase {
     AddressWithdrawEnd,
     ExpectWithdraw,
     WithdrawDone,
-    ValueDepositCount,  //Outer array
+    ValueDepositCount, //Outer array
     ValueDepositCountIds,
     Resource,
     NonFungibleResource,

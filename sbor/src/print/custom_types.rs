@@ -13,7 +13,8 @@ pub const BLOB_PARAMETER_PRINTER: BlobParameterPrinter = BlobParameterPrinter {}
 pub const EXPRESSION_PARAMETER_PRINTER: ExpressionParameterPrinter = ExpressionParameterPrinter {};
 pub const BUCKET_PARAMETER_PRINTER: BucketParameterPrinter = BucketParameterPrinter {};
 pub const PROOF_PARAMETER_PRINTER: ProofParameterPrinter = ProofParameterPrinter {};
-pub const ADDRESS_RESERVATION_PARAMETER_PRINTER: AddressReservationParameterPrinter = AddressReservationParameterPrinter {};
+pub const ADDRESS_RESERVATION_PARAMETER_PRINTER: AddressReservationParameterPrinter =
+    AddressReservationParameterPrinter {};
 
 impl<T: Copy> ParameterPrinter<T> for BlobParameterPrinter {
     fn handle_data(&self, state: &mut ParameterPrinterState<T>, event: SborEvent) {

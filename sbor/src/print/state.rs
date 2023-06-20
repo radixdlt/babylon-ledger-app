@@ -183,12 +183,12 @@ impl<T: Copy> ParameterPrinterState<T> {
     }
 
     pub fn print_named_address(&mut self) {
-        let mut address: [u8; 4] = [0u8; 4];
-        address.copy_from_slice(&self.data.as_slice()[1..]);
-        let addressU32 = u32::from_be_bytes(address);
+        let mut array: [u8; 4] = [0u8; 4];
+        array.copy_from_slice(&self.data.as_slice()[1..]);
+        let address = u32::from_be_bytes(array);
 
         self.data.clear();
-        print_u32(&mut self.data, addressU32);
+        print_u32(&mut self.data, address);
 
         self.display.extend_from_slice(b"Address(");
         self.display.extend_from_slice(self.data.as_slice());

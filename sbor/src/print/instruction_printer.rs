@@ -196,7 +196,9 @@ impl Dispatcher {
             TYPE_NON_FUNGIBLE_LOCAL_ID => {
                 NON_FUNGIBLE_LOCAL_ID_PARAMETER_PRINTER.handle_data(state, event)
             }
-            TYPE_ADDRESS_RESERVATION => ADDRESS_RESERVATION_PARAMETER_PRINTER.handle_data(state, event),
+            TYPE_ADDRESS_RESERVATION => {
+                ADDRESS_RESERVATION_PARAMETER_PRINTER.handle_data(state, event)
+            }
             _ => IGNORED_PARAMETER_PRINTER.handle_data(state, event),
         };
     }

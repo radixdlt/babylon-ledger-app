@@ -545,11 +545,14 @@ mod tests {
 
     #[test]
     pub fn test_create_non_fungible_resource_with_initial_supply() {
-        check_partial_decoding(&TX_CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY, &[
-            Instruction::CallMethod,
-            Instruction::CallFunction,
-            Instruction::CallMethod,
-        ]);
+        check_partial_decoding(
+            &TX_CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY,
+            &[
+                Instruction::CallMethod,
+                Instruction::CallFunction,
+                Instruction::CallMethod,
+            ],
+        );
     }
 
     #[test]
