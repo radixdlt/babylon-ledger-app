@@ -12,6 +12,9 @@ include_gif = { git = "https://github.com/LedgerHQ/sdk_include_gif" }
 
 sbor = { path = "./sbor", default-features = false }
 
+[dev-dependencies]
+blake2 = { version = "0.10.6", default-features = false }
+
 [profile.dev]
 opt-level = "z"
 lto = false

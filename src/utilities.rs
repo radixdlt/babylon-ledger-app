@@ -1,4 +1,3 @@
-pub mod conversion;
 pub mod max;
 pub mod version;
 

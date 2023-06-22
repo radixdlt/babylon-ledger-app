@@ -70,6 +70,8 @@ pub mod print;
 pub mod sbor_decoder;
 pub mod static_vec;
 pub mod type_info;
+pub mod digest;
+pub mod utilities;
 
 pub mod debug;
 

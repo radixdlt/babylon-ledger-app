@@ -104,6 +104,7 @@ pub enum SborEvent {
         type_id: u8,
         nesting_level: u8,
     },
+    InputByte(u8),
 }
 
 #[repr(u8)]
@@ -200,7 +201,7 @@ impl SborDecoder {
             }
         }
 
-        match self.head().phase() {
+        let result = match self.head().phase() {
             DecoderPhase::ReadingTypeId => self.read_type_id(handler, byte),
             DecoderPhase::ReadingLen => self.read_len(handler, byte),
             DecoderPhase::ReadingElementTypeId => {
@@ -218,7 +219,13 @@ impl SborDecoder {
             DecoderPhase::ReadingAddressDiscriminator => {
                 self.read_address_discriminator(handler, byte)
             }
+        };
+
+        if count_input {
+            handler.handle(SborEvent::InputByte(byte))
         }
+
+        result
     }
 
     fn read_discriminator(
@@ -617,6 +624,9 @@ mod tests {
                         *nesting_level
                     )
                 }
+                SborEvent::InputByte(byte) => {
+                    write!(f, "SborEvent::InputByte({:#02x}),", *byte)
+                }
             }
         }
     }
@@ -636,6 +646,11 @@ mod tests {
                 evt,
                 self.count
             );
+
+            if let SborEvent::InputByte(_) = evt {
+                return;
+            }
+
             self.collected[self.count] = evt;
             self.count += 1;
         }
@@ -669,10 +684,10 @@ mod tests {
         }
 
         pub fn print(&self) {
-            for i in 0..self.count {
-                println!("{}", self.collected[i]);
-            }
-            println!("Total {} events", self.count);
+            // for i in 0..self.count {
+            //     println!("{}", self.collected[i]);
+            // }
+            // println!("Total {} events", self.count);
         }
     }
 

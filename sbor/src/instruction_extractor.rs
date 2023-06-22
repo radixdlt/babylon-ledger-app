@@ -302,7 +302,7 @@ mod tests {
                     total
                 );
             } else {
-                println!("Event: {:?}", event);
+                // println!("Event: {:?}", event);
             }
         }
     }

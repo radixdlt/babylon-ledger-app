@@ -415,38 +415,18 @@ mod tests {
 
     pub struct InstructionProcessor<T: Copy> {
         extractor: InstructionExtractor,
-        ins_printer: InstructionPrinter<T>,
-        tx_printer: TxSummaryDetector,
-    }
-
-    pub struct DebugFanout<'a, T: Copy> {
-        ins_printer: &'a mut InstructionPrinter<T>,
-        tx_printer: &'a mut TxSummaryDetector,
-    }
-
-    impl<'a, T: Copy> DebugFanout<'a, T> {
-        pub fn new(
-            ins_printer: &'a mut InstructionPrinter<T>,
-            tx_printer: &'a mut TxSummaryDetector,
-        ) -> Self {
-            Self {
-                ins_printer,
-                tx_printer,
-            }
-        }
-    }
-
-    impl<'a, T: Copy> InstructionHandler for DebugFanout<'a, T> {
-        fn handle(&mut self, evt: ExtractorEvent) {
-            //println!("Event: {:?}", evt);
-            self.ins_printer.handle(evt);
-            self.tx_printer.handle(evt);
-        }
+        printer: InstructionPrinter<T>,
+        detector: TxSummaryDetector,
+        counter: usize,
     }
 
     impl<T: Copy> SborEventHandler for InstructionProcessor<T> {
         fn handle(&mut self, evt: SborEvent) {
-            let mut fanout = DebugFanout::new(&mut self.ins_printer, &mut self.tx_printer);
+            match evt {
+                SborEvent::InputByte(..) => self.counter += 1,
+                _ => {}
+            }
+            let mut fanout = Fanout::new(&mut self.printer, &mut self.detector);
             self.extractor.handle_event(&mut fanout, evt);
         }
     }
@@ -455,18 +435,23 @@ mod tests {
         pub fn new(tty: TTY<T>) -> Self {
             Self {
                 extractor: InstructionExtractor::new(),
-                ins_printer: InstructionPrinter::new(NetworkId::LocalNet, tty),
-                tx_printer: TxSummaryDetector::new(),
+                printer: InstructionPrinter::new(NetworkId::LocalNet, tty),
+                detector: TxSummaryDetector::new(),
+                counter: 0,
             }
         }
 
+        pub fn get_count(&self) -> usize {
+            self.counter
+        }
+
         pub fn set_intent_type(&mut self, intent_type: TxIntentType) {
-            self.tx_printer.set_intent_type(intent_type);
+            self.detector.set_intent_type(intent_type);
         }
 
         pub fn verify(&self, expected: &[u8], expected_type: &DetectedTxType) {
             let mut cnt = 0;
-            let output = from_utf8(self.ins_printer.get_tty().data.as_slice()).unwrap();
+            let output = from_utf8(self.printer.get_tty().data.as_slice()).unwrap();
 
             if expected.len() < 10 {
                 println!("Output:\n|{}|", output);
@@ -497,7 +482,7 @@ mod tests {
                 _ => {}
             }
 
-            let detected = self.tx_printer.get_detected_tx_type();
+            let detected = self.detector.get_detected_tx_type();
 
             match detected {
                 DetectedTxType::Transfer { fee, .. } | DetectedTxType::Other(fee) => match fee {
@@ -564,6 +549,11 @@ mod tests {
         }
 
         processor.verify(expected_text, expected_type);
+
+        let num_bytes = processor.get_count();
+
+        assert_eq!(num_bytes, input.len() - 1, "Number of bytes processed does not match input length");
+
         println!();
     }
 
