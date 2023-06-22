@@ -2,7 +2,7 @@ use core::ptr::write_bytes;
 
 use crate::utilities::conversion::{lower_as_hex, upper_as_hex};
 
-const BLAKE2B_DIGEST_SIZE: usize = 32; // 256 bits
+pub const BLAKE2B_DIGEST_SIZE: usize = 32; // 256 bits
 
 #[repr(C, packed)]
 #[derive(Clone, Debug)]
@@ -15,7 +15,7 @@ impl Digest {
         Self([0; BLAKE2B_DIGEST_SIZE])
     }
 
-    fn as_mut(&mut self) -> *mut u8 {
+    pub fn as_mut(&mut self) -> *mut u8 {
         self.0.as_mut_ptr()
     }
 

@@ -1,21 +1,21 @@
 use nanos_sdk::io::Comm;
 use sbor::decoder_error::DecoderError;
+use sbor::digest::digest::Digest;
 use sbor::math::Decimal;
 use sbor::print::tty::TTY;
 use sbor::print::tx_intent_type::TxIntentType;
 use sbor::print::tx_summary_detector::{Address, DetectedTxType};
 use sbor::sbor_decoder::{DecodingOutcome, SborDecoder};
+use sbor::utilities::conversion::{lower_as_hex, upper_as_hex};
 
 use crate::app_error::AppError;
 use crate::command_class::CommandClass;
-use crate::crypto::hash::Digest;
 use crate::sign::instruction_processor::InstructionProcessor;
 use crate::sign::sign_outcome::SignOutcome;
 use crate::sign::sign_type::SignType;
 use crate::ui::multiline_scroller::MultilineMessageScroller;
 use crate::ui::multipage_validator::MultipageValidator;
 use crate::ui::single_message::SingleMessage;
-use crate::utilities::conversion::{lower_as_hex, upper_as_hex};
 
 fn info_message(title: &[u8], message: &[u8]) {
     MultilineMessageScroller::with_title(

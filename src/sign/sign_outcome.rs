@@ -1,5 +1,6 @@
+use sbor::digest::digest::Digest;
+
 use crate::crypto::ed25519::{ED25519_PUBLIC_KEY_LEN, ED25519_SIGNATURE_LEN};
-use crate::crypto::hash::Digest;
 use crate::crypto::secp256k1::{SECP256K1_PUBLIC_KEY_LEN, SECP256K1_SIGNATURE_LEN};
 use crate::utilities::max::max;
 

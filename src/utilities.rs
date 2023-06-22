@@ -1,9 +1,10 @@
+use core::str::from_utf8;
+
+use nanos_sdk::testing::debug_print;
+use sbor::utilities::conversion::{to_hex_str, to_str};
+
 pub mod max;
 pub mod version;
-
-use crate::utilities::conversion::{to_hex_str, to_str};
-use core::str::from_utf8;
-use nanos_sdk::testing::debug_print;
 
 pub fn debug_u32(value: u32) {
     debug_prepared_message(&to_str(value));

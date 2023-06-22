@@ -1,19 +1,19 @@
 use nanos_sdk::io::Comm;
 use sbor::bech32::network::NetworkId;
-use sbor::hash::tx_hash_calculator::TxHashCalculator;
+use sbor::digest::digest::Digest;
+use sbor::digest::tx_hash_calculator::TxHashCalculator;
 use sbor::instruction_extractor::InstructionExtractor;
 use sbor::math::Decimal;
 use sbor::print::fanout::Fanout;
 use sbor::print::instruction_printer::InstructionPrinter;
 use sbor::print::tty::TTY;
 use sbor::print::tx_intent_type::TxIntentType;
-use sbor::print::tx_summary_detector::{Address, DetectedTxType};
-use sbor::print::tx_summary_detector::TxSummaryDetector;
+use sbor::print::tx_summary_detector::{Address, DetectedTxType, TxSummaryDetector};
 use sbor::sbor_decoder::{SborEvent, SborEventHandler};
 
 use crate::app_error::AppError;
 use crate::command_class::CommandClass;
-use crate::crypto::hash::Digest;
+use crate::crypto::hash::Blake2bHasher;
 use crate::sign::sign_outcome::SignOutcome;
 use crate::sign::sign_type::SignType;
 use crate::sign::signing_flow_state::SigningFlowState;
@@ -23,7 +23,7 @@ pub struct InstructionProcessor<T: Copy> {
     extractor: InstructionExtractor,
     printer: InstructionPrinter<T>,
     detector: TxSummaryDetector,
-    calculator: TxHashCalculator,
+    calculator: TxHashCalculator<Blake2bHasher>,
 }
 
 impl<T: Copy> SborEventHandler for InstructionProcessor<T> {
@@ -41,7 +41,7 @@ impl<T: Copy> InstructionProcessor<T> {
             extractor: InstructionExtractor::new(),
             printer: InstructionPrinter::new(NetworkId::LocalNet, tty),
             detector: TxSummaryDetector::new(),
-            calculator: TxHashCalculator::new(),
+            calculator: TxHashCalculator::<Blake2bHasher>::new(),
         }
     }
 

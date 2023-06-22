@@ -3,10 +3,10 @@ use core::intrinsics::write_bytes;
 use core::mem::size_of;
 
 use nanos_sdk::bindings::{cx_blake2b_t, cx_md_t, size_t, CX_BLAKE2B};
-use sbor::digest::digest::Digest;
+use sbor::digest::digest::{Digest, BLAKE2B_DIGEST_SIZE};
+use sbor::digest::digester::Digester;
 
 use crate::app_error::{to_result, AppError};
-use crate::utilities::conversion::{lower_as_hex, upper_as_hex};
 
 #[repr(C, align(4))]
 pub struct Blake2bHasher([u8; Self::WORK_AREA_SIZE]);
@@ -28,6 +28,30 @@ extern "C" {
 }
 extern "C" {
     pub fn cx_hash_final(hash: *mut u8, digest: *mut u8) -> u32;
+}
+
+impl Digester for Blake2bHasher {
+    type Error = AppError;
+
+    fn new() -> Self {
+        Self::new()
+    }
+
+    fn reset(&mut self) {
+        Self::reset(self)
+    }
+
+    fn init(&mut self) -> Result<(), Self::Error> {
+        Self::init(self)
+    }
+
+    fn update(&mut self, input: &[u8]) -> Result<(), Self::Error> {
+        Self::update(self, input)
+    }
+
+    fn finalize(&mut self) -> Result<Digest, Self::Error> {
+        Self::finalize(self)
+    }
 }
 
 impl Blake2bHasher {

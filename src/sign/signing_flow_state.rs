@@ -1,11 +1,11 @@
 use nanos_sdk::io::Comm;
 use sbor::bech32::network::NetworkId;
+use sbor::digest::digest::Digest;
 
 use crate::app_error::AppError;
 use crate::command_class::CommandClass;
 use crate::crypto::bip32::Bip32Path;
 use crate::crypto::ed25519::KeyPair25519;
-use crate::crypto::hash::Digest;
 use crate::crypto::secp256k1::KeyPairSecp256k1;
 use crate::sign::sign_outcome::SignOutcome;
 use crate::sign::sign_type::SignType;
