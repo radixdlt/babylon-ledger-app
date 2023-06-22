@@ -12,10 +12,7 @@ impl<'a, T: Copy> Fanout<'a, T> {
         printer: &'a mut InstructionPrinter<T>,
         detector: &'a mut TxSummaryDetector,
     ) -> Self {
-        Self {
-            printer,
-            detector,
-        }
+        Self { printer, detector }
     }
 }
 

@@ -169,14 +169,12 @@ impl<T: Digester> TxHashCalculator<T> {
 
     fn finalize_and_push(&mut self) {
         match self.work_digester.finalize() {
-            Ok(digest) => {
-                match self.output_digester.update(digest.as_bytes()) {
-                    Ok(_) => {}
-                    Err(_) => {
-                        self.phase = TxHashPhase::HashingError;
-                    }
+            Ok(digest) => match self.output_digester.update(digest.as_bytes()) {
+                Ok(_) => {}
+                Err(_) => {
+                    self.phase = TxHashPhase::HashingError;
                 }
-            }
+            },
             Err(_) => {
                 self.phase = TxHashPhase::HashingError;
             }
@@ -192,14 +190,12 @@ impl<T: Digester> TxHashCalculator<T> {
 
     fn finalize_and_push_blob(&mut self) {
         match self.blob_digester.finalize() {
-            Ok(digest) => {
-                match self.work_digester.update(digest.as_bytes()) {
-                    Ok(_) => {}
-                    Err(_) => {
-                        self.phase = TxHashPhase::HashingError;
-                    }
+            Ok(digest) => match self.work_digester.update(digest.as_bytes()) {
+                Ok(_) => {}
+                Err(_) => {
+                    self.phase = TxHashPhase::HashingError;
                 }
-            }
+            },
             Err(_) => {
                 self.phase = TxHashPhase::HashingError;
             }
@@ -216,9 +212,9 @@ impl<T: Digester> TxHashCalculator<T> {
 
 #[cfg(test)]
 mod tests {
-    use blake2::Blake2b;
     use blake2::digest::consts::U32;
     use blake2::digest::Digest as BlakeDigest;
+    use blake2::Blake2b;
 
     use crate::digest::digest::Digest;
     use crate::digest::digester::Digester;

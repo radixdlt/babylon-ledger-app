@@ -552,7 +552,11 @@ mod tests {
 
         let num_bytes = processor.get_count();
 
-        assert_eq!(num_bytes, input.len() - 1, "Number of bytes processed does not match input length");
+        assert_eq!(
+            num_bytes,
+            input.len() - 1,
+            "Number of bytes processed does not match input length"
+        );
 
         println!();
     }

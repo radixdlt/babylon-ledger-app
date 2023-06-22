@@ -63,6 +63,7 @@
 #![cfg_attr(not(test), no_std)]
 pub mod bech32;
 pub mod decoder_error;
+pub mod digest;
 pub mod instruction;
 pub mod instruction_extractor;
 pub mod math;
@@ -70,7 +71,6 @@ pub mod print;
 pub mod sbor_decoder;
 pub mod static_vec;
 pub mod type_info;
-pub mod digest;
 pub mod utilities;
 
 pub mod debug;
