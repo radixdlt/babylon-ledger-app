@@ -149,6 +149,7 @@ impl<T: Digester> TxHashCalculator<T> {
             (TxHashPhase::Blobs, 2) => self.phase = TxHashPhase::SingleBlob,
             (TxHashPhase::Blobs, 1) => {
                 self.finalize_and_push();
+                self.commit_phase = HashCommitPhase::None;
                 self.phase = TxHashPhase::Attachments;
             }
             (TxHashPhase::Attachments, 1) => self.phase = TxHashPhase::DecodingError,
@@ -222,21 +223,6 @@ mod tests {
     use crate::sbor_decoder::{SborDecoder, SborEvent, SborEventHandler};
     use crate::tx_intent_test_data::tests::*;
 
-    const HC_INTENT_HASH: [u8; 32] = [
-        0xd5, 0xf6, 0x7c, 0x03, 0xd5, 0x69, 0x39, 0x01, 0xa0, 0x87, 0x32, 0x35, 0x94, 0x52, 0x10,
-        0x7b, 0x63, 0x85, 0xe4, 0xb7, 0x6c, 0x9e, 0xdb, 0xf1, 0xab, 0x10, 0x74, 0xc6, 0x40, 0x57,
-        0x8b, 0x24,
-    ];
-    const HC_INTENT: [u8; 95] = [
-        0x4d, 0x22, 0x01, 0x04, 0x21, 0x07, 0x07, 0xf2, 0x0a, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x0a, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x09, 0x00, 0x00, 0x00,
-        0x00, 0x22, 0x01, 0x01, 0x20, 0x07, 0x20, 0xf3, 0x81, 0x62, 0x6e, 0x41, 0xe7, 0x02, 0x7e,
-        0xa4, 0x31, 0xbf, 0xe3, 0x00, 0x9e, 0x94, 0xbd, 0xd2, 0x5a, 0x74, 0x6b, 0xee, 0xc4, 0x68,
-        0x94, 0x8d, 0x6c, 0x3c, 0x7c, 0x5d, 0xc9, 0xa5, 0x4b, 0x01, 0x00, 0x08, 0x00, 0x00, 0x20,
-        0x22, 0x01, 0x12, 0x00, 0x20, 0x20, 0x02, 0x07, 0x04, 0x00, 0x01, 0x02, 0x03, 0x07, 0x02,
-        0x05, 0x06, 0x22, 0x00, 0x00,
-    ];
-
     type Blake2b256 = Blake2b<U32>;
 
     #[derive(Copy, Clone, Debug)]
@@ -277,16 +263,146 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_v1_user_transaction_structure() {
-        let mut decoder = SborDecoder::new(true);
+    fn calculate_hash_and_compare(input: &[u8], expected_hash: &[u8]) {
         let mut calculator = TxHashCalculator::<TestDigester>::new();
+        let mut decoder = SborDecoder::new(true);
 
         calculator.start();
-
-        decoder.decode(&mut calculator, &HC_INTENT);
+        match decoder.decode(&mut calculator, input) {
+            Ok(_) => {}
+            Err(_) => {
+                assert!(false, "Decoder failed");
+            }
+        }
 
         let digest = calculator.finalize().unwrap();
-        assert_eq!(digest.0, HC_INTENT_HASH);
+        assert_eq!(digest.0, expected_hash);
+    }
+
+    #[test]
+    fn test_hc_intent() {
+        calculate_hash_and_compare(&TX_HC_INTENT, &TX_HC_INTENT_HASH);
+    }
+
+    #[test]
+    fn test_tx_address_allocation() {
+        calculate_hash_and_compare(&TX_ADDRESS_ALLOCATION, &TX_ADDRESS_ALLOCATION_HASH);
+    }
+    #[test]
+    fn test_tx_call_function() {
+        calculate_hash_and_compare(&TX_CALL_FUNCTION, &TX_CALL_FUNCTION_HASH);
+    }
+    #[test]
+    fn test_tx_call_method() {
+        calculate_hash_and_compare(&TX_CALL_METHOD, &TX_CALL_METHOD_HASH);
+    }
+    #[test]
+    fn test_tx_create_access_controller() {
+        calculate_hash_and_compare(
+            &TX_CREATE_ACCESS_CONTROLLER,
+            &TX_CREATE_ACCESS_CONTROLLER_HASH,
+        );
+    }
+    #[test]
+    fn test_tx_create_account() {
+        calculate_hash_and_compare(&TX_CREATE_ACCOUNT, &TX_CREATE_ACCOUNT_HASH);
+    }
+    #[test]
+    fn test_tx_create_fungible_resource_with_initial_supply() {
+        calculate_hash_and_compare(
+            &TX_CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY,
+            &TX_CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY_HASH,
+        );
+    }
+    #[test]
+    fn test_tx_create_fungible_resource_with_no_initial_supply() {
+        calculate_hash_and_compare(
+            &TX_CREATE_FUNGIBLE_RESOURCE_WITH_NO_INITIAL_SUPPLY,
+            &TX_CREATE_FUNGIBLE_RESOURCE_WITH_NO_INITIAL_SUPPLY_HASH,
+        );
+    }
+    #[test]
+    fn test_tx_create_identity() {
+        calculate_hash_and_compare(&TX_CREATE_IDENTITY, &TX_CREATE_IDENTITY_HASH);
+    }
+    #[test]
+    fn test_tx_create_non_fungible_resource_with_initial_supply() {
+        calculate_hash_and_compare(
+            &TX_CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY,
+            &TX_CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY_HASH,
+        );
+    }
+    #[test]
+    fn test_tx_create_non_fungible_resource_with_no_initial_supply() {
+        calculate_hash_and_compare(
+            &TX_CREATE_NON_FUNGIBLE_RESOURCE_WITH_NO_INITIAL_SUPPLY,
+            &TX_CREATE_NON_FUNGIBLE_RESOURCE_WITH_NO_INITIAL_SUPPLY_HASH,
+        );
+    }
+    #[test]
+    fn test_tx_create_validator() {
+        calculate_hash_and_compare(&TX_CREATE_VALIDATOR, &TX_CREATE_VALIDATOR_HASH);
+    }
+    #[test]
+    fn test_tx_metadata() {
+        calculate_hash_and_compare(&TX_METADATA, &TX_METADATA_HASH);
+    }
+    #[test]
+    fn test_tx_mint_fungible() {
+        calculate_hash_and_compare(&TX_MINT_FUNGIBLE, &TX_MINT_FUNGIBLE_HASH);
+    }
+    #[test]
+    fn test_tx_mint_non_fungible() {
+        calculate_hash_and_compare(&TX_MINT_NON_FUNGIBLE, &TX_MINT_NON_FUNGIBLE_HASH);
+    }
+    #[test]
+    fn test_tx_publish_package() {
+        calculate_hash_and_compare(&TX_PUBLISH_PACKAGE, &TX_PUBLISH_PACKAGE_HASH);
+    }
+    #[test]
+    fn test_tx_resource_auth_zone() {
+        calculate_hash_and_compare(&TX_RESOURCE_AUTH_ZONE, &TX_RESOURCE_AUTH_ZONE_HASH);
+    }
+    #[test]
+    fn test_tx_resource_recall() {
+        calculate_hash_and_compare(&TX_RESOURCE_RECALL, &TX_RESOURCE_RECALL_HASH);
+    }
+    #[test]
+    fn test_tx_resource_worktop() {
+        calculate_hash_and_compare(&TX_RESOURCE_WORKTOP, &TX_RESOURCE_WORKTOP_HASH);
+    }
+    #[test]
+    fn test_tx_royalty() {
+        calculate_hash_and_compare(&TX_ROYALTY, &TX_ROYALTY_HASH);
+    }
+    #[test]
+    fn test_tx_simple_transfer() {
+        calculate_hash_and_compare(&TX_SIMPLE_TRANSFER, &TX_SIMPLE_TRANSFER_HASH);
+    }
+    #[test]
+    fn test_tx_simple_transfer_nft() {
+        calculate_hash_and_compare(&TX_SIMPLE_TRANSFER_NFT, &TX_SIMPLE_TRANSFER_NFT_HASH);
+    }
+    #[test]
+    fn test_tx_simple_transfer_nft_by_id() {
+        calculate_hash_and_compare(
+            &TX_SIMPLE_TRANSFER_NFT_BY_ID,
+            &TX_SIMPLE_TRANSFER_NFT_BY_ID_HASH,
+        );
+    }
+    #[test]
+    fn test_tx_simple_transfer_with_multiple_locked_fees() {
+        calculate_hash_and_compare(
+            &TX_SIMPLE_TRANSFER_WITH_MULTIPLE_LOCKED_FEES,
+            &TX_SIMPLE_TRANSFER_WITH_MULTIPLE_LOCKED_FEES_HASH,
+        );
+    }
+    #[test]
+    fn test_tx_access_rule() {
+        calculate_hash_and_compare(&TX_ACCESS_RULE, &TX_ACCESS_RULE_HASH);
+    }
+    #[test]
+    fn test_tx_values() {
+        calculate_hash_and_compare(&TX_VALUES, &TX_VALUES_HASH);
     }
 }
