@@ -8,6 +8,6 @@ pub fn handle(comm: &mut Comm) -> Result<(), AppError> {
     Bip32Path::read_cap26(comm)
         .and_then(|path| KeyPair25519::derive(&path))
         .map(|key| {
-            comm.append(key.public());
+            key.public(comm);
         })
 }

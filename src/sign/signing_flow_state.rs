@@ -119,29 +119,22 @@ impl SigningFlowState {
         Ok(())
     }
 
-    pub fn sign_tx(&self, tx_type: SignType, digest: Digest) -> Result<SignOutcome, AppError> {
+    pub fn sign_tx(
+        &self,
+        comm: &mut Comm,
+        tx_type: SignType,
+        digest: &Digest,
+    ) -> Result<SignOutcome, AppError> {
         match tx_type {
             SignType::Ed25519 | SignType::Ed25519Summary | SignType::AuthEd25519 => {
                 KeyPair25519::derive(&self.path).and_then(|keypair| {
-                    keypair
-                        .sign(digest.as_bytes())
-                        .map(|signature| SignOutcome::SignatureEd25519 {
-                            signature,
-                            key: keypair.public_key(),
-                            digest: digest.0,
-                        })
+                    keypair.sign(comm, digest.as_bytes())
                 })
             }
 
             SignType::Secp256k1 | SignType::Secp256k1Summary | SignType::AuthSecp256k1 => {
                 KeyPairSecp256k1::derive(&self.path).and_then(|keypair| {
-                    keypair.sign(digest.as_bytes()).map(|signature| {
-                        SignOutcome::SignatureSecp256k1 {
-                            signature,
-                            key: keypair.public_key(),
-                            digest: digest.0,
-                        }
-                    })
+                    keypair.sign(comm, digest.as_bytes())
                 })
             }
         }

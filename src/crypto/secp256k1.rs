@@ -3,11 +3,14 @@ use core::ptr::write_bytes;
 use nanos_sdk::bindings::{
     cx_ecfp_private_key_t, cx_err_t, cx_md_t, CX_ECCINFO_PARITY_ODD, CX_LAST, CX_NONE, CX_RND_TRNG,
 };
+use nanos_sdk::io::Comm;
 
 use crate::app_error::{to_result, AppError};
 use crate::crypto::bip32::Bip32Path;
 use crate::crypto::curves::{cx_ecfp_public_key_t, size_t, Curve};
 use crate::crypto::key_pair::InternalKeyPair;
+use crate::sign::sign_outcome::SignOutcome;
+use crate::utilities::debug::display_memory;
 
 const PUB_KEY_TYPE_UNCOMPRESSED: u8 = 0x04;
 const PUB_KEY_TYPE_COMPRESSED_Y_EVEN: u8 = 0x02;
@@ -21,12 +24,12 @@ const DER_MAX_LEN: usize = 72;
 pub const SECP256K1_SIGNATURE_LEN: usize = 65;
 pub const SECP256K1_PUBLIC_KEY_LEN: usize = PUB_KEY_COMPRESSED_LEN;
 
-struct PublicKeySecp256k1(pub [u8; PUB_KEY_COMPRESSED_LEN]);
-struct PrivateKeySecp256k1(pub [u8; PRIV_KEY_LEN]);
+//struct PublicKeySecp256k1(pub [u8; PUB_KEY_COMPRESSED_LEN]);
+//struct PrivateKeySecp256k1(pub [u8; PRIV_KEY_LEN]);
 
 pub struct KeyPairSecp256k1 {
-    public: PublicKeySecp256k1,
-    private: PrivateKeySecp256k1,
+    //public: PublicKeySecp256k1,
+    //private: PrivateKeySecp256k1,
     origin: InternalKeyPair,
 }
 
@@ -41,29 +44,29 @@ impl Drop for KeyPairSecp256k1 {
 impl From<InternalKeyPair> for KeyPairSecp256k1 {
     fn from(key_pair: InternalKeyPair) -> Self {
         Self {
-            public: key_pair.public.into(),
-            private: PrivateKeySecp256k1(key_pair.private.d),
+            //public: key_pair.public.into(),
+            //private: PrivateKeySecp256k1(key_pair.private.d),
             origin: key_pair,
         }
     }
 }
 
 // This operation transforms uncompressed key into compressed one
-impl From<cx_ecfp_public_key_t> for PublicKeySecp256k1 {
-    fn from(pub_key: cx_ecfp_public_key_t) -> Self {
-        let mut pk = PublicKeySecp256k1([0u8; PUB_KEY_COMPRESSED_LEN]);
-
-        // check if Y is even or odd. Assuming big-endian, just check the last byte.
-        pk.0[0] = if pub_key.W[PUB_KEY_UNCOMPRESSED_LAST_BYTE] % 2 == 0 {
-            PUB_KEY_TYPE_COMPRESSED_Y_EVEN
-        } else {
-            PUB_KEY_TYPE_COMPRESSED_Y_ODD
-        };
-
-        pk.0[1..].copy_from_slice(&pub_key.W[1..1 + PUB_KEY_X_COORDINATE_SIZE]);
-        pk
-    }
-}
+// impl From<cx_ecfp_public_key_t> for PublicKeySecp256k1 {
+//     fn from(pub_key: cx_ecfp_public_key_t) -> Self {
+//         let mut pk = PublicKeySecp256k1([0u8; PUB_KEY_COMPRESSED_LEN]);
+//
+//         // check if Y is even or odd. Assuming big-endian, just check the last byte.
+//         pk.0[0] = if pub_key.W[PUB_KEY_UNCOMPRESSED_LAST_BYTE] % 2 == 0 {
+//             PUB_KEY_TYPE_COMPRESSED_Y_EVEN
+//         } else {
+//             PUB_KEY_TYPE_COMPRESSED_Y_ODD
+//         };
+//
+//         pk.0[1..].copy_from_slice(&pub_key.W[1..1 + PUB_KEY_X_COORDINATE_SIZE]);
+//         pk
+//     }
+// }
 
 fn validate_secp256k1_public_key(pub_key: &cx_ecfp_public_key_t) -> Result<(), AppError> {
     if pub_key.W_len != PUB_KEY_UNCOMPRESSED_LEN as size_t {
@@ -98,13 +101,15 @@ impl KeyPairSecp256k1 {
         Ok(pair.into())
     }
 
-    pub fn sign(&self, message: &[u8]) -> Result<[u8; SECP256K1_SIGNATURE_LEN], AppError> {
-        let mut signature: [u8; SECP256K1_SIGNATURE_LEN] = [0; SECP256K1_SIGNATURE_LEN];
+    pub fn sign(&self, comm: &mut Comm, message: &[u8]) -> Result<SignOutcome, AppError> {
+        //let mut signature: [u8; SECP256K1_SIGNATURE_LEN] = [0; SECP256K1_SIGNATURE_LEN];
 
         unsafe {
             let mut der = [0u8; DER_MAX_LEN];
             let mut info: u32 = 0;
             let mut len: size_t = der.len() as size_t;
+
+            display_memory(b'K');
 
             let rc = cx_ecdsa_sign_no_throw(
                 &self.origin.private,
@@ -139,26 +144,45 @@ impl KeyPairSecp256k1 {
                 "Parsed S_len + R_len should equal 'L' + 4, but it did not"
             );
 
-            signature[1..33].copy_from_slice(&der[r_start..(r_start + 32)]);
-            signature[33..65].copy_from_slice(&der[s_start..(s_start + 32)]);
-
-            if (info & CX_ECCINFO_PARITY_ODD) != 0 {
-                signature[0] |= 0x01;
-            }
+            // if (info & CX_ECCINFO_PARITY_ODD) != 0 {
+            //     signature[0] |= 0x01;
+            // }
+            let parity = if (info & CX_ECCINFO_PARITY_ODD) != 0 { 0x01u8 } else { 0x00 };
+            comm.append(&[parity]);
+            // signature[1..33].copy_from_slice(&der[r_start..(r_start + 32)]);
+            comm.append(&der[r_start..(r_start + 32)]);
+            // signature[33..65].copy_from_slice(&der[s_start..(s_start + 32)]);
+            comm.append(&der[s_start..(s_start + 32)]);
         }
 
-        Ok(signature)
+        //comm.append(&signature);
+        //comm.append(&self.public.0);
+        self.public(comm);
+        comm.append(message);
+
+        Ok(SignOutcome::SignatureSecp256k1)
     }
 
-    pub fn public(&self) -> &[u8] {
-        &self.public.0
+    pub fn public(&self, comm: &mut Comm) {
+        //&self.public.0
+        //let mut pk = PublicKeySecp256k1([0u8; PUB_KEY_COMPRESSED_LEN]);
+
+        // check if Y is even or odd. Assuming big-endian, just check the last byte.
+        let key_parity = if self.origin.public.W[PUB_KEY_UNCOMPRESSED_LAST_BYTE] % 2 == 0 {
+            PUB_KEY_TYPE_COMPRESSED_Y_EVEN
+        } else {
+            PUB_KEY_TYPE_COMPRESSED_Y_ODD
+        };
+
+        comm.append(&[key_parity]);
+
+        //pk.0[1..].copy_from_slice(&pub_key.W[1..1 + PUB_KEY_X_COORDINATE_SIZE]);
+        comm.append(&self.origin.public.W[1..1 + PUB_KEY_X_COORDINATE_SIZE]);
+        //pk
+
     }
 
     pub fn private(&self) -> &[u8] {
-        &self.private.0
-    }
-
-    pub fn public_key(&self) -> [u8; PUB_KEY_COMPRESSED_LEN] {
-        self.public.0
+        &self.origin.private.d
     }
 }

@@ -16,6 +16,7 @@ use crate::sign::sign_type::SignType;
 use crate::ui::multiline_scroller::MultilineMessageScroller;
 use crate::ui::multipage_validator::MultipageValidator;
 use crate::ui::single_message::SingleMessage;
+use crate::utilities::debug::display_memory;
 
 fn info_message(title: &[u8], message: &[u8]) {
     MultilineMessageScroller::with_title(
@@ -69,6 +70,7 @@ impl<T: Copy> TxState<T> {
         tx_type: SignType,
         intent_type: TxIntentType,
     ) -> Result<SignOutcome, AppError> {
+        display_memory(b'P'); //536873292
         let result = self.process_sign_internal(comm, class, tx_type, intent_type);
 
         match result {
@@ -113,7 +115,7 @@ impl<T: Copy> TxState<T> {
                     return if class != CommandClass::LastData {
                         Err(AppError::BadAuthSignSequence)
                     } else {
-                        self.process_sign_auth(comm.get_data()?, tx_type)
+                        self.process_sign_auth(comm, tx_type)
                     }
                 }
                 _ => self.decode_tx_intent(comm.get_data()?, class)?,
@@ -121,7 +123,8 @@ impl<T: Copy> TxState<T> {
         }
 
         if class == CommandClass::LastData {
-            self.finalize_sign_tx(tx_type)
+            display_memory(b'F'); //536873292
+            self.finalize_sign_tx(comm, tx_type)
         } else {
             Ok(SignOutcome::SendNextPacket)
         }
@@ -143,9 +146,11 @@ impl<T: Copy> TxState<T> {
 
     fn process_sign_auth(
         &mut self,
-        value: &[u8],
+        comm: &mut Comm,
         tx_type: SignType,
     ) -> Result<SignOutcome, AppError> {
+        let value = comm.get_data()?;
+
         if value.len() < MIN_VALID_LENGTH {
             return Err(AppError::BadAuthSignRequest);
         }
@@ -171,8 +176,8 @@ impl<T: Copy> TxState<T> {
         let rc = MultipageValidator::new(&[&"Sign Proof?"], &[&"Sign"], &[&"Reject"]).ask();
 
         if rc {
-            let digest = self.auth_digest(nonce, hash_address, origin)?;
-            self.processor.sign_tx(tx_type, digest)
+            let digest = self.processor.auth_digest(nonce, hash_address, origin)?;
+            self.processor.sign_tx(comm, tx_type, &digest)
         } else {
             return Ok(SignOutcome::SigningRejected);
         }
@@ -189,23 +194,14 @@ impl<T: Copy> TxState<T> {
         .event_loop();
     }
 
-    fn auth_digest(
-        &mut self,
-        nonce: &[u8],
-        address: &[u8],
-        origin: &[u8],
-    ) -> Result<Digest, AppError> {
-        self.processor.auth_digest(nonce, address, origin)
-    }
-
-    fn finalize_sign_tx(&mut self, tx_type: SignType) -> Result<SignOutcome, AppError> {
+    fn finalize_sign_tx(&mut self, comm: &mut Comm, tx_type: SignType) -> Result<SignOutcome, AppError> {
         let digest = self.processor.finalize()?;
         self.display_tx_info(tx_type, &digest);
 
         let rc = MultipageValidator::new(&[&"Sign TX?"], &[&"Sign"], &[&"Reject"]).ask();
 
         if rc {
-            self.processor.sign_tx(tx_type, digest)
+            self.processor.sign_tx(comm, tx_type, &digest)
         } else {
             return Ok(SignOutcome::SigningRejected);
         }

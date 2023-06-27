@@ -8,6 +8,7 @@ pub fn handle(comm: &mut Comm) -> Result<(), AppError> {
     Bip32Path::read_olympia(comm)
         .and_then(|path| KeyPairSecp256k1::derive(&path))
         .map(|key| {
-            comm.append(key.public());
+            //comm.append(key.public());
+            key.public(comm);
         })
 }
