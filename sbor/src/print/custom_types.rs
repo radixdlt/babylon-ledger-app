@@ -41,8 +41,7 @@ impl<T: Copy> ParameterPrinter<T> for ExpressionParameterPrinter {
         if state.data.len() != 1 {
             state.print_text(b"<unknown>");
         } else {
-            state.print_text(
-            match state.data.as_slice()[0] {
+            state.print_text(match state.data.as_slice()[0] {
                 0 => b"ENTIRE_WORKTOP",
                 1 => b"ENTIRE_AUTH_ZONE",
                 _ => b"<unknown>",

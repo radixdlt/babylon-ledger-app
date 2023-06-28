@@ -345,14 +345,17 @@ mod tests {
 
     #[test]
     pub fn test_access_rule() {
-        check_partial_decoding(&TX_ACCESS_RULE, &[
-            Instruction::CallAccessRulesMethod,
-            Instruction::CallAccessRulesMethod,
-            Instruction::CallAccessRulesMethod,
-            Instruction::CallAccessRulesMethod,
-            Instruction::CallAccessRulesMethod,
-            Instruction::CallAccessRulesMethod,
-        ]);
+        check_partial_decoding(
+            &TX_ACCESS_RULE,
+            &[
+                Instruction::CallAccessRulesMethod,
+                Instruction::CallAccessRulesMethod,
+                Instruction::CallAccessRulesMethod,
+                Instruction::CallAccessRulesMethod,
+                Instruction::CallAccessRulesMethod,
+                Instruction::CallAccessRulesMethod,
+            ],
+        );
     }
 
     #[test]
