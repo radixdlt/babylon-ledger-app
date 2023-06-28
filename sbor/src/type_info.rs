@@ -146,10 +146,8 @@ const NON_FUNGIBLE_LOCAL_ID_ENCODING: [DecoderPhase; 4] = [
     DecoderPhase::ReadingData,
 ];
 
-const ADDRESS_ENCODING: [DecoderPhase; 2] = [
-    DecoderPhase::ReadingTypeId,
-    DecoderPhase::ReadingData,
-];
+const ADDRESS_ENCODING: [DecoderPhase; 2] =
+    [DecoderPhase::ReadingTypeId, DecoderPhase::ReadingData];
 
 pub fn to_type_info(byte: u8) -> Option<TypeInfo> {
     match byte {

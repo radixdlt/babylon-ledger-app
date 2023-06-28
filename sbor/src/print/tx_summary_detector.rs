@@ -335,37 +335,23 @@ impl TxSummaryDetector {
     fn parameter_start(&mut self, event: SborEvent, param_count: u32) {
         self.data.clear();
 
-        match (self.decoding_phase, param_count) {
-            (DecodingPhase::CallMethod, 0) => {
-                if let SborEvent::Start { type_id, .. } = event {
-                    if type_id == TYPE_ADDRESS {
-                        self.decoding_phase = DecodingPhase::AddressWithdraw;
-                    }
+        if let SborEvent::Start { type_id, .. } = event {
+            match (self.decoding_phase, param_count, type_id) {
+                (DecodingPhase::CallMethod, 0, TYPE_ADDRESS) => {
+                    self.decoding_phase = DecodingPhase::AddressWithdraw
                 }
-            }
-            (DecodingPhase::AddressWithdraw, 1) => {
-                if let SborEvent::Start { type_id, .. } = event {
-                    if type_id == TYPE_STRING {
-                        self.decoding_phase = DecodingPhase::ExpectWithdraw;
-                    }
+                (DecodingPhase::AddressWithdraw, 1, TYPE_STRING) => {
+                    self.decoding_phase = DecodingPhase::ExpectWithdraw
                 }
-            }
-            (DecodingPhase::ExpectAddressDeposit, 0) => {
-                if let SborEvent::Start { type_id, .. } = event {
-                    if type_id == TYPE_ADDRESS {
-                        self.decoding_phase = DecodingPhase::AddressDeposit;
-                    }
+                (DecodingPhase::ExpectAddressDeposit, 0, TYPE_ADDRESS) => {
+                    self.decoding_phase = DecodingPhase::AddressDeposit
                 }
-            }
-            (DecodingPhase::ValueDepositCount, 1) => {
-                if let SborEvent::Start { type_id, .. } = event {
-                    if type_id == TYPE_ARRAY {
-                        self.decoding_phase = DecodingPhase::ValueDepositCountIds;
-                    }
+                (DecodingPhase::ValueDepositCount, 1, TYPE_ARRAY) => {
+                    self.decoding_phase = DecodingPhase::ValueDepositCountIds
                 }
-            }
 
-            (_, _) => {}
+                (_, _, _) => {}
+            }
         };
 
         match (self.fee_phase, param_count) {
