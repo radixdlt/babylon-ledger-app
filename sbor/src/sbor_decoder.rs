@@ -7,15 +7,15 @@ use core::result::Result;
 use core::result::Result::{Err, Ok};
 
 #[cfg(target_os = "nanos")]
-pub const STACK_DEPTH: u8 = 32; // Use minimal possible stack for Nano S
+pub const STACK_DEPTH: u8 = 25; // Use minimal possible stack for Nano S
 #[cfg(target_os = "nanosplus")]
-pub const STACK_DEPTH: u8 = 32; // Nano S+ and Nano X have more memory
+pub const STACK_DEPTH: u8 = 25; // Nano S+ and Nano X have more memory
 #[cfg(target_os = "nanox")]
-pub const STACK_DEPTH: u8 = 32;
+pub const STACK_DEPTH: u8 = 25;
 #[cfg(not(any(target_os = "nanos", target_os = "nanox", target_os = "nanosplus")))]
-pub const STACK_DEPTH: u8 = 32; // For testing on desktop
+pub const STACK_DEPTH: u8 = 25;
 
-pub const SBOR_LEADING_BYTE: u8 = 77; // MANIFEST_SBOR_V1_PAYLOAD_PREFIX
+pub const SBOR_LEADING_BYTE: u8 = 0x4d; // MANIFEST_SBOR_V1_PAYLOAD_PREFIX
 
 #[repr(transparent)]
 #[derive(Copy, Clone, Debug)]
@@ -104,6 +104,7 @@ pub enum SborEvent {
         type_id: u8,
         nesting_level: u8,
     },
+    InputByte(u8),
 }
 
 #[repr(u8)]
@@ -200,7 +201,7 @@ impl SborDecoder {
             }
         }
 
-        match self.head().phase() {
+        let result = match self.head().phase() {
             DecoderPhase::ReadingTypeId => self.read_type_id(handler, byte),
             DecoderPhase::ReadingLen => self.read_len(handler, byte),
             DecoderPhase::ReadingElementTypeId => {
@@ -218,7 +219,13 @@ impl SborDecoder {
             DecoderPhase::ReadingAddressDiscriminator => {
                 self.read_address_discriminator(handler, byte)
             }
+        };
+
+        if count_input {
+            handler.handle(SborEvent::InputByte(byte))
         }
+
+        result
     }
 
     fn read_discriminator(
@@ -240,7 +247,7 @@ impl SborDecoder {
         match byte {
             NFL_STRING | NFL_BYTES => {}                         // read len
             NFL_INTEGER => self.read_len(handler, INTEGER_LEN)?, // simulate reading len and skip phase
-            NFL_UUID => self.read_len(handler, UUID_LEN)?,       // simulate and skip phase
+            NFL_RUID => self.read_len(handler, RUID_LEN)?,       // simulate and skip phase
             _ => return Err(DecoderError::UnknownDiscriminator(self.byte_count, byte)),
         }
 
@@ -617,6 +624,9 @@ mod tests {
                         *nesting_level
                     )
                 }
+                SborEvent::InputByte(byte) => {
+                    write!(f, "SborEvent::InputByte({:#02x}),", *byte)
+                }
             }
         }
     }
@@ -636,6 +646,11 @@ mod tests {
                 evt,
                 self.count
             );
+
+            if let SborEvent::InputByte(_) = evt {
+                return;
+            }
+
             self.collected[self.count] = evt;
             self.count += 1;
         }
@@ -669,10 +684,10 @@ mod tests {
         }
 
         pub fn print(&self) {
-            for i in 0..self.count {
-                println!("{}", self.collected[i]);
-            }
-            println!("Total {} events", self.count);
+            // for i in 0..self.count {
+            //     println!("{}", self.collected[i]);
+            // }
+            // println!("Total {} events", self.count);
         }
     }
 
@@ -1293,7 +1308,7 @@ mod tests {
         let mut handler = EventCollector::new();
 
         let mut start = 0;
-        let mut end = CHUNK_SIZE;
+        let mut end = core::cmp::min(CHUNK_SIZE, input.len());
 
         while start < input.len() {
             match decoder.decode(&mut handler, &input[start..end]) {
@@ -1321,127 +1336,111 @@ mod tests {
 
     // ---------------------------------------------------- Full TX Intent
     #[test]
-    pub fn test_access_rule() {
-        check_partial_decoding(&TX_ACCESS_RULE);
+    pub fn test_address_allocation() {
+        check_partial_decoding(&TX_ADDRESS_ALLOCATION);
     }
-
     #[test]
     pub fn test_call_function() {
         check_partial_decoding(&TX_CALL_FUNCTION);
     }
-
     #[test]
     pub fn test_call_method() {
         check_partial_decoding(&TX_CALL_METHOD);
     }
-
     #[test]
     pub fn test_create_access_controller() {
         check_partial_decoding(&TX_CREATE_ACCESS_CONTROLLER);
     }
-
     #[test]
     pub fn test_create_account() {
         check_partial_decoding(&TX_CREATE_ACCOUNT);
     }
-
     #[test]
     pub fn test_create_fungible_resource_with_initial_supply() {
         check_partial_decoding(&TX_CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY);
     }
-
     #[test]
     pub fn test_create_fungible_resource_with_no_initial_supply() {
         check_partial_decoding(&TX_CREATE_FUNGIBLE_RESOURCE_WITH_NO_INITIAL_SUPPLY);
     }
-
     #[test]
     pub fn test_create_identity() {
         check_partial_decoding(&TX_CREATE_IDENTITY);
     }
-
-    #[test]
-    pub fn test_create_non_fungible_resource_with_no_initial_supply() {
-        check_partial_decoding(&TX_CREATE_NON_FUNGIBLE_RESOURCE_WITH_NO_INITIAL_SUPPLY);
-    }
-
-    #[test]
-    pub fn test_metadata() {
-        check_partial_decoding(&TX_METADATA);
-    }
-
-    #[test]
-    pub fn test_mint_fungible() {
-        check_partial_decoding(&TX_MINT_FUNGIBLE);
-    }
-
-    #[test]
-    pub fn test_mint_non_fungible() {
-        check_partial_decoding(&TX_MINT_NON_FUNGIBLE);
-    }
-
-    #[test]
-    pub fn test_publish_package() {
-        check_partial_decoding(&TX_PUBLISH_PACKAGE);
-    }
-
-    #[test]
-    pub fn test_resource_recall() {
-        check_partial_decoding(&TX_RESOURCE_RECALL);
-    }
-
-    #[test]
-    pub fn test_resource_worktop() {
-        check_partial_decoding(&TX_RESOURCE_WORKTOP);
-    }
-
-    #[test]
-    pub fn test_royalty() {
-        check_partial_decoding(&TX_ROYALTY);
-    }
-
-    #[test]
-    pub fn test_values() {
-        check_partial_decoding(&TX_VALUES);
-    }
-
-    #[test]
-    pub fn test_address_allocation() {
-        check_partial_decoding(&TX_ADDRESS_ALLOCATION);
-    }
-
     #[test]
     pub fn test_create_non_fungible_resource_with_initial_supply() {
         check_partial_decoding(&TX_CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY);
     }
-
+    #[test]
+    pub fn test_create_non_fungible_resource_with_no_initial_supply() {
+        check_partial_decoding(&TX_CREATE_NON_FUNGIBLE_RESOURCE_WITH_NO_INITIAL_SUPPLY);
+    }
     #[test]
     pub fn test_create_validator() {
         check_partial_decoding(&TX_CREATE_VALIDATOR);
     }
-
+    #[test]
+    pub fn test_metadata() {
+        check_partial_decoding(&TX_METADATA);
+    }
+    #[test]
+    pub fn test_mint_fungible() {
+        check_partial_decoding(&TX_MINT_FUNGIBLE);
+    }
+    #[test]
+    pub fn test_mint_non_fungible() {
+        check_partial_decoding(&TX_MINT_NON_FUNGIBLE);
+    }
+    #[test]
+    pub fn test_publish_package() {
+        check_partial_decoding(&TX_PUBLISH_PACKAGE);
+    }
     #[test]
     pub fn test_resource_auth_zone() {
         check_partial_decoding(&TX_RESOURCE_AUTH_ZONE);
     }
-
+    #[test]
+    pub fn test_resource_recall() {
+        check_partial_decoding(&TX_RESOURCE_RECALL);
+    }
+    #[test]
+    pub fn test_resource_worktop() {
+        check_partial_decoding(&TX_RESOURCE_WORKTOP);
+    }
+    #[test]
+    pub fn test_royalty() {
+        check_partial_decoding(&TX_ROYALTY);
+    }
     #[test]
     pub fn test_simple_transfer() {
         check_partial_decoding(&TX_SIMPLE_TRANSFER);
     }
-
     #[test]
     pub fn test_simple_transfer_nft() {
         check_partial_decoding(&TX_SIMPLE_TRANSFER_NFT);
     }
-
     #[test]
     pub fn test_simple_transfer_nft_by_id() {
         check_partial_decoding(&TX_SIMPLE_TRANSFER_NFT_BY_ID);
     }
-
     #[test]
     pub fn test_simple_transfer_with_multiple_locked_fees() {
         check_partial_decoding(&TX_SIMPLE_TRANSFER_WITH_MULTIPLE_LOCKED_FEES);
+    }
+    #[test]
+    pub fn test_access_rule() {
+        check_partial_decoding(&TX_ACCESS_RULE);
+    }
+    #[test]
+    pub fn test_values() {
+        check_partial_decoding(&TX_VALUES);
+    }
+    #[test]
+    pub fn test_vault_freeze() {
+        check_partial_decoding(&TX_VAULT_FREEZE);
+    }
+    #[test]
+    pub fn test_hc_intent() {
+        check_partial_decoding(&TX_HC_INTENT);
     }
 }

@@ -38,19 +38,14 @@ impl Default for ValueState {
     }
 }
 
-#[cfg(target_os = "nanos")]
-pub const PARAMETER_AREA_SIZE: usize = 160; // Used for PreciseDecimal formatting and can't be smaller
-#[cfg(not(target_os = "nanos"))]
 pub const PARAMETER_AREA_SIZE: usize = 256;
 
 #[cfg(target_os = "nanos")]
-pub const DISPLAY_SIZE: usize = 128; // Use smaller buffer for Nano S
-#[cfg(target_os = "nanosplus")]
-pub const DISPLAY_SIZE: usize = 1024; // Nano S+ and Nano X have larger screens and more memory
-#[cfg(target_os = "nanox")]
-pub const DISPLAY_SIZE: usize = 1024;
+pub const DISPLAY_SIZE: usize = 256; // Use smaller buffer for Nano S
+#[cfg(any(target_os = "nanox", target_os = "nanosplus"))]
+pub const DISPLAY_SIZE: usize = 1024; // Nano S+/X have more memory
 #[cfg(not(any(target_os = "nanos", target_os = "nanox", target_os = "nanosplus")))]
-pub const DISPLAY_SIZE: usize = 2048; // For testing on desktop
+pub const DISPLAY_SIZE: usize = 2048;
 
 pub const TITLE_SIZE: usize = 32;
 
@@ -58,7 +53,7 @@ pub struct ParameterPrinterState<T: Copy> {
     pub display: StaticVec<u8, { DISPLAY_SIZE }>,
     pub data: StaticVec<u8, { PARAMETER_AREA_SIZE }>,
     pub title: StaticVec<u8, { TITLE_SIZE }>,
-    pub stack: StaticVec<ValueState, { (STACK_DEPTH - 5) as usize }>,
+    pub stack: StaticVec<ValueState, { STACK_DEPTH as usize }>,
     pub nesting_level: u8,
     pub network_id: NetworkId,
     pub show_instructions: bool,

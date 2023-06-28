@@ -302,7 +302,7 @@ mod tests {
                     total
                 );
             } else {
-                println!("Event: {:?}", event);
+                // println!("Event: {:?}", event);
             }
         }
     }
@@ -314,7 +314,7 @@ mod tests {
         let mut handler = InstructionProcessor::new();
 
         let mut start = 0;
-        let mut end = CHUNK_SIZE;
+        let mut end = core::cmp::min(CHUNK_SIZE, input.len());
 
         while start < input.len() {
             match decoder.decode(&mut handler, &input[start..end]) {
@@ -345,7 +345,17 @@ mod tests {
 
     #[test]
     pub fn test_access_rule() {
-        check_partial_decoding(&TX_ACCESS_RULE, &[Instruction::CallAccessRulesMethod]);
+        check_partial_decoding(
+            &TX_ACCESS_RULE,
+            &[
+                Instruction::CallAccessRulesMethod,
+                Instruction::CallAccessRulesMethod,
+                Instruction::CallAccessRulesMethod,
+                Instruction::CallAccessRulesMethod,
+                Instruction::CallAccessRulesMethod,
+                Instruction::CallAccessRulesMethod,
+            ],
+        );
     }
 
     #[test]
@@ -445,6 +455,9 @@ mod tests {
                 Instruction::CallMetadataMethod,
                 Instruction::CallMetadataMethod,
                 Instruction::CallMetadataMethod,
+                Instruction::CallMetadataMethod,
+                Instruction::CallMetadataMethod,
+                Instruction::CallMetadataMethod,
             ],
         );
     }
@@ -510,6 +523,7 @@ mod tests {
         check_partial_decoding(
             &TX_ROYALTY,
             &[
+                Instruction::CallRoyaltyMethod,
                 Instruction::CallRoyaltyMethod,
                 Instruction::CallMethod,
                 Instruction::CallRoyaltyMethod,
@@ -642,5 +656,27 @@ mod tests {
                 Instruction::CallMethod,
             ],
         );
+    }
+
+    #[test]
+    pub fn test_vault_freeze() {
+        check_partial_decoding(
+            &TX_VAULT_FREEZE,
+            &[
+                Instruction::CallDirectVaultMethod,
+                Instruction::CallDirectVaultMethod,
+                Instruction::CallDirectVaultMethod,
+                Instruction::CallDirectVaultMethod,
+                Instruction::CallDirectVaultMethod,
+                Instruction::CallDirectVaultMethod,
+                Instruction::CallDirectVaultMethod,
+                Instruction::CallDirectVaultMethod,
+            ],
+        );
+    }
+
+    #[test]
+    pub fn test_hc_intent() {
+        check_partial_decoding(&TX_HC_INTENT, &[Instruction::ClearAuthZone]);
     }
 }

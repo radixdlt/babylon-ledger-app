@@ -18,5 +18,5 @@ pub fn handle<T: Copy>(
             SignType::Ed25519Summary,
             comm.get_apdu_metadata().p1.into(),
         )
-        .and_then(|outcome| process_sign_outcome(comm, outcome))
+        .and_then(|outcome| process_sign_outcome(outcome))
 }

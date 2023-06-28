@@ -64,7 +64,7 @@ pub const ADDRESS_NAMED_LEN: u8 = 4;
 pub const COMPONENT_LEN: u8 = 36;
 
 pub const INTEGER_LEN: u8 = 8;
-pub const UUID_LEN: u8 = 16;
+pub const RUID_LEN: u8 = 32;
 
 pub const ID_LEN: u8 = 4;
 pub const BUCKET_LEN: u8 = ID_LEN;
@@ -79,7 +79,8 @@ pub const TYPE_DATA_BUFFER_SIZE: usize = 256;
 pub const NFL_STRING: u8 = 0;
 pub const NFL_INTEGER: u8 = 1;
 pub const NFL_BYTES: u8 = 2;
-pub const NFL_UUID: u8 = 3;
+pub const NFL_RUID: u8 = 3;
+pub const NFL_MAX_STRING_LENG: usize = 64;
 
 // Address discriminators
 pub const ADDRESS_STATIC: u8 = 0;

@@ -33,17 +33,20 @@ impl<T: Copy> ParameterPrinter<T> for BlobParameterPrinter {
 }
 
 impl<T: Copy> ParameterPrinter<T> for ExpressionParameterPrinter {
-    fn handle_data(&self, state: &mut ParameterPrinterState<T>, event: SborEvent) {
-        if let SborEvent::Data(byte) = event {
-            state.print_hex_byte(byte);
-        }
-    }
-
     fn start(&self, state: &mut ParameterPrinterState<T>) {
         state.print_text(b"Expression(");
     }
 
     fn end(&self, state: &mut ParameterPrinterState<T>) {
+        if state.data.len() != 1 {
+            state.print_text(b"<unknown>");
+        } else {
+            state.print_text(match state.data.as_slice()[0] {
+                0 => b"ENTIRE_WORKTOP",
+                1 => b"ENTIRE_AUTH_ZONE",
+                _ => b"<unknown>",
+            });
+        }
         state.print_byte(b')');
     }
 }

@@ -1,4 +1,3 @@
-const MAX_ARR_LEN: usize = 64;
 const HEX_DIGITS: [u8; 16] = *b"0123456789abcdef";
 
 #[inline(always)]
