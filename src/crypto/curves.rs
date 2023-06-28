@@ -12,7 +12,6 @@ pub use nanos_sdk::bindings::{
 use crate::app_error::{to_result, AppError};
 use crate::crypto::bip32::Bip32Path;
 use crate::crypto::key_pair::InternalKeyPair;
-use crate::utilities::debug::display_memory;
 
 pub const INTERNAL_SEED_SIZE: usize = 32;
 
@@ -73,7 +72,6 @@ impl Curve {
             private: self.derive(path)?,
             public: self.init_public_key()?,
         };
-        display_memory(b'C'); //536871876
 
         let rc = unsafe {
             cx_ecfp_generate_pair_no_throw(

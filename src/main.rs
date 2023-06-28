@@ -18,7 +18,6 @@ use crate::sign::tx_state::TxState;
 use crate::ui::menu::{Menu, MenuItem};
 use crate::ui::single_message::SingleMessage;
 use crate::ui::utils::RADIX_LOGO_ICON;
-use crate::utilities::debug::display_memory;
 
 mod app_error;
 mod command;
@@ -68,8 +67,6 @@ extern "C" fn sample_main() {
     let mut state = TxState::new(LedgerTTY::new_tty());
     let mut main_menu = Menu::new(&menu);
     let mut ticker = 0i8;
-
-    display_memory(b'A'); //536873820
 
     main_menu.display();
 

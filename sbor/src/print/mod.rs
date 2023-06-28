@@ -12,6 +12,6 @@ mod enums;
 mod map;
 mod non_fungible;
 mod parameter_printer;
-pub mod primitives;
+mod primitives;
 mod state;
 mod tuple;

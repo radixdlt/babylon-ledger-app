@@ -23,6 +23,9 @@ pub fn debug_print_byte(byte: u8) {
     buffer[0] = byte;
     debug_print(from_utf8(&buffer).unwrap());
 }
+/*
+// Useful helper function which prints current stack position
+// requires making module sbor::print::primitives public
 
 #[cfg(debug_assertions)]
 pub mod debug {
@@ -40,7 +43,4 @@ pub mod debug {
         SingleMessage::new(from_utf8(number.as_slice()).unwrap()).show_and_wait();
     }
 }
-#[cfg(not(debug_assertions))]
-pub mod debug {
-    pub fn display_memory(_lead_byte: u8) {}
-}
+ */

@@ -17,7 +17,6 @@ use crate::crypto::hash::Blake2bHasher;
 use crate::sign::sign_outcome::SignOutcome;
 use crate::sign::sign_type::SignType;
 use crate::sign::signing_flow_state::SigningFlowState;
-use crate::utilities::debug::display_memory;
 
 pub struct InstructionProcessor<T: Copy> {
     state: SigningFlowState,
@@ -50,8 +49,12 @@ impl<T: Copy> InstructionProcessor<T> {
         self.detector.set_intent_type(intent_type);
     }
 
-    pub fn sign_tx(&self, comm: &mut Comm, tx_type: SignType, digest: &Digest) -> Result<SignOutcome, AppError> {
-        display_memory(b'S'); //536873268
+    pub fn sign_tx(
+        &self,
+        comm: &mut Comm,
+        tx_type: SignType,
+        digest: &Digest,
+    ) -> Result<SignOutcome, AppError> {
         self.state.sign_tx(comm, tx_type, digest)
     }
 

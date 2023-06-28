@@ -127,15 +127,13 @@ impl SigningFlowState {
     ) -> Result<SignOutcome, AppError> {
         match tx_type {
             SignType::Ed25519 | SignType::Ed25519Summary | SignType::AuthEd25519 => {
-                KeyPair25519::derive(&self.path).and_then(|keypair| {
-                    keypair.sign(comm, digest.as_bytes())
-                })
+                KeyPair25519::derive(&self.path)
+                    .and_then(|keypair| keypair.sign(comm, digest.as_bytes()))
             }
 
             SignType::Secp256k1 | SignType::Secp256k1Summary | SignType::AuthSecp256k1 => {
-                KeyPairSecp256k1::derive(&self.path).and_then(|keypair| {
-                    keypair.sign(comm, digest.as_bytes())
-                })
+                KeyPairSecp256k1::derive(&self.path)
+                    .and_then(|keypair| keypair.sign(comm, digest.as_bytes()))
             }
         }
     }
