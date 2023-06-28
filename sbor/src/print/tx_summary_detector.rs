@@ -26,12 +26,14 @@ pub enum FeePhase {
 pub enum DecodingPhase {
     Start,
     CallMethod,
-    AddressWithdrawStart, //Outer enum
+    AddressWithdrawStart,
+    //Outer enum
     AddressWithdraw,
     AddressWithdrawEnd,
     ExpectWithdraw,
     WithdrawDone,
-    ValueDepositCount, //Outer array
+    ValueDepositCount,
+    //Outer array
     ValueDepositCountIds,
     Resource,
     NonFungibleResource,
@@ -39,7 +41,8 @@ pub enum DecodingPhase {
     ValueDepositDone,
     ExpectDepositCall,
     ExpectAddressDeposit,
-    AddressDepositStart, //Outer enum
+    AddressDepositStart,
+    //Outer enum
     AddressDeposit,
     AddressDepositEnd,
     ExpectDeposit,
@@ -341,37 +344,23 @@ impl TxSummaryDetector {
     fn parameter_start(&mut self, event: SborEvent, param_count: u32) {
         self.data.clear();
 
-        match (self.decoding_phase, param_count) {
-            (DecodingPhase::CallMethod, 0) => {
-                if let SborEvent::Start { type_id, .. } = event {
-                    if type_id == TYPE_ENUM {
-                        self.decoding_phase = DecodingPhase::AddressWithdrawStart;
-                    }
+        if let SborEvent::Start { type_id, .. } = event {
+            match (self.decoding_phase, param_count, type_id) {
+                (DecodingPhase::CallMethod, 0, TYPE_ENUM) => {
+                    self.decoding_phase = DecodingPhase::AddressWithdrawStart;
                 }
-            }
-            (DecodingPhase::AddressWithdraw, 1) => {
-                if let SborEvent::Start { type_id, .. } = event {
-                    if type_id == TYPE_STRING {
-                        self.decoding_phase = DecodingPhase::ExpectWithdraw;
-                    }
+                (DecodingPhase::AddressWithdraw, 1, TYPE_STRING) => {
+                    self.decoding_phase = DecodingPhase::ExpectWithdraw;
                 }
-            }
-            (DecodingPhase::ExpectAddressDeposit, 0) => {
-                if let SborEvent::Start { type_id, .. } = event {
-                    if type_id == TYPE_ENUM {
-                        self.decoding_phase = DecodingPhase::AddressDepositStart;
-                    }
+                (DecodingPhase::ExpectAddressDeposit, 0, TYPE_ENUM) => {
+                    self.decoding_phase = DecodingPhase::AddressDepositStart;
                 }
-            }
-            (DecodingPhase::ValueDepositCount, 1) => {
-                if let SborEvent::Start { type_id, .. } = event {
-                    if type_id == TYPE_ARRAY {
-                        self.decoding_phase = DecodingPhase::ValueDepositCountIds;
-                    }
+                (DecodingPhase::ValueDepositCount, 1, TYPE_ARRAY) => {
+                    self.decoding_phase = DecodingPhase::ValueDepositCountIds;
                 }
-            }
 
-            (_, _) => {}
+                (_, _, _) => {}
+            }
         };
 
         match (self.fee_phase, param_count) {
