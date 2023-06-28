@@ -196,9 +196,6 @@ impl Dispatcher {
             TYPE_NON_FUNGIBLE_LOCAL_ID => {
                 NON_FUNGIBLE_LOCAL_ID_PARAMETER_PRINTER.handle_data(state, event)
             }
-            TYPE_ADDRESS_RESERVATION => {
-                ADDRESS_RESERVATION_PARAMETER_PRINTER.handle_data(state, event)
-            }
             _ => IGNORED_PARAMETER_PRINTER.handle_data(state, event),
         };
     }
@@ -230,7 +227,6 @@ impl Dispatcher {
             TYPE_DECIMAL => DECIMAL_PARAMETER_PRINTER.start(state),
             TYPE_PRECISE_DECIMAL => PRECISE_DECIMAL_PARAMETER_PRINTER.start(state),
             TYPE_NON_FUNGIBLE_LOCAL_ID => NON_FUNGIBLE_LOCAL_ID_PARAMETER_PRINTER.start(state),
-            TYPE_ADDRESS_RESERVATION => ADDRESS_RESERVATION_PARAMETER_PRINTER.start(state),
             _ => IGNORED_PARAMETER_PRINTER.start(state),
         };
     }
@@ -262,7 +258,6 @@ impl Dispatcher {
             TYPE_DECIMAL => DECIMAL_PARAMETER_PRINTER.end(state),
             TYPE_PRECISE_DECIMAL => PRECISE_DECIMAL_PARAMETER_PRINTER.end(state),
             TYPE_NON_FUNGIBLE_LOCAL_ID => NON_FUNGIBLE_LOCAL_ID_PARAMETER_PRINTER.end(state),
-            TYPE_ADDRESS_RESERVATION => ADDRESS_RESERVATION_PARAMETER_PRINTER.end(state),
             _ => IGNORED_PARAMETER_PRINTER.end(state),
         };
     }
@@ -296,9 +291,6 @@ impl Dispatcher {
             TYPE_NON_FUNGIBLE_LOCAL_ID => {
                 NON_FUNGIBLE_LOCAL_ID_PARAMETER_PRINTER.subcomponent_start(state)
             }
-            TYPE_ADDRESS_RESERVATION => {
-                ADDRESS_RESERVATION_PARAMETER_PRINTER.subcomponent_start(state)
-            }
             _ => IGNORED_PARAMETER_PRINTER.subcomponent_start(state),
         };
     }
@@ -331,9 +323,6 @@ impl Dispatcher {
             TYPE_PRECISE_DECIMAL => PRECISE_DECIMAL_PARAMETER_PRINTER.subcomponent_end(state),
             TYPE_NON_FUNGIBLE_LOCAL_ID => {
                 NON_FUNGIBLE_LOCAL_ID_PARAMETER_PRINTER.subcomponent_end(state)
-            }
-            TYPE_ADDRESS_RESERVATION => {
-                ADDRESS_RESERVATION_PARAMETER_PRINTER.subcomponent_end(state)
             }
             _ => IGNORED_PARAMETER_PRINTER.subcomponent_end(state),
         };
@@ -565,12 +554,7 @@ mod tests {
     pub fn test_access_rule() {
         check_partial_decoding(&TX_ACCESS_RULE,
 br##"
-1 of 6: CallAccessRulesMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "set_owner_role" Tuple(Enum<0u8>(), )
-2 of 6: CallAccessRulesMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "lock_owner_role" Tuple()
-3 of 6: CallAccessRulesMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "set_and_lock_owner_role" Tuple(Enum<0u8>(), )
-4 of 6: CallAccessRulesMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "set_role" Tuple(Enum<0u8>(), "hello", Enum<0u8>(), )
-5 of 6: CallAccessRulesMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "lock_role" Tuple(Enum<0u8>(), "hello", )
-6 of 6: CallAccessRulesMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "set_and_lock_role" Tuple(Enum<0u8>(), "hello", Enum<0u8>(), )
+1 of 1: CallAccessRulesMethod Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al) "set_authority_rule" Tuple(Enum<0u8>(), Enum<0u8>(), Enum<0u8>(), )
 "##, &DetectedTxType::Other(None));
     }
 
@@ -578,7 +562,7 @@ br##"
     pub fn test_call_function() {
         check_partial_decoding(&TX_CALL_FUNCTION,
 br##"
-1 of 1: CallFunction Enum<0u8>(Address(package_loc1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfdmytuxt), ) "BlueprintName" "f" Tuple("string", )
+1 of 1: CallFunction Address(package_loc1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfdmytuxt) "BlueprintName" "f" Tuple("string", )
 "##, &DetectedTxType::Other(None));
     }
 
@@ -586,10 +570,10 @@ br##"
     pub fn test_call_method() {
         check_partial_decoding(&TX_CALL_METHOD,
 br##"
-1 of 4: CallMethod Enum<0u8>(Address(component_loc1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve2jtvlp), ) "complicated_method" Tuple(Decimal(1), PreciseDecimal(2), )
-2 of 4: CallRoyaltyMethod Enum<0u8>(Address(component_loc1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve2jtvlp), ) "set_royalty" Tuple("my_method", Enum<0u8>(), )
-3 of 4: CallMetadataMethod Enum<0u8>(Address(component_loc1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve2jtvlp), ) "get" Tuple("HelloWorld", )
-4 of 4: CallAccessRulesMethod Enum<0u8>(Address(component_loc1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve2jtvlp), ) "get_role" Tuple(Enum<0u8>(), "hello", )
+1 of 4: CallMethod Address(component_loc1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve2jtvlp) "complicated_method" Tuple(Decimal(1), PreciseDecimal(2), )
+2 of 4: CallRoyaltyMethod Address(component_loc1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve2jtvlp) "some_method_1" Tuple(Decimal(1), )
+3 of 4: CallMetadataMethod Address(component_loc1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve2jtvlp) "some_method_2" Tuple(Decimal(2), )
+4 of 4: CallAccessRulesMethod Address(component_loc1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve2jtvlp) "some_method_3" Tuple(Decimal(3), )
 "##, &DetectedTxType::Other(None))
     }
 
@@ -598,7 +582,7 @@ br##"
         check_partial_decoding(&TX_CREATE_ACCESS_CONTROLLER,
 br##"
 1 of 2: TakeAllFromWorktop Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq)
-2 of 2: CallFunction Enum<0u8>(Address(package_loc1pkgxxxxxxxxxcntrlrxxxxxxxxx000648572295xxxxxxxxxhwh0tz), ) "AccessController" "create_global" Tuple(Bucket(0u32), Tuple(Enum<1u8>(), Enum<1u8>(), Enum<1u8>(), ), Enum<0u8>(), )
+2 of 2: CallFunction Address(package_loc1pkgxxxxxxxxxcntrlrxxxxxxxxx000648572295xxxxxxxxxhwh0tz) "AccessController" "create_global" Tuple(Bucket(0u32), Tuple(Enum<0u8>(), Enum<0u8>(), Enum<0u8>(), ), Enum<0u8>(), )
 "##, &DetectedTxType::Other(None))
     }
 
@@ -606,8 +590,8 @@ br##"
     pub fn test_create_account() {
         check_partial_decoding(&TX_CREATE_ACCOUNT,
 br##"
-1 of 2: CallFunction Enum<0u8>(Address(package_loc1pkgxxxxxxxxxaccntxxxxxxxxxx000929625493xxxxxxxxxj9yll8), ) "Account" "create_advanced" Tuple(Enum<2u8>(Enum<0u8>(), ), )
-2 of 2: CallFunction Enum<0u8>(Address(package_loc1pkgxxxxxxxxxaccntxxxxxxxxxx000929625493xxxxxxxxxj9yll8), ) "Account" "create" Tuple()
+1 of 2: CallFunction Address(package_loc1pkgxxxxxxxxxaccntxxxxxxxxxx000929625493xxxxxxxxxj9yll8) "Account" "create_advanced" Tuple(Map<Enum, Tuple>({Enum<0u8>(), Tuple(Enum<0u8>(), Enum<1u8>(), )}, {Enum<1u8>(Enum<1u8>(), "metadata", ), Tuple(Enum<0u8>(), Enum<1u8>(), )}, ), )
+2 of 2: CallFunction Address(package_loc1pkgxxxxxxxxxaccntxxxxxxxxxx000929625493xxxxxxxxxj9yll8) "Account" "create" Tuple()
 "##, &DetectedTxType::Other(None))
     }
 
@@ -615,9 +599,9 @@ br##"
     pub fn test_create_fungible_resource_with_initial_supply() {
         check_partial_decoding(&TX_CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY,
 br##"
-1 of 3: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "lock_fee" Tuple(Decimal(10), )
-2 of 3: CallFunction Enum<0u8>(Address(package_loc1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxvyv0vc), ) "FungibleResourceManager" "create_with_initial_supply" Tuple(false, 18u8, Map<String, Tuple>({"name", Tuple(Enum<0u8>("MyResource", ), true, )}, {"symbol", Tuple(Enum<0u8>("RSRC", ), true, )}, {"description", Tuple(Enum<0u8>("A very innovative and important resource", ), true, )}, ), Map<Enum, Tuple>({Enum<4u8>(), Tuple(Enum<0u8>(), Enum<1u8>(), )}, {Enum<5u8>(), Tuple(Enum<0u8>(), Enum<1u8>(), )}, ), Decimal(12), )
-3 of 3: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "deposit_batch" Tuple(Expression(ENTIRE_WORKTOP), )
+1 of 3: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "lock_fee" Tuple(Decimal(10), )
+2 of 3: CallFunction Address(package_loc1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxvyv0vc) "FungibleResourceManager" "create_with_initial_supply" Tuple(18u8, Map<String, Enum>({"name", Enum<0u8>("MyResource", )}, {"symbol", Enum<0u8>("RSRC", )}, {"description", Enum<0u8>("A very innovative and important resource", )}, ), Map<Enum, Tuple>({Enum<4u8>(), Tuple(Enum<0u8>(), Enum<1u8>(), )}, {Enum<5u8>(), Tuple(Enum<0u8>(), Enum<1u8>(), )}, ), Decimal(12), )
+3 of 3: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "deposit_batch" Tuple(Expression(ENTIRE_WORKTOP), )
 "##, &DetectedTxType::Other(Some(Decimal::whole(10))))
     }
 
@@ -625,8 +609,8 @@ br##"
     pub fn test_create_fungible_resource_with_no_initial_supply() {
         check_partial_decoding(&TX_CREATE_FUNGIBLE_RESOURCE_WITH_NO_INITIAL_SUPPLY,
 br##"
-1 of 2: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "lock_fee" Tuple(Decimal(10), )
-2 of 2: CallFunction Enum<0u8>(Address(package_loc1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxvyv0vc), ) "FungibleResourceManager" "create" Tuple(false, 18u8, Map<String, Tuple>({"name", Tuple(Enum<0u8>("MyResource", ), true, )}, {"symbol", Tuple(Enum<0u8>("RSRC", ), true, )}, {"description", Tuple(Enum<0u8>("A very innovative and important resource", ), true, )}, ), Map<Enum, Tuple>({Enum<4u8>(), Tuple(Enum<0u8>(), Enum<1u8>(), )}, {Enum<5u8>(), Tuple(Enum<0u8>(), Enum<1u8>(), )}, ), )
+1 of 2: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "lock_fee" Tuple(Decimal(10), )
+2 of 2: CallFunction Address(package_loc1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxvyv0vc) "FungibleResourceManager" "create" Tuple(18u8, Map<String, Enum>({"name", Enum<0u8>("MyResource", )}, {"symbol", Enum<0u8>("RSRC", )}, {"description", Enum<0u8>("A very innovative and important resource", )}, ), Map<Enum, Tuple>({Enum<4u8>(), Tuple(Enum<0u8>(), Enum<1u8>(), )}, {Enum<5u8>(), Tuple(Enum<0u8>(), Enum<1u8>(), )}, ), )
 "##, &DetectedTxType::Other(Some(Decimal::whole(10))))
     }
 
@@ -634,8 +618,8 @@ br##"
     pub fn test_create_identity() {
         check_partial_decoding(&TX_CREATE_IDENTITY,
 br##"
-1 of 2: CallFunction Enum<0u8>(Address(package_loc1pkgxxxxxxxxxdntyxxxxxxxxxxx008560783089xxxxxxxxxzwhgj8), ) "Identity" "create_advanced" Tuple(Enum<0u8>(), )
-2 of 2: CallFunction Enum<0u8>(Address(package_loc1pkgxxxxxxxxxdntyxxxxxxxxxxx008560783089xxxxxxxxxzwhgj8), ) "Identity" "create" Tuple()
+1 of 2: CallFunction Address(package_loc1pkgxxxxxxxxxdntyxxxxxxxxxxx008560783089xxxxxxxxxzwhgj8) "Identity" "create_advanced" Tuple(Map<Enum, Tuple>(), )
+2 of 2: CallFunction Address(package_loc1pkgxxxxxxxxxdntyxxxxxxxxxxx008560783089xxxxxxxxxzwhgj8) "Identity" "create" Tuple()
 "##, &DetectedTxType::Other(None))
     }
 
@@ -643,8 +627,8 @@ br##"
     pub fn test_create_non_fungible_resource_with_no_initial_supply() {
         check_partial_decoding(&TX_CREATE_NON_FUNGIBLE_RESOURCE_WITH_NO_INITIAL_SUPPLY,
 br##"
-1 of 2: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "lock_fee" Tuple(Decimal(10), )
-2 of 2: CallFunction Enum<0u8>(Address(package_loc1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxvyv0vc), ) "NonFungibleResourceManager" "create" Tuple(Enum<1u8>(), false, Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>(), ), Enum<0u8>(64u8, ), Array<String>(), ), Map<String, Tuple>({"name", Tuple(Enum<0u8>("MyResource", ), true, )}, {"description", Tuple(Enum<0u8>("A very innovative and important resource", ), false, )}, ), Map<Enum, Tuple>({Enum<4u8>(), Tuple(Enum<0u8>(), Enum<1u8>(), )}, {Enum<5u8>(), Tuple(Enum<0u8>(), Enum<1u8>(), )}, ), )
+1 of 2: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "lock_fee" Tuple(Decimal(10), )
+2 of 2: CallFunction Address(package_loc1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxvyv0vc) "NonFungibleResourceManager" "create" Tuple(Enum<1u8>(), Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>(), ), Enum<0u8>(64u8, ), Array<String>(), ), Map<String, Enum>({"name", Enum<0u8>("MyResource", )}, {"description", Enum<0u8>("A very innovative and important resource", )}, ), Map<Enum, Tuple>({Enum<4u8>(), Tuple(Enum<0u8>(), Enum<1u8>(), )}, {Enum<5u8>(), Tuple(Enum<0u8>(), Enum<1u8>(), )}, ), )
 "##, &DetectedTxType::Other(Some(Decimal::whole(10))))
     }
 
@@ -652,31 +636,28 @@ br##"
     pub fn test_metadata() {
         check_partial_decoding(&TX_METADATA,
 br##"
-1 of 25: CallMetadataMethod Enum<0u8>(Address(package_loc1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfdmytuxt), ) "set" Tuple("field_name", Enum<0u8>("Metadata string value, eg description", ), )
-2 of 25: CallMetadataMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "set" Tuple("field_name", Enum<0u8>("Metadata string value, eg description", ), )
-3 of 25: CallMetadataMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "set" Tuple("field_name", Enum<0u8>("Metadata string value, eg description", ), )
-4 of 25: CallMetadataMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "set" Tuple("field_name", Enum<1u8>(true, ), )
-5 of 25: CallMetadataMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "set" Tuple("field_name", Enum<2u8>(123u8, ), )
-6 of 25: CallMetadataMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "set" Tuple("field_name", Enum<3u8>(123u32, ), )
-7 of 25: CallMetadataMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "set" Tuple("field_name", Enum<4u8>(123u64, ), )
-8 of 25: CallMetadataMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "set" Tuple("field_name", Enum<5u8>(-123i32, ), )
-9 of 25: CallMetadataMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "set" Tuple("field_name", Enum<6u8>(-123i64, ), )
-10 of 25: CallMetadataMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "set" Tuple("field_name", Enum<7u8>(Decimal(10.5), ), )
-11 of 25: CallMetadataMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "set" Tuple("field_name", Enum<8u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ), )
-12 of 25: CallMetadataMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "set" Tuple("field_name", Enum<9u8>(Enum<0u8>(Bytes(0000000000000000000000000000000000000000000000000000000000000000ff), ), ), )
-13 of 25: CallMetadataMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "set" Tuple("field_name", Enum<10u8>(Tuple(Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq), <some_string>, ), ), )
-14 of 25: CallMetadataMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "set" Tuple("field_name", Enum<11u8>(<some_string>, ), )
-15 of 25: CallMetadataMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "set" Tuple("field_name", Enum<12u8>(10000i64, ), )
-16 of 25: CallMetadataMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "set" Tuple("field_name", Enum<13u8>("https://radixdlt.com/index.html", ), )
-17 of 25: CallMetadataMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "set" Tuple("field_name", Enum<14u8>("https://radixdlt.com", ), )
-18 of 25: CallMetadataMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "set" Tuple("field_name", Enum<15u8>(Enum<0u8>(Bytes(0000000000000000000000000000000000000000000000000000000000), ), ), )
-19 of 25: CallMetadataMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "set" Tuple("field_name", Enum<128u8>(Array<String>("some_string", "another_string", "yet_another_string", ), ), )
-20 of 25: CallMetadataMethod Enum<0u8>(Address(package_loc1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfdmytuxt), ) "lock" Tuple("field_name", )
-21 of 25: CallMetadataMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "lock" Tuple("field_name", )
-22 of 25: CallMetadataMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "lock" Tuple("field_name", )
-23 of 25: CallMetadataMethod Enum<0u8>(Address(package_loc1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfdmytuxt), ) "remove" Tuple("field_name", )
-24 of 25: CallMetadataMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "remove" Tuple("field_name", )
-25 of 25: CallMetadataMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "remove" Tuple("field_name", )
+1 of 22: CallMetadataMethod Address(package_loc1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfdmytuxt) "set" Tuple("field_name", Enum<0u8>("Metadata string value, eg description", ), )
+2 of 22: CallMetadataMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "set" Tuple("field_name", Enum<0u8>("Metadata string value, eg description", ), )
+3 of 22: CallMetadataMethod Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al) "set" Tuple("field_name", Enum<0u8>("Metadata string value, eg description", ), )
+4 of 22: CallMetadataMethod Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al) "set" Tuple("field_name", Enum<1u8>(true, ), )
+5 of 22: CallMetadataMethod Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al) "set" Tuple("field_name", Enum<2u8>(123u8, ), )
+6 of 22: CallMetadataMethod Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al) "set" Tuple("field_name", Enum<3u8>(123u32, ), )
+7 of 22: CallMetadataMethod Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al) "set" Tuple("field_name", Enum<4u8>(123u64, ), )
+8 of 22: CallMetadataMethod Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al) "set" Tuple("field_name", Enum<5u8>(-123i32, ), )
+9 of 22: CallMetadataMethod Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al) "set" Tuple("field_name", Enum<6u8>(-123i64, ), )
+10 of 22: CallMetadataMethod Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al) "set" Tuple("field_name", Enum<7u8>(Decimal(10.5), ), )
+11 of 22: CallMetadataMethod Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al) "set" Tuple("field_name", Enum<8u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ), )
+12 of 22: CallMetadataMethod Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al) "set" Tuple("field_name", Enum<9u8>(Enum<0u8>(Bytes(0000000000000000000000000000000000000000000000000000000000000000ff), ), ), )
+13 of 22: CallMetadataMethod Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al) "set" Tuple("field_name", Enum<10u8>(Tuple(Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq), <some_string>, ), ), )
+14 of 22: CallMetadataMethod Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al) "set" Tuple("field_name", Enum<11u8>(<some_string>, ), )
+15 of 22: CallMetadataMethod Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al) "set" Tuple("field_name", Enum<12u8>(10000i64, ), )
+16 of 22: CallMetadataMethod Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al) "set" Tuple("field_name", Enum<13u8>("https://radixdlt.com/index.html", ), )
+17 of 22: CallMetadataMethod Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al) "set" Tuple("field_name", Enum<14u8>("https://radixdlt.com", ), )
+18 of 22: CallMetadataMethod Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al) "set" Tuple("field_name", Enum<15u8>(Enum<0u8>(Bytes(0000000000000000000000000000000000000000000000000000000000), ), ), )
+19 of 22: CallMetadataMethod Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al) "set" Tuple("field_name", Enum<128u8>(Array<String>("some_string", "another_string", "yet_another_string", ), ), )
+20 of 22: CallMetadataMethod Address(package_loc1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfdmytuxt) "remove" Tuple("field_name", )
+21 of 22: CallMetadataMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "remove" Tuple("field_name", )
+22 of 22: CallMetadataMethod Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al) "remove" Tuple("field_name", )
 "##, &DetectedTxType::Other(None))
     }
 
@@ -684,10 +665,10 @@ br##"
     pub fn test_mint_fungible() {
         check_partial_decoding(&TX_MINT_FUNGIBLE,
 br##"
-1 of 4: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "lock_fee" Tuple(Decimal(10), )
-2 of 4: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "create_proof_of_amount" Tuple(Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq), Decimal(1), )
-3 of 4: CallMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "mint" Tuple(Decimal(12), )
-4 of 4: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "deposit_batch" Tuple(Expression(ENTIRE_WORKTOP), )
+1 of 4: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "lock_fee" Tuple(Decimal(10), )
+2 of 4: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "create_proof_of_amount" Tuple(Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq), Decimal(1), )
+3 of 4: CallMethod Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al) "mint" Tuple(Decimal(12), )
+4 of 4: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "deposit_batch" Tuple(Expression(ENTIRE_WORKTOP), )
 "##, &DetectedTxType::Other(Some(Decimal::whole(10))))
     }
 
@@ -695,10 +676,10 @@ br##"
     pub fn test_mint_non_fungible() {
         check_partial_decoding(&TX_MINT_NON_FUNGIBLE,
 br##"
-1 of 4: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "lock_fee" Tuple(Decimal(10), )
-2 of 4: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "create_proof_of_amount" Tuple(Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq), Decimal(1), )
-3 of 4: CallMethod Enum<0u8>(Address(resource_loc1nfhtg7ttszgjwysfglx8jcjtvv8q02fg9s2y6qpnvtw5jsy3l6u6k8), ) "mint" Tuple(Map<NonFungibleLocalId, Tuple>({#12u64#, Tuple(Tuple(), )}, ), )
-4 of 4: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "deposit_batch" Tuple(Expression(ENTIRE_WORKTOP), )
+1 of 4: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "lock_fee" Tuple(Decimal(10), )
+2 of 4: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "create_proof_of_amount" Tuple(Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq), Decimal(1), )
+3 of 4: CallMethod Address(resource_loc1nfhtg7ttszgjwysfglx8jcjtvv8q02fg9s2y6qpnvtw5jsy3l6u6k8) "mint" Tuple(Map<NonFungibleLocalId, Tuple>({#12u64#, Tuple(Tuple(), )}, ), )
+4 of 4: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "deposit_batch" Tuple(Expression(ENTIRE_WORKTOP), )
 "##, &DetectedTxType::Other(Some(Decimal::whole(10))))
     }
 
@@ -706,8 +687,8 @@ br##"
     pub fn test_publish_package() {
         check_partial_decoding(&TX_PUBLISH_PACKAGE,
 br##"
-1 of 2: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "lock_fee" Tuple(Decimal(10), )
-2 of 2: CallFunction Enum<0u8>(Address(package_loc1pkgxxxxxxxxxpackgexxxxxxxxx000726633226xxxxxxxxxwqy6uc), ) "Package" "publish_wasm_advanced" Tuple(Enum<0u8>(), Blob(a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0), Tuple(Map<String, Tuple>(), ), Map<String, Enum>(), Enum<0u8>(), )
+1 of 2: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "lock_fee" Tuple(Decimal(10), )
+2 of 2: CallFunction Address(package_loc1pkgxxxxxxxxxpackgexxxxxxxxx000726633226xxxxxxxxxwqy6uc) "Package" "publish_wasm_advanced" Tuple(Enum<0u8>(), Blob(a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0), Tuple(Map<String, Tuple>(), ), Map<String, Tuple>(), Map<String, Enum>(), Map<Enum, Tuple>(), )
 "##, &DetectedTxType::Other(Some(Decimal::whole(10))))
     }
 
@@ -715,7 +696,7 @@ br##"
     pub fn test_resource_recall() {
         check_partial_decoding(&TX_RESOURCE_RECALL,
 br##"
-1 of 1: CallDirectVaultMethod Address(internal_vault_loc1tqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveaha8d5) "recall" Tuple(Decimal(1.2), )
+1 of 1: RecallResource Address(internal_vault_loc1tqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveaha8d5) Decimal(1.2)
 "##, &DetectedTxType::Other(None))
     }
 
@@ -723,14 +704,14 @@ br##"
     pub fn test_resource_worktop() {
         check_partial_decoding(&TX_RESOURCE_WORKTOP,
 br##"
-1 of 8: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "withdraw" Tuple(Address(resource_loc1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxvq32hv), Decimal(5), )
+1 of 8: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "withdraw" Tuple(Address(resource_loc1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxvq32hv), Decimal(5), )
 2 of 8: TakeFromWorktop Address(resource_loc1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxvq32hv) Decimal(2)
-3 of 8: CallMethod Enum<0u8>(Address(component_loc1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve2jtvlp), ) "buy_gumball" Tuple(Bucket(0u32), )
+3 of 8: CallMethod Address(component_loc1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve2jtvlp) "buy_gumball" Tuple(Bucket(0u32), )
 4 of 8: AssertWorktopContains Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al) Decimal(3)
 5 of 8: TakeAllFromWorktop Address(resource_loc1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxvq32hv)
 6 of 8: ReturnToWorktop Bucket(1u32)
 7 of 8: TakeNonFungiblesFromWorktop Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq) Array<NonFungibleLocalId>(#1u64#, )
-8 of 8: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "deposit_batch" Tuple(Expression(ENTIRE_WORKTOP), )
+8 of 8: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "deposit_batch" Tuple(Expression(ENTIRE_WORKTOP), )
 "##, &DetectedTxType::Other(None))
     }
 
@@ -738,10 +719,10 @@ br##"
     pub fn test_royalty() {
         check_partial_decoding(&TX_ROYALTY,
 br##"
-1 of 4: CallRoyaltyMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "set_royalty" Tuple("my_method", Enum<0u8>(), )
-2 of 4: CallRoyaltyMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "lock_royalty" Tuple("my_method", )
-3 of 4: CallMethod Enum<0u8>(Address(package_loc1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfdmytuxt), ) "PackageRoyalty_claim_royalties" Tuple()
-4 of 4: CallRoyaltyMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "claim_royalties" Tuple()
+1 of 4: CallMethod Address(package_loc1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfdmytuxt) "PackageRoyalty_set_royalty_config" Tuple(Map<String, Tuple>({"Blueprint", Tuple(Map<String, U32>({"method", 1u32}, ), 0u32, )}, ), )
+2 of 4: CallRoyaltyMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "set_royalty_config" Tuple(Tuple(Map<String, U32>({"method", 1u32}, ), 0u32, ), )
+3 of 4: CallMethod Address(package_loc1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfdmytuxt) "PackageRoyalty_claim_royalty" Tuple()
+4 of 4: CallRoyaltyMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "claim_royalty" Tuple()
 "##, &DetectedTxType::Other(None))
     }
 
@@ -751,33 +732,19 @@ br##"
 br##"
 1 of 4: TakeAllFromWorktop Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al)
 2 of 4: CreateProofFromAuthZone Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al)
-3 of 4: CallMethod Enum<0u8>(Address(component_loc1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve2jtvlp), ) "aliases" Tuple(Enum<0u8>(), Enum<0u8>(), Enum<1u8>("hello", ), Enum<1u8>("hello", ), Enum<0u8>("test", ), Enum<0u8>("test", ), Enum<1u8>("test123", ), Enum<1u8>("test123", ), Enum<0u8>(), Enum<1u8>("a", ), Enum<0u8>("b", ), Enum<1u8>("c", ), Bytes(deadbeef), Bytes(050aff), Tuple(Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq), <value>, ), Tuple(Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq), #123u64#, ), Tuple(Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq), #456u64#, ), Tuple(Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq), [031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f], ), Tuple(Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq), #1234567890u64#, ), Tuple(Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq), #1u64#, ), Array<Array>(Bytes(dead), Bytes(050aff), ), Array<Array>(Bytes(dead), Bytes(050aff), ), Array<Tuple>(Tuple(Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq), <value>, ), Tuple(Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq), #1u64#, ), ), Array<Tuple>(Tuple(Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq), <value>, ), Tuple(Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq), #1u64#, ), ), Array<Enum>(Enum<1u8>("hello", ), ), Array<Enum>(Enum<1u8>(), Enum<0u8>(), ), Array<Map>(Map<U8, U16>(), ), Map<U8, U16>({1u8, 5u16}, ), )
-4 of 4: CallMethod Enum<0u8>(Address(component_loc1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve2jtvlp), ) "custom_types" Tuple(Address(package_loc1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfdmytuxt), Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), Address(consensusmanager_loc1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxhwvhuz), Address(unknown address type), Address(accesscontroller_loc1cvvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveht3nek), Bucket(0u32), Proof(0u32), Expression(ENTIRE_WORKTOP), Blob(a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0), Decimal(1.2), PreciseDecimal(1.2), <SomeId>, #12u64#, [031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f], {1111111111111111-1111111111111111-1111111111111111-1111111111111111}, )
+3 of 4: CallMethod Address(component_loc1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve2jtvlp) "aliases" Tuple(Enum<0u8>(), Enum<0u8>(), Enum<1u8>("hello", ), Enum<1u8>("hello", ), Enum<0u8>("test", ), Enum<0u8>("test", ), Enum<1u8>("test123", ), Enum<1u8>("test123", ), Enum<0u8>(), Enum<1u8>("a", ), Enum<0u8>("b", ), Enum<1u8>("c", ), Bytes(deadbeef), Bytes(050aff), Tuple(Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq), <value>, ), Tuple(Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq), #123u64#, ), Tuple(Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq), #456u64#, ), Tuple(Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq), [031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f], ), Tuple(Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq), #1234567890u64#, ), Tuple(Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq), #1u64#, ), Array<Array>(Bytes(dead), Bytes(050aff), ), Array<Array>(Bytes(dead), Bytes(050aff), ), Array<Tuple>(Tuple(Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq), <value>, ), Tuple(Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq), #1u64#, ), ), Array<Tuple>(Tuple(Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq), <value>, ), Tuple(Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq), #1u64#, ), ), Array<Enum>(Enum<1u8>("hello", ), ), Array<Enum>(Enum<1u8>(), Enum<0u8>(), ), Array<Map>(Map<U8, U16>(), ), Map<U8, U16>({1u8, 5u16}, ), )
+4 of 4: CallMethod Address(component_loc1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve2jtvlp) "custom_types" Tuple(Address(package_loc1p4r4955skdjq9swg8s5jguvcjvyj7tsxct87a9z6sw76cdfdmytuxt), Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), Address(consensusmanager_loc1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxhwvhuz), Address(validator_loc1sgvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveu5tw4z), Address(accesscontroller_loc1cvvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveht3nek), Bucket(0u32), Proof(1u32), Expression(ENTIRE_WORKTOP), Blob(a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0), Decimal(1.2), PreciseDecimal(1.2), <SomeId>, #12u64#, [031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f], {43968a72-5954-45da-9678-8659dd399faa}, )
 "##, &DetectedTxType::Other(None))
-    }
-
-    #[test]
-    pub fn test_address_allocation() {
-        check_partial_decoding(
-            &TX_ADDRESS_ALLOCATION,
-            br##"
-1 of 4: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "lock_fee" Tuple(Decimal(10), )
-2 of 4: AllocateGlobalAddress Address(package_loc1pkgxxxxxxxxxpackgexxxxxxxxx000726633226xxxxxxxxxwqy6uc) "Package"
-3 of 4: CallFunction Enum<0u8>(Address(package_loc1pkgxxxxxxxxxpackgexxxxxxxxx000726633226xxxxxxxxxwqy6uc), ) "Package" "publish_wasm_advanced" Tuple(Enum<1u8>(AddressReservation(0u32), ), Blob(a710f0959d8e139b3c1ca74ac4fcb9a95ada2c82e7f563304c5487e0117095c0), Tuple(Map<String, Tuple>(), ), Map<String, Enum>(), Enum<0u8>(), )
-4 of 4: CallFunction Enum<1u8>(0u32, ) "BlueprintName" "no_such_function" Tuple(Decimal(1), Address(0u32), )
-"##,
-            &DetectedTxType::Other(Some(Decimal::whole(10))),
-        )
     }
 
     #[test]
     pub fn test_create_non_fungible_resource_with_initial_supply() {
         check_partial_decoding(
             &TX_CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY,
-            br##"
-1 of 3: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "lock_fee" Tuple(Decimal(10), )
-2 of 3: CallFunction Enum<0u8>(Address(package_loc1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxvyv0vc), ) "NonFungibleResourceManager" "create_with_initial_supply" Tuple(Enum<1u8>(), false, Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>(), ), Enum<0u8>(64u8, ), Array<String>(), ), Map<String, Tuple>({"name", Tuple(Enum<0u8>("MyResource", ), true, )}, {"description", Tuple(Enum<0u8>("A very innovative and important resource", ), false, )}, ), Map<Enum, Tuple>({Enum<4u8>(), Tuple(Enum<0u8>(), Enum<1u8>(), )}, {Enum<5u8>(), Tuple(Enum<0u8>(), Enum<1u8>(), )}, ), Map<NonFungibleLocalId, Tuple>({#12u64#, Tuple(Tuple("Hello World", Decimal(12), ), )}, ), )
-3 of 3: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "deposit_batch" Tuple(Expression(ENTIRE_WORKTOP), )
+br##"
+1 of 3: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "lock_fee" Tuple(Decimal(10), )
+2 of 3: CallFunction Address(package_loc1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxvyv0vc) "NonFungibleResourceManager" "create_with_initial_supply" Tuple(Enum<1u8>(), Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>(), ), Enum<0u8>(64u8, ), Array<String>(), ), Map<String, Enum>({"name", Enum<0u8>("MyResource", )}, {"description", Enum<0u8>("A very innovative and important resource", )}, ), Map<Enum, Tuple>({Enum<4u8>(), Tuple(Enum<0u8>(), Enum<1u8>(), )}, {Enum<5u8>(), Tuple(Enum<0u8>(), Enum<1u8>(), )}, ), Map<NonFungibleLocalId, Tuple>({#12u64#, Tuple(Tuple("Hello World", Decimal(12), ), )}, ), )
+3 of 3: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "deposit_batch" Tuple(Expression(ENTIRE_WORKTOP), )
 "##,
             &DetectedTxType::Other(Some(Decimal::whole(10))),
         )
@@ -787,8 +754,8 @@ br##"
     pub fn test_create_validator() {
         check_partial_decoding(
             &TX_CREATE_VALIDATOR,
-            br##"
-1 of 1: CallMethod Enum<0u8>(Address(consensusmanager_loc1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxhwvhuz), ) "create_validator" Tuple(Bytes(02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5), Decimal(1), )
+br##"
+1 of 1: CallMethod Address(consensusmanager_loc1scxxxxxxxxxxcnsmgrxxxxxxxxx000999665565xxxxxxxxxhwvhuz) "create_validator" Tuple(Bytes(02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5), )
 "##,
             &DetectedTxType::Other(None),
         )
@@ -798,24 +765,24 @@ br##"
     pub fn test_resource_auth_zone() {
         check_partial_decoding(
             &TX_RESOURCE_AUTH_ZONE,
-            br##"
-1 of 22: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "withdraw" Tuple(Address(resource_loc1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxvq32hv), Decimal(5), )
+br##"
+1 of 22: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "withdraw" Tuple(Address(resource_loc1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxvq32hv), Decimal(5), )
 2 of 22: TakeAllFromWorktop Address(resource_loc1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxvq32hv)
 3 of 22: CreateProofFromBucket Bucket(0u32)
 4 of 22: CreateProofFromBucketOfAmount Bucket(0u32) Decimal(1)
 5 of 22: CreateProofFromBucketOfNonFungibles Bucket(0u32) Array<NonFungibleLocalId>(#123u64#, )
 6 of 22: CreateProofFromBucketOfAll Bucket(0u32)
-7 of 22: CloneProof Proof(0u32)
-8 of 22: DropProof Proof(0u32)
-9 of 22: DropProof Proof(4u32)
-11 of 22: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "create_proof_of_amount" Tuple(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), Decimal(5), )
-13 of 22: DropProof Proof(5u32)
-14 of 22: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "create_proof_of_amount" Tuple(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), Decimal(5), )
+7 of 22: CloneProof Proof(1u32)
+8 of 22: DropProof Proof(1u32)
+9 of 22: DropProof Proof(5u32)
+11 of 22: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "create_proof_of_amount" Tuple(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), Decimal(5), )
+13 of 22: DropProof Proof(6u32)
+14 of 22: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "create_proof_of_amount" Tuple(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), Decimal(5), )
 15 of 22: CreateProofFromAuthZone Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al)
 16 of 22: CreateProofFromAuthZoneOfAmount Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al) Decimal(1)
 17 of 22: CreateProofFromAuthZoneOfNonFungibles Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq) Array<NonFungibleLocalId>(#123u64#, )
 18 of 22: CreateProofFromAuthZoneOfAll Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq)
-22 of 22: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "deposit_batch" Tuple(Expression(ENTIRE_WORKTOP), )
+22 of 22: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "deposit_batch" Tuple(Expression(ENTIRE_WORKTOP), )
 "##,
             &DetectedTxType::Other(None),
         )
@@ -823,11 +790,11 @@ br##"
     #[test]
     pub fn test_simple_transfer() {
         check_partial_decoding_with_type(&TX_SIMPLE_TRANSFER,
-                               br##"
-1 of 4: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "lock_fee" Tuple(Decimal(10), )
-2 of 4: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "withdraw" Tuple(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), Decimal(123), )
+br##"
+1 of 4: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "lock_fee" Tuple(Decimal(10), )
+2 of 4: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "withdraw" Tuple(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), Decimal(123), )
 3 of 4: TakeFromWorktop Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al) Decimal(123)
-4 of 4: CallMethod Enum<0u8>(Address(account_loc1cyzfj6p254jy6lhr237s7pcp8qqz6c8ahq9mn6nkdjxxxat5pjq9xc), ) "try_deposit_or_abort" Tuple(Bucket(0u32), )
+4 of 4: CallMethod Address(account_loc1cyzfj6p254jy6lhr237s7pcp8qqz6c8ahq9mn6nkdjxxxat5pjq9xc) "try_deposit_or_abort" Tuple(Bucket(0u32), )
 "##, &DetectedTxType::Transfer {
                 fee: Some(Decimal::whole(10)),
                 src_address: Address::from_array([0xc1, 0x18, 0x83, 0x46, 0x2f, 0x39, 0x79, 0x6d, 0xa8, 0x3f, 0x2f, 0x82, 0xca, 0xef, 0xa6, 0x79, 0xaa, 0xf1, 0xf1, 0x89, 0x25, 0x7e, 0xbd, 0x3c, 0x8c, 0x27, 0x7d, 0x5a, 0xe1, 0x99,]),
@@ -840,11 +807,11 @@ br##"
     #[test]
     pub fn test_simple_transfer_nft() {
         check_partial_decoding_with_type(&TX_SIMPLE_TRANSFER_NFT,
-                                         br##"
-1 of 4: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "lock_fee" Tuple(Decimal(10), )
-2 of 4: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "withdraw_non_fungibles" Tuple(Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq), Array<NonFungibleLocalId>(#1u64#, #2u64#, ), )
+br##"
+1 of 4: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "lock_fee" Tuple(Decimal(10), )
+2 of 4: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "withdraw_non_fungibles" Tuple(Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq), Array<NonFungibleLocalId>(#1u64#, #2u64#, ), )
 3 of 4: TakeFromWorktop Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq) Decimal(2)
-4 of 4: CallMethod Enum<0u8>(Address(account_loc1cyzfj6p254jy6lhr237s7pcp8qqz6c8ahq9mn6nkdjxxxat5pjq9xc), ) "try_deposit_or_abort" Tuple(Bucket(0u32), )
+4 of 4: CallMethod Address(account_loc1cyzfj6p254jy6lhr237s7pcp8qqz6c8ahq9mn6nkdjxxxat5pjq9xc) "try_deposit_or_abort" Tuple(Bucket(0u32), )
 "##, &DetectedTxType::Transfer {
                 fee: Some(Decimal::whole(10)),
                 src_address: Address::from_array([0xc1, 0x18, 0x83, 0x46, 0x2f, 0x39, 0x79, 0x6d, 0xa8, 0x3f, 0x2f, 0x82, 0xca, 0xef, 0xa6, 0x79, 0xaa, 0xf1, 0xf1, 0x89, 0x25, 0x7e, 0xbd, 0x3c, 0x8c, 0x27, 0x7d, 0x5a, 0xe1, 0x99,]),
@@ -857,11 +824,11 @@ br##"
     #[test]
     pub fn test_simple_transfer_nft_by_id() {
         check_partial_decoding_with_type(&TX_SIMPLE_TRANSFER_NFT_BY_ID,
-                                         br##"
-1 of 4: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "lock_fee" Tuple(Decimal(10), )
-2 of 4: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "withdraw_non_fungibles" Tuple(Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq), Array<NonFungibleLocalId>(#1u64#, #2u64#, #3u64#, ), )
+br##"
+1 of 4: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "lock_fee" Tuple(Decimal(10), )
+2 of 4: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "withdraw_non_fungibles" Tuple(Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq), Array<NonFungibleLocalId>(#1u64#, #2u64#, #3u64#, ), )
 3 of 4: TakeNonFungiblesFromWorktop Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq) Array<NonFungibleLocalId>(#1u64#, #2u64#, #3u64#, )
-4 of 4: CallMethod Enum<0u8>(Address(account_loc1cyzfj6p254jy6lhr237s7pcp8qqz6c8ahq9mn6nkdjxxxat5pjq9xc), ) "try_deposit_or_abort" Tuple(Bucket(0u32), )
+4 of 4: CallMethod Address(account_loc1cyzfj6p254jy6lhr237s7pcp8qqz6c8ahq9mn6nkdjxxxat5pjq9xc) "try_deposit_or_abort" Tuple(Bucket(0u32), )
 "##, &DetectedTxType::Transfer {
                 fee: Some(Decimal::whole(10)),
                 src_address: Address::from_array([0xc1, 0x18, 0x83, 0x46, 0x2f, 0x39, 0x79, 0x6d, 0xa8, 0x3f, 0x2f, 0x82, 0xca, 0xef, 0xa6, 0x79, 0xaa, 0xf1, 0xf1, 0x89, 0x25, 0x7e, 0xbd, 0x3c, 0x8c, 0x27, 0x7d, 0x5a, 0xe1, 0x99,]),
@@ -874,12 +841,12 @@ br##"
     #[test]
     pub fn test_simple_transfer_with_multiple_locked_fees() {
         check_partial_decoding_with_type(&TX_SIMPLE_TRANSFER_WITH_MULTIPLE_LOCKED_FEES,
-                               br##"
-1 of 5: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "lock_fee" Tuple(Decimal(1.2), )
-2 of 5: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "withdraw" Tuple(Address(resource_loc1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxvq32hv), Decimal(123), )
+br##"
+1 of 5: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "lock_fee" Tuple(Decimal(1.2), )
+2 of 5: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "withdraw" Tuple(Address(resource_loc1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxvq32hv), Decimal(123), )
 3 of 5: TakeFromWorktop Address(resource_loc1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxvq32hv) Decimal(123)
-4 of 5: CallMethod Enum<0u8>(Address(account_loc1cyzfj6p254jy6lhr237s7pcp8qqz6c8ahq9mn6nkdjxxxat5pjq9xc), ) "try_deposit_or_abort" Tuple(Bucket(0u32), )
-5 of 5: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "lock_fee" Tuple(Decimal(3.4), )
+4 of 5: CallMethod Address(account_loc1cyzfj6p254jy6lhr237s7pcp8qqz6c8ahq9mn6nkdjxxxat5pjq9xc) "try_deposit_or_abort" Tuple(Bucket(0u32), )
+5 of 5: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "lock_fee" Tuple(Decimal(3.4), )
 "##, &DetectedTxType::Transfer {
                 fee: Some(Decimal::new(4600000000000000000u128)),
                 src_address: Address::from_array([0xc1, 0x18, 0x83, 0x46, 0x2f, 0x39, 0x79, 0x6d, 0xa8, 0x3f, 0x2f, 0x82, 0xca, 0xef, 0xa6, 0x79, 0xaa, 0xf1, 0xf1, 0x89, 0x25, 0x7e, 0xbd, 0x3c, 0x8c, 0x27, 0x7d, 0x5a, 0xe1, 0x99,]),
@@ -887,21 +854,5 @@ br##"
                 res_address: Address::from_array([0x5d, 0xa6, 0x63, 0x18, 0xc6, 0x31, 0x8c, 0x61, 0xf5, 0xa6, 0x1b, 0x4c, 0x63, 0x18, 0xc6, 0x31, 0x8c, 0xf7, 0x94, 0xaa, 0x8d, 0x29, 0x5f, 0x14, 0xe6, 0x31, 0x8c, 0x63, 0x18, 0xc6,]),
                 amount: Decimal::whole(123)
             }, TxIntentType::Transfer)
-    }
-
-    #[test]
-    pub fn test_vault_freeze() {
-        check_partial_decoding(&TX_VAULT_FREEZE,
-                               br##"
-1 of 8: CallDirectVaultMethod Address(internal_vault_loc1tqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveaha8d5) "freeze" Tuple(Tuple(1u32, ), )
-2 of 8: CallDirectVaultMethod Address(internal_vault_loc1tqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveaha8d5) "freeze" Tuple(Tuple(2u32, ), )
-3 of 8: CallDirectVaultMethod Address(internal_vault_loc1tqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveaha8d5) "freeze" Tuple(Tuple(4u32, ), )
-4 of 8: CallDirectVaultMethod Address(internal_vault_loc1tqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveaha8d5) "freeze" Tuple(Tuple(7u32, ), )
-5 of 8: CallDirectVaultMethod Address(internal_vault_loc1tqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveaha8d5) "unfreeze" Tuple(Tuple(1u32, ), )
-6 of 8: CallDirectVaultMethod Address(internal_vault_loc1tqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveaha8d5) "unfreeze" Tuple(Tuple(2u32, ), )
-7 of 8: CallDirectVaultMethod Address(internal_vault_loc1tqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveaha8d5) "unfreeze" Tuple(Tuple(4u32, ), )
-8 of 8: CallDirectVaultMethod Address(internal_vault_loc1tqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveaha8d5) "unfreeze" Tuple(Tuple(7u32, ), )
-"##, &DetectedTxType::Other(None),
-        )
     }
 }

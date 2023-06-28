@@ -1,4 +1,6 @@
+#[cfg(not(test))]
 use core::arch::asm;
+#[cfg(not(test))]
 use core::str::from_utf8;
 
 #[cfg(test)]

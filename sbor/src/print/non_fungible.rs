@@ -46,18 +46,20 @@ impl<T: Copy> ParameterPrinter<T> for NonFungibleLocalIdParameterPrinter {
                 state.print_byte(b']');
             }
             NFL_RUID => {
-                if state.data.len() != (RUID_LEN as usize) {
+                if state.data.len() != (UUID_LEN as usize) {
                     state.print_text(b"<invalid non-fungible local id UUID>");
                     return;
                 }
                 state.print_byte(b'{');
-                state.print_data_as_hex_slice(0..8);
+                state.print_data_as_hex_slice(0..4);
                 state.print_byte(b'-');
-                state.print_data_as_hex_slice(8..16);
+                state.print_data_as_hex_slice(4..6);
                 state.print_byte(b'-');
-                state.print_data_as_hex_slice(16..24);
+                state.print_data_as_hex_slice(6..8);
                 state.print_byte(b'-');
-                state.print_data_as_hex_slice(24..32);
+                state.print_data_as_hex_slice(8..10);
+                state.print_byte(b'-');
+                state.print_data_as_hex_slice(10..16);
                 state.print_byte(b'}');
             }
             _ => {

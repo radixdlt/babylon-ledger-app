@@ -26,9 +26,7 @@ pub enum FeePhase {
 pub enum DecodingPhase {
     Start,
     CallMethod,
-    AddressWithdrawStart, //Outer enum
     AddressWithdraw,
-    AddressWithdrawEnd,
     ExpectWithdraw,
     WithdrawDone,
     ValueDepositCount, //Outer array
@@ -39,9 +37,7 @@ pub enum DecodingPhase {
     ValueDepositDone,
     ExpectDepositCall,
     ExpectAddressDeposit,
-    AddressDepositStart, //Outer enum
     AddressDeposit,
-    AddressDepositEnd,
     ExpectDeposit,
     DoneTransfer,
     NonConformingTransaction,
@@ -300,9 +296,7 @@ impl TxSummaryDetector {
 
     fn instruction_start(&mut self, info: InstructionInfo) {
         match (self.fee_phase, info.instruction) {
-            (FeePhase::Start, Instruction::CallMethod) => {
-                self.fee_phase = FeePhase::Address;
-            }
+            (FeePhase::Start, Instruction::CallMethod) => self.fee_phase = FeePhase::Address,
             (_, _) => {}
         }
 
@@ -312,16 +306,16 @@ impl TxSummaryDetector {
 
         match (self.decoding_phase, info.instruction) {
             (DecodingPhase::Start, Instruction::CallMethod) => {
-                self.decoding_phase = DecodingPhase::CallMethod;
+                self.decoding_phase = DecodingPhase::CallMethod
             }
             (DecodingPhase::WithdrawDone, Instruction::TakeFromWorktop) => {
-                self.decoding_phase = DecodingPhase::Resource;
+                self.decoding_phase = DecodingPhase::Resource
             }
             (DecodingPhase::WithdrawDone, Instruction::TakeNonFungiblesFromWorktop) => {
-                self.decoding_phase = DecodingPhase::NonFungibleResource;
+                self.decoding_phase = DecodingPhase::NonFungibleResource
             }
             (DecodingPhase::ExpectDepositCall, Instruction::CallMethod) => {
-                self.decoding_phase = DecodingPhase::ExpectAddressDeposit;
+                self.decoding_phase = DecodingPhase::ExpectAddressDeposit
             }
             // TODO: How to reliably detect nonconforming transaction here?
             (_, _) => {}
@@ -331,7 +325,7 @@ impl TxSummaryDetector {
     fn instruction_end(&mut self) {
         match self.decoding_phase {
             DecodingPhase::ValueDepositDone => {
-                self.decoding_phase = DecodingPhase::ExpectDepositCall;
+                self.decoding_phase = DecodingPhase::ExpectDepositCall
             }
             _ => {}
         }
@@ -344,8 +338,8 @@ impl TxSummaryDetector {
         match (self.decoding_phase, param_count) {
             (DecodingPhase::CallMethod, 0) => {
                 if let SborEvent::Start { type_id, .. } = event {
-                    if type_id == TYPE_ENUM {
-                        self.decoding_phase = DecodingPhase::AddressWithdrawStart;
+                    if type_id == TYPE_ADDRESS {
+                        self.decoding_phase = DecodingPhase::AddressWithdraw;
                     }
                 }
             }
@@ -358,8 +352,8 @@ impl TxSummaryDetector {
             }
             (DecodingPhase::ExpectAddressDeposit, 0) => {
                 if let SborEvent::Start { type_id, .. } = event {
-                    if type_id == TYPE_ENUM {
-                        self.decoding_phase = DecodingPhase::AddressDepositStart;
+                    if type_id == TYPE_ADDRESS {
+                        self.decoding_phase = DecodingPhase::AddressDeposit;
                     }
                 }
             }
@@ -387,49 +381,11 @@ impl TxSummaryDetector {
 
     fn parameter_data(&mut self, source_event: SborEvent) {
         match source_event {
+            SborEvent::Start { .. } => self.data.clear(),
             SborEvent::Data(data) => self.data.push(data),
             SborEvent::Len(len) if self.decoding_phase == DecodingPhase::ValueDepositCountIds => {
                 self.amount = Decimal::whole(len.into());
                 self.decoding_phase = DecodingPhase::ValueDepositDone;
-            }
-            SborEvent::Start { type_id, .. } => {
-                self.data.clear();
-
-                if type_id == TYPE_ADDRESS {
-                    match self.decoding_phase {
-                        DecodingPhase::AddressWithdrawStart => {
-                            self.decoding_phase = DecodingPhase::AddressWithdraw;
-                        }
-                        DecodingPhase::AddressDepositStart => {
-                            self.decoding_phase = DecodingPhase::AddressDeposit;
-                        }
-                        _ => {}
-                    }
-                }
-            }
-            SborEvent::End { type_id, .. } => {
-                if type_id == TYPE_ADDRESS {
-                    match self.decoding_phase {
-                        DecodingPhase::AddressWithdraw => {
-                            if self.data.len() == ADDRESS_STATIC_LEN as usize {
-                                self.src_address.copy_from_slice(self.data.as_slice());
-                                self.decoding_phase = DecodingPhase::AddressWithdrawEnd;
-                            } else {
-                                self.decoding_phase = DecodingPhase::DecodingError;
-                            }
-                        }
-
-                        DecodingPhase::AddressDeposit => {
-                            if self.data.len() == ADDRESS_STATIC_LEN as usize {
-                                self.dst_address.copy_from_slice(self.data.as_slice());
-                                self.decoding_phase = DecodingPhase::AddressDepositEnd;
-                            } else {
-                                self.decoding_phase = DecodingPhase::DecodingError;
-                            }
-                        }
-                        _ => {}
-                    }
-                }
             }
             _ => {}
         }
@@ -441,12 +397,6 @@ impl TxSummaryDetector {
 
     fn parameter_end(&mut self) {
         match self.decoding_phase {
-            DecodingPhase::AddressWithdrawEnd => {
-                self.decoding_phase = DecodingPhase::ExpectWithdraw;
-            }
-            DecodingPhase::AddressDepositEnd => {
-                self.decoding_phase = DecodingPhase::ExpectDeposit;
-            }
             DecodingPhase::ExpectWithdraw => {
                 if self.data.as_slice() == b"withdraw" {
                     self.decoding_phase = DecodingPhase::WithdrawDone;
@@ -488,6 +438,24 @@ impl TxSummaryDetector {
                 if self.data.len() == ADDRESS_STATIC_LEN as usize {
                     self.res_address.copy_from_slice(self.data.as_slice());
                     self.decoding_phase = DecodingPhase::ValueDepositCount;
+                } else {
+                    self.decoding_phase = DecodingPhase::DecodingError;
+                }
+            }
+
+            DecodingPhase::AddressWithdraw => {
+                if self.data.len() == ADDRESS_STATIC_LEN as usize {
+                    self.src_address.copy_from_slice(self.data.as_slice());
+                    self.decoding_phase = DecodingPhase::ExpectWithdraw;
+                } else {
+                    self.decoding_phase = DecodingPhase::DecodingError;
+                }
+            }
+
+            DecodingPhase::AddressDeposit => {
+                if self.data.len() == ADDRESS_STATIC_LEN as usize {
+                    self.dst_address.copy_from_slice(self.data.as_slice());
+                    self.decoding_phase = DecodingPhase::ExpectDeposit;
                 } else {
                     self.decoding_phase = DecodingPhase::DecodingError;
                 }

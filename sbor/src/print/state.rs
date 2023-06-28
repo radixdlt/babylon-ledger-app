@@ -1,7 +1,6 @@
 use core::ops::Range;
 
 use crate::bech32::network::*;
-use crate::print::primitives::print_u32;
 use crate::print::tty::TTY;
 use crate::print::tx_summary_detector::Address;
 use crate::sbor_decoder::STACK_DEPTH;
@@ -167,7 +166,7 @@ impl<T: Copy> ParameterPrinterState<T> {
 
     pub fn print_static_address(&mut self) {
         let mut address = Address::new();
-        address.copy_from_slice(&self.data.as_slice()[1..]);
+        address.copy_from_slice(&self.data.as_slice());
         self.data.clear();
 
         address.format(&mut self.data, self.network_id);
@@ -175,19 +174,6 @@ impl<T: Copy> ParameterPrinterState<T> {
         self.display.extend_from_slice(b"Address(");
         self.display.extend_from_slice(self.data.as_slice());
         self.display.push(b')');
-    }
-
-    pub fn print_named_address(&mut self) {
-        let mut array: [u8; 4] = [0u8; 4];
-        array.copy_from_slice(&self.data.as_slice()[1..]);
-        let address = u32::from_be_bytes(array);
-
-        self.data.clear();
-        print_u32(&mut self.data, address);
-
-        self.display.extend_from_slice(b"Address(");
-        self.display.extend_from_slice(self.data.as_slice());
-        self.display.extend_from_slice(b"u32)");
     }
 
     pub fn format_address(&mut self, address: &Address) -> &[u8] {

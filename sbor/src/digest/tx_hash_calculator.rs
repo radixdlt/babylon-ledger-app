@@ -267,7 +267,7 @@ mod tests {
         let mut calculator = TxHashCalculator::<TestDigester>::new();
         let mut decoder = SborDecoder::new(true);
 
-        calculator.start();
+        let _ = calculator.start();
         match decoder.decode(&mut calculator, input) {
             Ok(_) => {}
             Err(_) => {
@@ -284,10 +284,6 @@ mod tests {
         calculate_hash_and_compare(&TX_HC_INTENT, &TX_HC_INTENT_HASH);
     }
 
-    #[test]
-    fn test_tx_address_allocation() {
-        calculate_hash_and_compare(&TX_ADDRESS_ALLOCATION, &TX_ADDRESS_ALLOCATION_HASH);
-    }
     #[test]
     fn test_tx_call_function() {
         calculate_hash_and_compare(&TX_CALL_FUNCTION, &TX_CALL_FUNCTION_HASH);

@@ -216,9 +216,6 @@ impl SborDecoder {
             DecoderPhase::ReadingData => self.read_data(handler, byte),
             DecoderPhase::ReadingDiscriminator => self.read_discriminator(handler, byte),
             DecoderPhase::ReadingNFLDiscriminator => self.read_nfl_discriminator(handler, byte),
-            DecoderPhase::ReadingAddressDiscriminator => {
-                self.read_address_discriminator(handler, byte)
-            }
         };
 
         if count_input {
@@ -247,25 +244,11 @@ impl SborDecoder {
         match byte {
             NFL_STRING | NFL_BYTES => {}                         // read len
             NFL_INTEGER => self.read_len(handler, INTEGER_LEN)?, // simulate reading len and skip phase
-            NFL_RUID => self.read_len(handler, RUID_LEN)?,       // simulate and skip phase
+            NFL_RUID => self.read_len(handler, UUID_LEN)?,       // simulate and skip phase
             _ => return Err(DecoderError::UnknownDiscriminator(self.byte_count, byte)),
         }
 
         self.advance_phase(handler)
-    }
-
-    fn read_address_discriminator(
-        &mut self,
-        handler: &mut impl SborEventHandler,
-        byte: u8,
-    ) -> Result<(), DecoderError> {
-        handler.handle(SborEvent::Discriminator(byte));
-
-        match byte {
-            ADDRESS_STATIC => self.read_len(handler, ADDRESS_STATIC_LEN),
-            ADDRESS_NAMED => self.read_len(handler, ADDRESS_NAMED_LEN),
-            _ => Err(DecoderError::UnknownDiscriminator(self.byte_count, byte)),
-        }
     }
 
     fn decoding_outcome(&mut self) -> DecodingOutcome {
@@ -1336,10 +1319,6 @@ mod tests {
 
     // ---------------------------------------------------- Full TX Intent
     #[test]
-    pub fn test_address_allocation() {
-        check_partial_decoding(&TX_ADDRESS_ALLOCATION);
-    }
-    #[test]
     pub fn test_call_function() {
         check_partial_decoding(&TX_CALL_FUNCTION);
     }
@@ -1434,10 +1413,6 @@ mod tests {
     #[test]
     pub fn test_values() {
         check_partial_decoding(&TX_VALUES);
-    }
-    #[test]
-    pub fn test_vault_freeze() {
-        check_partial_decoding(&TX_VAULT_FREEZE);
     }
     #[test]
     pub fn test_hc_intent() {

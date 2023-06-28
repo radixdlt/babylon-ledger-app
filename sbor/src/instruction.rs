@@ -31,9 +31,8 @@ pub enum Instruction {
     CallRoyaltyMethod, // { address: DynamicGlobalAddress, method_name: String, args: ManifestValue, },
     CallMetadataMethod, // { address: DynamicGlobalAddress, method_name: String, args: ManifestValue, },
     CallAccessRulesMethod, // { address: DynamicGlobalAddress, method_name: String, args: ManifestValue, },
-    CallDirectVaultMethod, // { address: InternalAddress, method_name: String, args: ManifestValue, },
     DropAllProofs,         //,
-    AllocateGlobalAddress, // { package_address: PackageAddress, blueprint_name: String, },
+    RecallResource,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -152,17 +151,13 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
             instruction: Instruction::CallAccessRulesMethod,
             name: b"CallAccessRulesMethod",
         }),
-        INSTRUCTION_CALL_DIRECT_VAULT_METHOD_DISCRIMINATOR => Some(InstructionInfo {
-            instruction: Instruction::CallDirectVaultMethod,
-            name: b"CallDirectVaultMethod",
+        INSTRUCTION_RECALL_RESOURCE_DISCRIMINATOR => Some(InstructionInfo {
+            instruction: Instruction::RecallResource,
+            name: b"RecallResource",
         }),
         INSTRUCTION_DROP_ALL_PROOFS_DISCRIMINATOR => Some(InstructionInfo {
             instruction: Instruction::DropAllProofs,
             name: b"DropAllProofs",
-        }),
-        INSTRUCTION_ALLOCATE_GLOBAL_ADDRESS_DISCRIMINATOR => Some(InstructionInfo {
-            instruction: Instruction::AllocateGlobalAddress,
-            name: b"AllocateGlobalAddress",
         }),
 
         _ => None,
@@ -214,10 +209,9 @@ pub const INSTRUCTION_CALL_METHOD_DISCRIMINATOR: u8 = 0x41;
 pub const INSTRUCTION_CALL_ROYALTY_METHOD_DISCRIMINATOR: u8 = 0x42;
 pub const INSTRUCTION_CALL_METADATA_METHOD_DISCRIMINATOR: u8 = 0x43;
 pub const INSTRUCTION_CALL_ACCESS_RULES_METHOD_DISCRIMINATOR: u8 = 0x44;
-pub const INSTRUCTION_CALL_DIRECT_VAULT_METHOD_DISCRIMINATOR: u8 = 0x45;
+pub const INSTRUCTION_RECALL_RESOURCE_DISCRIMINATOR: u8 = 0x45;
 
 //==============
 // Complex
 //==============
 pub const INSTRUCTION_DROP_ALL_PROOFS_DISCRIMINATOR: u8 = 0x50;
-pub const INSTRUCTION_ALLOCATE_GLOBAL_ADDRESS_DISCRIMINATOR: u8 = 0x51;

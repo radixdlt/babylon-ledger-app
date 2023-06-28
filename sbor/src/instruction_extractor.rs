@@ -345,17 +345,7 @@ mod tests {
 
     #[test]
     pub fn test_access_rule() {
-        check_partial_decoding(
-            &TX_ACCESS_RULE,
-            &[
-                Instruction::CallAccessRulesMethod,
-                Instruction::CallAccessRulesMethod,
-                Instruction::CallAccessRulesMethod,
-                Instruction::CallAccessRulesMethod,
-                Instruction::CallAccessRulesMethod,
-                Instruction::CallAccessRulesMethod,
-            ],
-        );
+        check_partial_decoding(&TX_ACCESS_RULE, &[Instruction::CallAccessRulesMethod]);
     }
 
     #[test]
@@ -455,9 +445,6 @@ mod tests {
                 Instruction::CallMetadataMethod,
                 Instruction::CallMetadataMethod,
                 Instruction::CallMetadataMethod,
-                Instruction::CallMetadataMethod,
-                Instruction::CallMetadataMethod,
-                Instruction::CallMetadataMethod,
             ],
         );
     }
@@ -498,7 +485,7 @@ mod tests {
 
     #[test]
     pub fn test_resource_recall() {
-        check_partial_decoding(&TX_RESOURCE_RECALL, &[Instruction::CallDirectVaultMethod]);
+        check_partial_decoding(&TX_RESOURCE_RECALL, &[Instruction::RecallResource]);
     }
 
     #[test]
@@ -523,7 +510,7 @@ mod tests {
         check_partial_decoding(
             &TX_ROYALTY,
             &[
-                Instruction::CallRoyaltyMethod,
+                Instruction::CallMethod,
                 Instruction::CallRoyaltyMethod,
                 Instruction::CallMethod,
                 Instruction::CallRoyaltyMethod,
@@ -540,19 +527,6 @@ mod tests {
                 Instruction::CreateProofFromAuthZone,
                 Instruction::CallMethod,
                 Instruction::CallMethod,
-            ],
-        );
-    }
-
-    #[test]
-    pub fn test_address_allocation() {
-        check_partial_decoding(
-            &TX_ADDRESS_ALLOCATION,
-            &[
-                Instruction::CallMethod,
-                Instruction::AllocateGlobalAddress,
-                Instruction::CallFunction,
-                Instruction::CallFunction,
             ],
         );
     }
@@ -654,23 +628,6 @@ mod tests {
                 Instruction::TakeFromWorktop,
                 Instruction::CallMethod,
                 Instruction::CallMethod,
-            ],
-        );
-    }
-
-    #[test]
-    pub fn test_vault_freeze() {
-        check_partial_decoding(
-            &TX_VAULT_FREEZE,
-            &[
-                Instruction::CallDirectVaultMethod,
-                Instruction::CallDirectVaultMethod,
-                Instruction::CallDirectVaultMethod,
-                Instruction::CallDirectVaultMethod,
-                Instruction::CallDirectVaultMethod,
-                Instruction::CallDirectVaultMethod,
-                Instruction::CallDirectVaultMethod,
-                Instruction::CallDirectVaultMethod,
             ],
         );
     }
