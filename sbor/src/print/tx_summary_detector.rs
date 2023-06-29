@@ -26,14 +26,12 @@ pub enum FeePhase {
 pub enum DecodingPhase {
     Start,
     CallMethod,
-    AddressWithdrawStart,
-    //Outer enum
+    AddressWithdrawStart, //Outer enum
     AddressWithdraw,
     AddressWithdrawEnd,
     ExpectWithdraw,
     WithdrawDone,
-    ValueDepositCount,
-    //Outer array
+    ValueDepositCount, //Outer array
     ValueDepositCountIds,
     Resource,
     NonFungibleResource,
@@ -41,8 +39,7 @@ pub enum DecodingPhase {
     ValueDepositDone,
     ExpectDepositCall,
     ExpectAddressDeposit,
-    AddressDepositStart,
-    //Outer enum
+    AddressDepositStart, //Outer enum
     AddressDeposit,
     AddressDepositEnd,
     ExpectDeposit,
@@ -192,7 +189,7 @@ impl Address {
         }
     }
 
-    pub fn prefix(&self) -> Option<&'static str> {
+    pub fn prefix(&self) -> Option<&'static [u8]> {
         if self.is_set {
             hrp_prefix(self.address[0])
         } else {
@@ -203,8 +200,8 @@ impl Address {
     pub fn format<const N: usize>(&self, data: &mut StaticVec<u8, N>, network_id: NetworkId) {
         match self.prefix() {
             Some(prefix) => {
-                data.extend_from_slice(prefix.as_bytes());
-                data.extend_from_slice(hrp_suffix(network_id).as_bytes());
+                data.extend_from_slice(prefix);
+                data.extend_from_slice(hrp_suffix(network_id));
 
                 let encoding_result = Bech32::encode(data.as_slice(), self.as_ref());
                 data.clear();

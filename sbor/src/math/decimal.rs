@@ -10,8 +10,6 @@ impl Decimal {
     pub const SIZE_IN_BYTES: usize = 32;
     pub const ZERO: Decimal = Decimal(BigInt::from_limbs([0, 0, 0, 0, 0, 0, 0, 0]));
     pub const SCALE: usize = 18;
-    // 2ˆ256 = 1.1579209e+77, 78 digits + 1 decimal point + 1 sign = 80
-    // 2ˆ128 = 3.4028237e+38, 39 digits + 1 decimal point + 1 sign = 41
     pub const MAX_PRINT_LEN: usize = 86;
     pub const MAX: Decimal = Decimal(BigInt::from_limbs([
         0xFFFF_FFFF,

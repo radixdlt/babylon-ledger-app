@@ -571,7 +571,14 @@ mod tests {
 
     #[test]
     pub fn test_create_validator() {
-        check_partial_decoding(&TX_CREATE_VALIDATOR, &[Instruction::CallMethod]);
+        check_partial_decoding(
+            &TX_CREATE_VALIDATOR,
+            &[
+                Instruction::CallMethod,
+                Instruction::TakeFromWorktop,
+                Instruction::CallMethod,
+            ],
+        );
     }
 
     #[test]

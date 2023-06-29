@@ -267,7 +267,7 @@ mod tests {
         let mut calculator = TxHashCalculator::<TestDigester>::new();
         let mut decoder = SborDecoder::new(true);
 
-        calculator.start();
+        let _ = calculator.start();
         match decoder.decode(&mut calculator, input) {
             Ok(_) => {}
             Err(_) => {
