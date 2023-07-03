@@ -10,7 +10,7 @@ pub enum Instruction {
     TakeNonFungiblesFromWorktop, // { resource_address: ResourceAddress, ids: Vec<NonFungibleLocalId>, },
     ReturnToWorktop,             // { bucket_id: ManifestBucket },
     AssertWorktopContains,       // { resource_address: ResourceAddress, amount: Decimal, },
-    AssertWorktopContainsAny,          // { resource_address: ResourceAddress, },
+    AssertWorktopContainsAny,    // { resource_address: ResourceAddress, },
     AssertWorktopContainsNonFungibles, // { resource_address: ResourceAddress, ids: Vec<NonFungibleLocalId>, },
     PopFromAuthZone,                   //,
     PushToAuthZone,                    // { proof_id: ManifestProof },
