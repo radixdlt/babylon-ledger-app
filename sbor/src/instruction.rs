@@ -10,6 +10,7 @@ pub enum Instruction {
     TakeNonFungiblesFromWorktop, // { resource_address: ResourceAddress, ids: Vec<NonFungibleLocalId>, },
     ReturnToWorktop,             // { bucket_id: ManifestBucket },
     AssertWorktopContains,       // { resource_address: ResourceAddress, amount: Decimal, },
+    AssertWorktopContainsAny,          // { resource_address: ResourceAddress, },
     AssertWorktopContainsNonFungibles, // { resource_address: ResourceAddress, ids: Vec<NonFungibleLocalId>, },
     PopFromAuthZone,                   //,
     PushToAuthZone,                    // { proof_id: ManifestProof },
@@ -63,6 +64,10 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
         INSTRUCTION_ASSERT_WORKTOP_CONTAINS_DISCRIMINATOR => Some(InstructionInfo {
             instruction: Instruction::AssertWorktopContains,
             name: b"AssertWorktopContains",
+        }),
+        INSTRUCTION_ASSERT_WORKTOP_CONTAINS_ANY_DISCRIMINATOR => Some(InstructionInfo {
+            instruction: Instruction::AssertWorktopContainsAny,
+            name: b"AssertWorktopContainsAny",
         }),
         INSTRUCTION_ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES_DISCRIMINATOR => Some(InstructionInfo {
             instruction: Instruction::AssertWorktopContainsNonFungibles,
@@ -178,6 +183,7 @@ pub const INSTRUCTION_TAKE_ALL_FROM_WORKTOP_DISCRIMINATOR: u8 = 0x02;
 pub const INSTRUCTION_RETURN_TO_WORKTOP_DISCRIMINATOR: u8 = 0x03;
 pub const INSTRUCTION_ASSERT_WORKTOP_CONTAINS_DISCRIMINATOR: u8 = 0x04;
 pub const INSTRUCTION_ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES_DISCRIMINATOR: u8 = 0x05;
+pub const INSTRUCTION_ASSERT_WORKTOP_CONTAINS_ANY_DISCRIMINATOR: u8 = 0x06;
 
 //==============
 // Auth zone
