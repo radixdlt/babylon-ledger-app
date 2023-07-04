@@ -509,6 +509,7 @@ mod tests {
                 Instruction::CallMethod,
                 Instruction::TakeFromWorktop,
                 Instruction::CallMethod,
+                Instruction::AssertWorktopContainsAny,
                 Instruction::AssertWorktopContains,
                 Instruction::TakeAllFromWorktop,
                 Instruction::ReturnToWorktop,

@@ -640,7 +640,7 @@ br##"
             &TX_CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY,
 br##"
 1 of 3: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "lock_fee" Tuple(Decimal(500), )
-2 of 3: CallFunction Enum<0u8>(Address(package_loc1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxvyv0vc), ) "FungibleResourceManager" "create_with_initial_supply" Tuple(Enum<0u8>(), false, 18u8, Decimal(12), Map<Enum, Tuple>({Enum<3u8>(), Tuple(Enum<0u8>(), Enum<1u8>(), )}, {Enum<4u8>(), Tuple(Enum<0u8>(), Enum<1u8>(), )}, ), Tuple(Map<String, Tuple>({"name", Tuple(Enum<1u8>(Enum<0u8>("MyResource", ), ), true, )}, {"symbol", Tuple(Enum<1u8>(Enum<0u8>("RSRC", ), ), true, )}, {"description", Tuple(Enum<1u8>(Enum<0u8>("A very innovative and important resource", ), ), true, )}, ), Map<String, Tuple>(), ), Enum<0u8>(), )
+2 of 3: CallFunction Enum<0u8>(Address(package_loc1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxvyv0vc), ) "FungibleResourceManager" "create_with_initial_supply" Tuple(Enum<0u8>(), false, 18u8, Decimal(12), Tuple(Enum<1u8>(Tuple(Tuple(Enum<1u8>(Enum<0u8>(), ), true, ), Tuple(Enum<1u8>(Enum<1u8>(), ), true, ), ), ), Enum<0u8>(), Enum<0u8>(), Enum<0u8>(), Enum<0u8>(), Enum<0u8>(), ), Tuple(Map<String, Tuple>({"name", Tuple(Enum<1u8>(Enum<0u8>("MyResource", ), ), true, )}, {"symbol", Tuple(Enum<1u8>(Enum<0u8>("RSRC", ), ), true, )}, {"description", Tuple(Enum<1u8>(Enum<0u8>("A very innovative and important resource", ), ), true, )}, ), Map<String, Tuple>(), ), Enum<0u8>(), )
 3 of 3: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "deposit_batch" Tuple(Expression(ENTIRE_WORKTOP), )
 "##,
             &DetectedTxType::Other(Some(Decimal::whole(500))),
@@ -652,7 +652,7 @@ br##"
             &TX_CREATE_FUNGIBLE_RESOURCE_WITH_NO_INITIAL_SUPPLY,
 br##"
 1 of 2: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "lock_fee" Tuple(Decimal(500), )
-2 of 2: CallFunction Enum<0u8>(Address(package_loc1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxvyv0vc), ) "FungibleResourceManager" "create" Tuple(Enum<0u8>(), false, 18u8, Map<Enum, Tuple>({Enum<3u8>(), Tuple(Enum<0u8>(), Enum<1u8>(), )}, {Enum<4u8>(), Tuple(Enum<0u8>(), Enum<1u8>(), )}, ), Tuple(Map<String, Tuple>({"name", Tuple(Enum<1u8>(Enum<0u8>("MyResource", ), ), true, )}, {"symbol", Tuple(Enum<1u8>(Enum<0u8>("RSRC", ), ), true, )}, {"description", Tuple(Enum<1u8>(Enum<0u8>("A very innovative and important resource", ), ), true, )}, ), Map<String, Tuple>(), ), Enum<0u8>(), )
+2 of 2: CallFunction Enum<0u8>(Address(package_loc1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxvyv0vc), ) "FungibleResourceManager" "create" Tuple(Enum<0u8>(), false, 18u8, Tuple(Enum<1u8>(Tuple(Tuple(Enum<1u8>(Enum<0u8>(), ), true, ), Tuple(Enum<1u8>(Enum<1u8>(), ), true, ), ), ), Enum<0u8>(), Enum<0u8>(), Enum<0u8>(), Enum<0u8>(), Enum<0u8>(), ), Tuple(Map<String, Tuple>({"name", Tuple(Enum<1u8>(Enum<0u8>("MyResource", ), ), true, )}, {"symbol", Tuple(Enum<1u8>(Enum<0u8>("RSRC", ), ), true, )}, {"description", Tuple(Enum<1u8>(Enum<0u8>("A very innovative and important resource", ), ), true, )}, ), Map<String, Tuple>(), ), Enum<0u8>(), )
 "##,
             &DetectedTxType::Other(Some(Decimal::whole(500))),
         );
@@ -674,7 +674,7 @@ br##"
             &TX_CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY,
 br##"
 1 of 3: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "lock_fee" Tuple(Decimal(500), )
-2 of 3: CallFunction Enum<0u8>(Address(package_loc1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxvyv0vc), ) "NonFungibleResourceManager" "create_with_initial_supply" Tuple(Enum<0u8>(), Enum<1u8>(), false, Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>(), ), Enum<0u8>(64u8, ), Array<String>(), ), Map<NonFungibleLocalId, Tuple>({#12u64#, Tuple(Tuple("Hello World", Decimal(12), ), )}, ), Map<Enum, Tuple>({Enum<3u8>(), Tuple(Enum<0u8>(), Enum<1u8>(), )}, {Enum<4u8>(), Tuple(Enum<0u8>(), Enum<1u8>(), )}, ), Tuple(Map<String, Tuple>({"name", Tuple(Enum<1u8>(Enum<0u8>("MyResource", ), ), true, )}, {"description", Tuple(Enum<1u8>(Enum<0u8>("A very innovative and important resource", ), ), false, )}, ), Map<String, Tuple>(), ), Enum<0u8>(), )
+2 of 3: CallFunction Enum<0u8>(Address(package_loc1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxvyv0vc), ) "NonFungibleResourceManager" "create_with_initial_supply" Tuple(Enum<0u8>(), Enum<1u8>(), false, Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>(), ), Enum<0u8>(64u8, ), Array<String>(), ), Map<NonFungibleLocalId, Tuple>({#12u64#, Tuple(Tuple("Hello World", Decimal(12), ), )}, ), Tuple(Enum<1u8>(Tuple(Tuple(Enum<1u8>(Enum<0u8>(), ), true, ), Tuple(Enum<1u8>(Enum<1u8>(), ), true, ), ), ), Enum<0u8>(), Enum<0u8>(), Enum<0u8>(), Enum<0u8>(), Enum<0u8>(), Enum<0u8>(), ), Tuple(Map<String, Tuple>({"name", Tuple(Enum<1u8>(Enum<0u8>("MyResource", ), ), true, )}, {"description", Tuple(Enum<1u8>(Enum<0u8>("A very innovative and important resource", ), ), false, )}, ), Map<String, Tuple>(), ), Enum<0u8>(), )
 3 of 3: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "deposit_batch" Tuple(Expression(ENTIRE_WORKTOP), )
 "##,
             &DetectedTxType::Other(Some(Decimal::whole(500))),
@@ -686,7 +686,7 @@ br##"
             &TX_CREATE_NON_FUNGIBLE_RESOURCE_WITH_NO_INITIAL_SUPPLY,
 br##"
 1 of 2: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "lock_fee" Tuple(Decimal(500), )
-2 of 2: CallFunction Enum<0u8>(Address(package_loc1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxvyv0vc), ) "NonFungibleResourceManager" "create" Tuple(Enum<0u8>(), Enum<1u8>(), false, Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>(), ), Enum<0u8>(64u8, ), Array<String>(), ), Map<Enum, Tuple>({Enum<3u8>(), Tuple(Enum<0u8>(), Enum<1u8>(), )}, {Enum<4u8>(), Tuple(Enum<0u8>(), Enum<1u8>(), )}, ), Tuple(Map<String, Tuple>({"name", Tuple(Enum<1u8>(Enum<0u8>("MyResource", ), ), true, )}, {"description", Tuple(Enum<1u8>(Enum<0u8>("A very innovative and important resource", ), ), false, )}, ), Map<String, Tuple>(), ), Enum<0u8>(), )
+2 of 2: CallFunction Enum<0u8>(Address(package_loc1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxvyv0vc), ) "NonFungibleResourceManager" "create" Tuple(Enum<0u8>(), Enum<1u8>(), false, Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>(), ), Enum<0u8>(64u8, ), Array<String>(), ), Tuple(Enum<1u8>(Tuple(Tuple(Enum<1u8>(Enum<0u8>(), ), true, ), Tuple(Enum<1u8>(Enum<1u8>(), ), true, ), ), ), Enum<0u8>(), Enum<0u8>(), Enum<0u8>(), Enum<0u8>(), Enum<0u8>(), Enum<0u8>(), ), Tuple(Map<String, Tuple>({"name", Tuple(Enum<1u8>(Enum<0u8>("MyResource", ), ), true, )}, {"description", Tuple(Enum<1u8>(Enum<0u8>("A very innovative and important resource", ), ), false, )}, ), Map<String, Tuple>(), ), Enum<0u8>(), )
 "##,
             &DetectedTxType::Other(Some(Decimal::whole(500))),
         );
@@ -814,14 +814,15 @@ br##"
         check_partial_decoding(
             &TX_RESOURCE_WORKTOP,
 br##"
-1 of 8: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "withdraw" Tuple(Address(resource_loc1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxvq32hv), Decimal(5), )
-2 of 8: TakeFromWorktop Address(resource_loc1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxvq32hv) Decimal(2)
-3 of 8: CallMethod Enum<0u8>(Address(component_loc1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve2jtvlp), ) "buy_gumball" Tuple(Bucket(0u32), )
-4 of 8: AssertWorktopContains Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al) Decimal(3)
-5 of 8: TakeAllFromWorktop Address(resource_loc1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxvq32hv)
-6 of 8: ReturnToWorktop Bucket(1u32)
-7 of 8: TakeNonFungiblesFromWorktop Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq) Array<NonFungibleLocalId>(#1u64#, )
-8 of 8: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "deposit_batch" Tuple(Expression(ENTIRE_WORKTOP), )
+1 of 9: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "withdraw" Tuple(Address(resource_loc1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxvq32hv), Decimal(5), )
+2 of 9: TakeFromWorktop Address(resource_loc1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxvq32hv) Decimal(2)
+3 of 9: CallMethod Enum<0u8>(Address(component_loc1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve2jtvlp), ) "buy_gumball" Tuple(Bucket(0u32), )
+4 of 9: AssertWorktopContainsAny Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al)
+5 of 9: AssertWorktopContains Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al) Decimal(3)
+6 of 9: TakeAllFromWorktop Address(resource_loc1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxvq32hv)
+7 of 9: ReturnToWorktop Bucket(1u32)
+8 of 9: TakeNonFungiblesFromWorktop Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq) Array<NonFungibleLocalId>(#1u64#, )
+9 of 9: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "deposit_batch" Tuple(Expression(ENTIRE_WORKTOP), )
 "##,
             &DetectedTxType::Other(None),
         );
