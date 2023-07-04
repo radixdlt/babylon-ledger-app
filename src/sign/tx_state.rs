@@ -156,7 +156,6 @@ impl<T: Copy> TxState<T> {
         let addr_start = CHALLENGE_LENGTH + 1;
         let addr_end = addr_start + value[CHALLENGE_LENGTH] as usize;
         let address = &value[addr_start..addr_end];
-        let hash_address = &value[CHALLENGE_LENGTH..addr_end];
         let origin = &value[addr_end..];
 
         let mut nonce_hex = [0u8; CHALLENGE_LENGTH * 2];
@@ -173,9 +172,7 @@ impl<T: Copy> TxState<T> {
         let rc = MultipageValidator::new(&[&"Sign Proof?"], &[&"Sign"], &[&"Reject"]).ask();
 
         if rc {
-            let digest = self
-                .processor
-                .auth_digest(challenge, hash_address, origin)?;
+            let digest = self.processor.auth_digest(challenge, address, origin)?;
             self.processor.sign_tx(comm, tx_type, &digest)
         } else {
             return Ok(SignOutcome::SigningRejected);
