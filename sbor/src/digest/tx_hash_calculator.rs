@@ -53,13 +53,14 @@ impl<T: Digester> TxHashCalculator<T> {
     #[inline(always)]
     pub fn auth_digest(
         &mut self,
-        nonce: &[u8],
+        challenge: &[u8],
         address: &[u8],
         origin: &[u8],
     ) -> Result<Digest, T::Error> {
         self.reset();
         self.work_digester.init()?;
-        self.work_digester.update(nonce)?;
+        self.work_digester.update(&[b'R'])?;
+        self.work_digester.update(challenge)?;
         self.work_digester.update(address)?;
         self.work_digester.update(origin)?;
         self.work_digester.finalize()

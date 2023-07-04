@@ -26,12 +26,12 @@ fn info_message(title: &[u8], message: &[u8]) {
     .event_loop();
 }
 
-const NONCE_LENGTH: usize = 32;
+const CHALLENGE_LENGTH: usize = 32;
 const DAPP_ADDRESS_LENGTH: usize = 70;
 const ORIGIN_LENGTH: usize = 150;
 const MIN_DAPP_ADDRESS_LENGTH: usize = 2; // 1 byte length + 1 byte address
 const MIN_ORIGIN_LENGTH: usize = 10; // 1 byte length + "https://a"
-const MIN_VALID_LENGTH: usize = NONCE_LENGTH + MIN_DAPP_ADDRESS_LENGTH + MIN_ORIGIN_LENGTH;
+const MIN_VALID_LENGTH: usize = CHALLENGE_LENGTH + MIN_DAPP_ADDRESS_LENGTH + MIN_ORIGIN_LENGTH;
 
 pub struct TxState<T: Copy> {
     decoder: SborDecoder,
@@ -152,16 +152,16 @@ impl<T: Copy> TxState<T> {
             return Err(AppError::BadAuthSignRequest);
         }
 
-        let nonce = &value[..NONCE_LENGTH];
-        let addr_start = NONCE_LENGTH + 1;
-        let addr_end = addr_start + value[NONCE_LENGTH] as usize;
+        let challenge = &value[..CHALLENGE_LENGTH];
+        let addr_start = CHALLENGE_LENGTH + 1;
+        let addr_end = addr_start + value[CHALLENGE_LENGTH] as usize;
         let address = &value[addr_start..addr_end];
-        let hash_address = &value[NONCE_LENGTH..addr_end];
+        let hash_address = &value[CHALLENGE_LENGTH..addr_end];
         let origin = &value[addr_end..];
 
-        let mut nonce_hex = [0u8; NONCE_LENGTH * 2];
+        let mut nonce_hex = [0u8; CHALLENGE_LENGTH * 2];
 
-        for (i, &byte) in nonce.iter().enumerate() {
+        for (i, &byte) in challenge.iter().enumerate() {
             nonce_hex[i * 2] = upper_as_hex(byte);
             nonce_hex[i * 2 + 1] = lower_as_hex(byte);
         }
@@ -173,7 +173,9 @@ impl<T: Copy> TxState<T> {
         let rc = MultipageValidator::new(&[&"Sign Proof?"], &[&"Sign"], &[&"Reject"]).ask();
 
         if rc {
-            let digest = self.processor.auth_digest(nonce, hash_address, origin)?;
+            let digest = self
+                .processor
+                .auth_digest(challenge, hash_address, origin)?;
             self.processor.sign_tx(comm, tx_type, &digest)
         } else {
             return Ok(SignOutcome::SigningRejected);
