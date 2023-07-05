@@ -80,6 +80,10 @@ jobs:
         with:
           command: build
           args: --release -Z build-std=core -Z build-std-features=compiler-builtins-mem --target ./target-config/${{ matrix.target }}.json
+      - name: Unit tests
+        run: |
+          cd sbor
+          cargo test
       - name: Prepare artifacts
         run: |
           mkdir -p downloads
