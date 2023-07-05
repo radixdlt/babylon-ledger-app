@@ -35,29 +35,6 @@ pub const TYPE_PRECISE_DECIMAL: u8 = 0x86;
 pub const TYPE_NON_FUNGIBLE_LOCAL_ID: u8 = 0x87;
 pub const TYPE_ADDRESS_RESERVATION: u8 = 0x88;
 
-pub const SIMPLE_TYPES: [u8; 20] = [
-    TYPE_BOOL,
-    TYPE_I8,
-    TYPE_I16,
-    TYPE_I32,
-    TYPE_I64,
-    TYPE_I128,
-    TYPE_U8,
-    TYPE_U16,
-    TYPE_U32,
-    TYPE_U64,
-    TYPE_U128,
-    TYPE_STRING,
-    TYPE_ADDRESS,
-    TYPE_BUCKET,
-    TYPE_PROOF,
-    TYPE_EXPRESSION,
-    TYPE_BLOB,
-    TYPE_DECIMAL,
-    TYPE_PRECISE_DECIMAL,
-    TYPE_NON_FUNGIBLE_LOCAL_ID,
-];
-
 // end of custom types
 pub const ADDRESS_STATIC_LEN: u8 = 30; // 1 byte discriminator + 29 bytes address
 pub const ADDRESS_NAMED_LEN: u8 = 4;
@@ -72,8 +49,6 @@ pub const PROOF_LEN: u8 = ID_LEN;
 pub const BLOB_LEN: u8 = 32;
 pub const DECIMAL_LEN: u8 = 32; // 256 bits
 pub const PRECISE_DECIMAL_LEN: u8 = 64; // 512 bits
-
-pub const TYPE_DATA_BUFFER_SIZE: usize = 256;
 
 // Non-fungible local ID discriminators
 pub const NFL_STRING: u8 = 0;

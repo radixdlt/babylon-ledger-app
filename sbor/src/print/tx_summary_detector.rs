@@ -189,7 +189,7 @@ impl Address {
         }
     }
 
-    pub fn prefix(&self) -> Option<&'static str> {
+    pub fn prefix(&self) -> Option<&'static [u8]> {
         if self.is_set {
             hrp_prefix(self.address[0])
         } else {
@@ -200,8 +200,8 @@ impl Address {
     pub fn format<const N: usize>(&self, data: &mut StaticVec<u8, N>, network_id: NetworkId) {
         match self.prefix() {
             Some(prefix) => {
-                data.extend_from_slice(prefix.as_bytes());
-                data.extend_from_slice(hrp_suffix(network_id).as_bytes());
+                data.extend_from_slice(prefix);
+                data.extend_from_slice(hrp_suffix(network_id));
 
                 let encoding_result = Bech32::encode(data.as_slice(), self.as_ref());
                 data.clear();
@@ -341,37 +341,23 @@ impl TxSummaryDetector {
     fn parameter_start(&mut self, event: SborEvent, param_count: u32) {
         self.data.clear();
 
-        match (self.decoding_phase, param_count) {
-            (DecodingPhase::CallMethod, 0) => {
-                if let SborEvent::Start { type_id, .. } = event {
-                    if type_id == TYPE_ENUM {
-                        self.decoding_phase = DecodingPhase::AddressWithdrawStart;
-                    }
+        if let SborEvent::Start { type_id, .. } = event {
+            match (self.decoding_phase, param_count, type_id) {
+                (DecodingPhase::CallMethod, 0, TYPE_ENUM) => {
+                    self.decoding_phase = DecodingPhase::AddressWithdrawStart;
                 }
-            }
-            (DecodingPhase::AddressWithdraw, 1) => {
-                if let SborEvent::Start { type_id, .. } = event {
-                    if type_id == TYPE_STRING {
-                        self.decoding_phase = DecodingPhase::ExpectWithdraw;
-                    }
+                (DecodingPhase::AddressWithdraw, 1, TYPE_STRING) => {
+                    self.decoding_phase = DecodingPhase::ExpectWithdraw;
                 }
-            }
-            (DecodingPhase::ExpectAddressDeposit, 0) => {
-                if let SborEvent::Start { type_id, .. } = event {
-                    if type_id == TYPE_ENUM {
-                        self.decoding_phase = DecodingPhase::AddressDepositStart;
-                    }
+                (DecodingPhase::ExpectAddressDeposit, 0, TYPE_ENUM) => {
+                    self.decoding_phase = DecodingPhase::AddressDepositStart;
                 }
-            }
-            (DecodingPhase::ValueDepositCount, 1) => {
-                if let SborEvent::Start { type_id, .. } = event {
-                    if type_id == TYPE_ARRAY {
-                        self.decoding_phase = DecodingPhase::ValueDepositCountIds;
-                    }
+                (DecodingPhase::ValueDepositCount, 1, TYPE_ARRAY) => {
+                    self.decoding_phase = DecodingPhase::ValueDepositCountIds;
                 }
-            }
 
-            (_, _) => {}
+                (_, _, _) => {}
+            }
         };
 
         match (self.fee_phase, param_count) {

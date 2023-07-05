@@ -60,11 +60,11 @@ impl<T: Copy> InstructionProcessor<T> {
 
     pub fn auth_digest(
         &mut self,
-        nonce: &[u8],
+        challenge: &[u8],
         address: &[u8],
         origin: &[u8],
     ) -> Result<Digest, AppError> {
-        self.calculator.auth_digest(nonce, address, origin)
+        self.calculator.auth_digest(challenge, address, origin)
     }
 
     pub fn tx_size(&self) -> usize {

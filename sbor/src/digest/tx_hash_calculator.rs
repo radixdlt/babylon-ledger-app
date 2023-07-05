@@ -53,13 +53,15 @@ impl<T: Digester> TxHashCalculator<T> {
     #[inline(always)]
     pub fn auth_digest(
         &mut self,
-        nonce: &[u8],
+        challenge: &[u8],
         address: &[u8],
         origin: &[u8],
     ) -> Result<Digest, T::Error> {
         self.reset();
         self.work_digester.init()?;
-        self.work_digester.update(nonce)?;
+        self.work_digester.update(&[82u8])?;
+        self.work_digester.update(challenge)?;
+        self.work_digester.update(&[address.len() as u8])?;
         self.work_digester.update(address)?;
         self.work_digester.update(origin)?;
         self.work_digester.finalize()
@@ -267,7 +269,7 @@ mod tests {
         let mut calculator = TxHashCalculator::<TestDigester>::new();
         let mut decoder = SborDecoder::new(true);
 
-        calculator.start();
+        let _ = calculator.start();
         match decoder.decode(&mut calculator, input) {
             Ok(_) => {}
             Err(_) => {
@@ -284,10 +286,6 @@ mod tests {
         calculate_hash_and_compare(&TX_HC_INTENT, &TX_HC_INTENT_HASH);
     }
 
-    #[test]
-    fn test_tx_address_allocation() {
-        calculate_hash_and_compare(&TX_ADDRESS_ALLOCATION, &TX_ADDRESS_ALLOCATION_HASH);
-    }
     #[test]
     fn test_tx_call_function() {
         calculate_hash_and_compare(&TX_CALL_FUNCTION, &TX_CALL_FUNCTION_HASH);
@@ -404,5 +402,139 @@ mod tests {
     #[test]
     fn test_tx_values() {
         calculate_hash_and_compare(&TX_VALUES, &TX_VALUES_HASH);
+    }
+
+    //-----------------------------------------------------------------------------------
+    // Auth
+    //-----------------------------------------------------------------------------------
+
+    struct AuthData {
+        blake_hash_of_payload: &'static str,
+        dapp_definition_address: &'static str,
+        origin: &'static str,
+        challenge: &'static str,
+    }
+
+    const AUTH_TEST_VECTOR: &[AuthData] = &[
+        AuthData {
+            blake_hash_of_payload:
+                "dc47fc69e9e45855addf579f398da0309c878092dd95352b9fe187a7e5a529e2",
+            dapp_definition_address:
+                "account_tdx_b_1p9dkged3rpzy860ampt5jpmvv3yl4y6f5yppp4tnscdslvt9v3",
+            origin: "https://dashboard.rdx.works",
+            challenge: "ec5dcb3d1f75627be1021cb8890f0e8ce0c9fe7f2ff55cbdff096b38a32612c9",
+        },
+        AuthData {
+            blake_hash_of_payload:
+                "866836f5b9c827ca38fd2bfef94f95ba21933f75a0291c85d3ecfc18b8aa5b2d",
+            dapp_definition_address:
+                "account_tdx_b_1p8ahenyznrqy2w0tyg00r82rwuxys6z8kmrhh37c7maqpydx7p",
+            origin: "https://dashboard.rdx.works",
+            challenge: "d7fb740b9ff00657d710dcbeddb2d432e697fc0dd39c60feb7858b17ef0eff58",
+        },
+        AuthData {
+            blake_hash_of_payload:
+                "0f41aa92e8c978d7f920ca56daf123a0a0d975eea06ecfb57bec0a0560fb73e3",
+            dapp_definition_address:
+                "account_tdx_b_1p95nal0nmrqyl5r4phcspg8ahwnamaduzdd3kaklw3vqeavrwa",
+            origin: "https://dashboard.rdx.works",
+            challenge: "4aaa2ec25c3fe215412b3f005e4c37d518af3a22b4728587cf6dbcf83341e8b3",
+        },
+        AuthData {
+            blake_hash_of_payload:
+                "9c8d2622cedb9dc4e53daea398dd178a2ec938d402eeaba41a2ac946b0f4dd57",
+            dapp_definition_address:
+                "account_tdx_b_1p9dkged3rpzy860ampt5jpmvv3yl4y6f5yppp4tnscdslvt9v3",
+            origin: "https://stella.swap",
+            challenge: "a10fad201666b4bcf7f707841d58b11740c290e03790b17ed0fec23b3f180e65",
+        },
+        AuthData {
+            blake_hash_of_payload:
+                "2c07a4fc72341ae9160a8f9ddf2d0bb8fd9d795ed0d87059a9e5de8321513871",
+            dapp_definition_address:
+                "account_tdx_b_1p8ahenyznrqy2w0tyg00r82rwuxys6z8kmrhh37c7maqpydx7p",
+            origin: "https://stella.swap",
+            challenge: "718b0eb060a719492011910258a4b4119d8c95aef34eb9519c9fa7de25f7ac43",
+        },
+        AuthData {
+            blake_hash_of_payload:
+                "306b2407e8b675bb22b630efa938249595433975276862e9bfa07f7f94ca84a8",
+            dapp_definition_address:
+                "account_tdx_b_1p95nal0nmrqyl5r4phcspg8ahwnamaduzdd3kaklw3vqeavrwa",
+            origin: "https://stella.swap",
+            challenge: "9a4f834aefdc455cb4601337227e1b7e74d60308327564ececf33456509964cd",
+        },
+        AuthData {
+            blake_hash_of_payload:
+                "a14942b1dc361c7e153e4d4200f902da1dafa2bd54bc4c0387c779c22a1e454e",
+            dapp_definition_address:
+                "account_tdx_b_1p9dkged3rpzy860ampt5jpmvv3yl4y6f5yppp4tnscdslvt9v3",
+            origin: "https://rola.xrd",
+            challenge: "00dca15875839ab1f549445a36c7b5c0dcf7aebfa7d48f945f2aa5cf4aa1a9a3",
+        },
+        AuthData {
+            blake_hash_of_payload:
+                "6a13329619caafdf4351d1c8b85b7f523ce2955873f003402be6e1e45cdce4ae",
+            dapp_definition_address:
+                "account_tdx_b_1p8ahenyznrqy2w0tyg00r82rwuxys6z8kmrhh37c7maqpydx7p",
+            origin: "https://rola.xrd",
+            challenge: "0a510b2362c9ce19d11c538b2f6a15f62caab6528071eaad5ba8a563a02e01cb",
+        },
+        AuthData {
+            blake_hash_of_payload:
+                "f9ec8f328d9aeec55546d1cd78a13cc7967bd52aba3c8e305ed39f82465f395c",
+            dapp_definition_address:
+                "account_tdx_b_1p95nal0nmrqyl5r4phcspg8ahwnamaduzdd3kaklw3vqeavrwa",
+            origin: "https://rola.xrd",
+            challenge: "20619c1df905a28e7a76d431f2b59e99dd1a8f386842e1701862e765806a5c47",
+        },
+    ];
+
+    use crate::digest::digester;
+    use core::fmt::Write;
+    use core::num::ParseIntError;
+
+    fn calculate_auth_hash(input: &[u8]) -> Result<Digest, HasherError> {
+        let mut digester = TestDigester::new();
+        digester.init()?;
+        digester.update(input)?;
+        digester.finalize()
+    }
+
+    fn calculate_auth_and_compare(input: &AuthData) {
+        fn decode_hex(s: &str) -> Result<Vec<u8>, ParseIntError> {
+            (0..s.len())
+                .step_by(2)
+                .map(|i| u8::from_str_radix(&s[i..i + 2], 16))
+                .collect()
+        }
+
+        pub fn encode_hex(bytes: &[u8]) -> String {
+            let mut s = String::with_capacity(bytes.len() * 2);
+            for &b in bytes {
+                write!(&mut s, "{:02x}", b).unwrap();
+            }
+            s
+        }
+
+        let expected_hash = decode_hex(input.blake_hash_of_payload).unwrap();
+        let challenge = decode_hex(input.challenge).unwrap();
+
+        let digest = TxHashCalculator::<TestDigester>::new()
+            .auth_digest(
+                challenge.as_slice(),
+                input.dapp_definition_address.as_bytes(),
+                input.origin.as_bytes(),
+            )
+            .unwrap();
+
+        assert_eq!(digest.0, expected_hash.as_slice());
+    }
+
+    #[test]
+    fn test_auth_digest() {
+        for input in AUTH_TEST_VECTOR.iter() {
+            calculate_auth_and_compare(input);
+        }
     }
 }
