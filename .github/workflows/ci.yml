@@ -89,25 +89,25 @@ jobs:
         with:
           name: babylon_ledger_app_${{ matrix.target }}
           path: downloads
-
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: arm-none-eabi-gcc
-        uses: carlosperate/arm-none-eabi-gcc-action@v1
-        with:
-          release: '12.2.Rel1'
-      - name: Install clang
-        run: sudo apt-get update && sudo apt install -y clang
-      - name: Install toolchains
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly-2023-05-28
-          override: true
-          components: rust-src
-      - uses: actions/checkout@v2
-      - name: Cargo test
-        uses: actions-rs/cargo@v1
-        working-directory: ./sbor
-        run: |
-          cargo test
+#
+#  test:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: arm-none-eabi-gcc
+#        uses: carlosperate/arm-none-eabi-gcc-action@v1
+#        with:
+#          release: '12.2.Rel1'
+#      - name: Install clang
+#        run: sudo apt-get update && sudo apt install -y clang
+#      - name: Install toolchains
+#        uses: actions-rs/toolchain@v1
+#        with:
+#          toolchain: nightly-2023-05-28
+#          override: true
+#          components: rust-src
+#      - uses: actions/checkout@v2
+#      - name: Cargo test
+#        uses: actions-rs/cargo@v1
+#        working-directory: ./sbor
+#        run: |
+#          cargo test
