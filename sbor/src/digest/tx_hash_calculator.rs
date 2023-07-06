@@ -490,16 +490,8 @@ mod tests {
         },
     ];
 
-    use crate::digest::digester;
     use core::fmt::Write;
     use core::num::ParseIntError;
-
-    fn calculate_auth_hash(input: &[u8]) -> Result<Digest, HasherError> {
-        let mut digester = TestDigester::new();
-        digester.init()?;
-        digester.update(input)?;
-        digester.finalize()
-    }
 
     fn calculate_auth_and_compare(input: &AuthData) {
         fn decode_hex(s: &str) -> Result<Vec<u8>, ParseIntError> {
@@ -528,6 +520,8 @@ mod tests {
             )
             .unwrap();
 
+        println!("expected: {}", encode_hex(expected_hash.as_slice()));
+        println!("actual  : {}", encode_hex(&digest.0));
         assert_eq!(digest.0, expected_hash.as_slice());
     }
 

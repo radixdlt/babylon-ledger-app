@@ -351,9 +351,6 @@ mod tests {
                 Instruction::CallAccessRulesMethod,
                 Instruction::CallAccessRulesMethod,
                 Instruction::CallAccessRulesMethod,
-                Instruction::CallAccessRulesMethod,
-                Instruction::CallAccessRulesMethod,
-                Instruction::CallAccessRulesMethod,
             ],
         );
     }
@@ -538,7 +535,7 @@ mod tests {
             &TX_VALUES,
             &[
                 Instruction::TakeAllFromWorktop,
-                Instruction::CreateProofFromAuthZone,
+                Instruction::CreateProofFromAuthZoneOfAll,
                 Instruction::CallMethod,
                 Instruction::CallMethod,
             ],
@@ -589,7 +586,6 @@ mod tests {
             &[
                 Instruction::CallMethod,
                 Instruction::TakeAllFromWorktop,
-                Instruction::CreateProofFromBucket,
                 Instruction::CreateProofFromBucketOfAmount,
                 Instruction::CreateProofFromBucketOfNonFungibles,
                 Instruction::CreateProofFromBucketOfAll,
@@ -601,7 +597,6 @@ mod tests {
                 Instruction::PopFromAuthZone,
                 Instruction::DropProof,
                 Instruction::CallMethod,
-                Instruction::CreateProofFromAuthZone,
                 Instruction::CreateProofFromAuthZoneOfAmount,
                 Instruction::CreateProofFromAuthZoneOfNonFungibles,
                 Instruction::CreateProofFromAuthZoneOfAll,
