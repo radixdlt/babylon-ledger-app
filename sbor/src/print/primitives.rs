@@ -50,6 +50,30 @@ pub struct StringParameterPrinter {}
 pub const STRING_PARAMETER_PRINTER: StringParameterPrinter = StringParameterPrinter {};
 
 impl<T: Copy> ParameterPrinter<T> for StringParameterPrinter {
+    fn handle_data(&self, state: &mut ParameterPrinterState<T>, event: SborEvent) {
+        if let SborEvent::Data(byte) = event {
+            match byte {
+                b'\t' => {
+                    state.push_byte(b'\\');
+                    state.push_byte(b't')
+                }
+                b'\r' => {
+                    state.push_byte(b'\\');
+                    state.push_byte(b'r')
+                }
+                b'\n' => {
+                    state.push_byte(b'\\');
+                    state.push_byte(b'n')
+                }
+                b'\"' => {
+                    state.push_byte(b'\\');
+                    state.push_byte(b'"')
+                }
+                _ => state.push_byte(byte),
+            }
+        }
+    }
+
     fn end(&self, state: &mut ParameterPrinterState<T>) {
         state.print_byte(b'"');
         state.print_data_as_text();
