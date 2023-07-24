@@ -53,11 +53,23 @@ impl<T: Copy> ParameterPrinter<T> for StringParameterPrinter {
     fn handle_data(&self, state: &mut ParameterPrinterState<T>, event: SborEvent) {
         if let SborEvent::Data(byte) = event {
             match byte {
-                b'\t' => { state.push_byte(b'\\'); state.push_byte(b't') }
-                b'\r' => { state.push_byte(b'\\'); state.push_byte(b'r') }
-                b'\n' => { state.push_byte(b'\\'); state.push_byte(b'n') }
-                b'\"' => { state.push_byte(b'\\'); state.push_byte(b'"') }
-                _ => state.push_byte(byte)
+                b'\t' => {
+                    state.push_byte(b'\\');
+                    state.push_byte(b't')
+                }
+                b'\r' => {
+                    state.push_byte(b'\\');
+                    state.push_byte(b'r')
+                }
+                b'\n' => {
+                    state.push_byte(b'\\');
+                    state.push_byte(b'n')
+                }
+                b'\"' => {
+                    state.push_byte(b'\\');
+                    state.push_byte(b'"')
+                }
+                _ => state.push_byte(byte),
             }
         }
     }
