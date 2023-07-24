@@ -31,7 +31,7 @@ pub enum Instruction {
     CallMethod,   // { address: DynamicGlobalAddress, method_name: String, args: ManifestValue, },
     CallRoyaltyMethod, // { address: DynamicGlobalAddress, method_name: String, args: ManifestValue, },
     CallMetadataMethod, // { address: DynamicGlobalAddress, method_name: String, args: ManifestValue, },
-    CallAccessRulesMethod, // { address: DynamicGlobalAddress, method_name: String, args: ManifestValue, },
+    CallRoleAssignmentMethod, // { address: DynamicGlobalAddress, method_name: String, args: ManifestValue, },
     CallDirectVaultMethod, // { address: InternalAddress, method_name: String, args: ManifestValue, },
     DropAllProofs,         //,
     AllocateGlobalAddress, // { package_address: PackageAddress, blueprint_name: String, },
@@ -153,9 +153,9 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
             instruction: Instruction::CallMetadataMethod,
             name: b"CallMetadataMethod",
         }),
-        INSTRUCTION_CALL_ACCESS_RULES_METHOD_DISCRIMINATOR => Some(InstructionInfo {
-            instruction: Instruction::CallAccessRulesMethod,
-            name: b"CallAccessRulesMethod",
+        INSTRUCTION_CALL_ROLE_ASSIGNMENT_METHOD_DISCRIMINATOR => Some(InstructionInfo {
+            instruction: Instruction::CallRoleAssignmentMethod,
+            name: b"CallRoleAssignmentMethod",
         }),
         INSTRUCTION_CALL_DIRECT_VAULT_METHOD_DISCRIMINATOR => Some(InstructionInfo {
             instruction: Instruction::CallDirectVaultMethod,
@@ -219,7 +219,7 @@ pub const INSTRUCTION_CALL_FUNCTION_DISCRIMINATOR: u8 = 0x40;
 pub const INSTRUCTION_CALL_METHOD_DISCRIMINATOR: u8 = 0x41;
 pub const INSTRUCTION_CALL_ROYALTY_METHOD_DISCRIMINATOR: u8 = 0x42;
 pub const INSTRUCTION_CALL_METADATA_METHOD_DISCRIMINATOR: u8 = 0x43;
-pub const INSTRUCTION_CALL_ACCESS_RULES_METHOD_DISCRIMINATOR: u8 = 0x44;
+pub const INSTRUCTION_CALL_ROLE_ASSIGNMENT_METHOD_DISCRIMINATOR: u8 = 0x44;
 pub const INSTRUCTION_CALL_DIRECT_VAULT_METHOD_DISCRIMINATOR: u8 = 0x45;
 
 //==============

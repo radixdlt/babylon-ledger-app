@@ -348,9 +348,9 @@ mod tests {
         check_partial_decoding(
             &TX_ACCESS_RULE,
             &[
-                Instruction::CallAccessRulesMethod,
-                Instruction::CallAccessRulesMethod,
-                Instruction::CallAccessRulesMethod,
+                Instruction::CallRoleAssignmentMethod,
+                Instruction::CallRoleAssignmentMethod,
+                Instruction::CallRoleAssignmentMethod,
             ],
         );
     }
@@ -368,7 +368,7 @@ mod tests {
                 Instruction::CallMethod,
                 Instruction::CallRoyaltyMethod,
                 Instruction::CallMetadataMethod,
-                Instruction::CallAccessRulesMethod,
+                Instruction::CallRoleAssignmentMethod,
             ],
         );
     }
