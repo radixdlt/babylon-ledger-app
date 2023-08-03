@@ -566,9 +566,9 @@ mod tests {
         check_partial_decoding(
             &TX_ACCESS_RULE,
 br##"
-1 of 3: CallRoleAssignmentMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "set_owner" Tuple(Enum<0u8>(), )
-2 of 3: CallRoleAssignmentMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "lock_owner" Tuple()
-3 of 3: CallRoleAssignmentMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "set" Tuple(Enum<0u8>(), "hello", Enum<0u8>(), )
+1 of 3: CallRoleAssignmentMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "set_owner_role" Tuple(Enum<0u8>(), )
+2 of 3: CallRoleAssignmentMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "lock_owner_role" Tuple()
+3 of 3: CallRoleAssignmentMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "set_role" Tuple(Enum<0u8>(), "hello", Enum<0u8>(), )
 "##,
             &DetectedTxType::Other(None),
         );
@@ -604,7 +604,7 @@ br##"
 1 of 4: CallMethod Enum<0u8>(Address(component_loc1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve2jtvlp), ) "complicated_method" Tuple(Decimal(1), PreciseDecimal(2), )
 2 of 4: CallRoyaltyMethod Enum<0u8>(Address(component_loc1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve2jtvlp), ) "set_royalty" Tuple("my_method", Enum<0u8>(), )
 3 of 4: CallMetadataMethod Enum<0u8>(Address(component_loc1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve2jtvlp), ) "get" Tuple("HelloWorld", )
-4 of 4: CallRoleAssignmentMethod Enum<0u8>(Address(component_loc1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve2jtvlp), ) "get" Tuple(Enum<0u8>(), "hello", )
+4 of 4: CallRoleAssignmentMethod Enum<0u8>(Address(component_loc1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve2jtvlp), ) "get_role" Tuple(Enum<0u8>(), "hello", )
 "##,
             &DetectedTxType::Other(None),
         );
