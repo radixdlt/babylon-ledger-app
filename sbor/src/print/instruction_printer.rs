@@ -566,9 +566,9 @@ mod tests {
         check_partial_decoding(
             &TX_ACCESS_RULE,
 br##"
-1 of 3: CallRoleAssignmentMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "set_owner_role" Tuple(Enum<0u8>(), )
-2 of 3: CallRoleAssignmentMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "lock_owner_role" Tuple()
-3 of 3: CallRoleAssignmentMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "set_role" Tuple(Enum<0u8>(), "hello", Enum<0u8>(), )
+1 of 3: CallRoleAssignmentMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "set_owner" Tuple(Enum<0u8>(), )
+2 of 3: CallRoleAssignmentMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "lock_owner" Tuple()
+3 of 3: CallRoleAssignmentMethod Enum<0u8>(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), ) "set" Tuple(Enum<0u8>(), "hello", Enum<0u8>(), )
 "##,
             &DetectedTxType::Other(None),
         );
@@ -604,7 +604,7 @@ br##"
 1 of 4: CallMethod Enum<0u8>(Address(component_loc1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve2jtvlp), ) "complicated_method" Tuple(Decimal(1), PreciseDecimal(2), )
 2 of 4: CallRoyaltyMethod Enum<0u8>(Address(component_loc1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve2jtvlp), ) "set_royalty" Tuple("my_method", Enum<0u8>(), )
 3 of 4: CallMetadataMethod Enum<0u8>(Address(component_loc1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve2jtvlp), ) "get" Tuple("HelloWorld", )
-4 of 4: CallRoleAssignmentMethod Enum<0u8>(Address(component_loc1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve2jtvlp), ) "get_role" Tuple(Enum<0u8>(), "hello", )
+4 of 4: CallRoleAssignmentMethod Enum<0u8>(Address(component_loc1cqvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cve2jtvlp), ) "get" Tuple(Enum<0u8>(), "hello", )
 "##,
             &DetectedTxType::Other(None),
         );
@@ -776,21 +776,21 @@ br##"
         check_partial_decoding(
             &TX_RESOURCE_AUTH_ZONE,
 br##"
-1 of 20: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "withdraw" Tuple(Address(resource_loc1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxvq32hv), Decimal(5), )
-2 of 20: TakeAllFromWorktop Address(resource_loc1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxvq32hv)
-3 of 20: CreateProofFromBucketOfAmount Bucket(0u32) Decimal(1)
-4 of 20: CreateProofFromBucketOfNonFungibles Bucket(0u32) Array<NonFungibleLocalId>(#123u64#, )
-5 of 20: CreateProofFromBucketOfAll Bucket(0u32)
-6 of 20: CloneProof Proof(2u32)
-7 of 20: DropProof Proof(3u32)
-8 of 20: DropProof Proof(2u32)
-10 of 20: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "create_proof_of_amount" Tuple(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), Decimal(5), )
-12 of 20: DropProof Proof(4u32)
-13 of 20: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "create_proof_of_amount" Tuple(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), Decimal(5), )
-14 of 20: CreateProofFromAuthZoneOfAmount Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al) Decimal(1)
-15 of 20: CreateProofFromAuthZoneOfNonFungibles Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq) Array<NonFungibleLocalId>(#123u64#, )
-16 of 20: CreateProofFromAuthZoneOfAll Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq)
-20 of 20: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "deposit_batch" Tuple(Expression(ENTIRE_WORKTOP), )
+1 of 22: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "withdraw" Tuple(Address(resource_loc1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxvq32hv), Decimal(5), )
+2 of 22: TakeAllFromWorktop Address(resource_loc1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxvq32hv)
+3 of 22: CreateProofFromBucketOfAmount Bucket(0u32) Decimal(1)
+4 of 22: CreateProofFromBucketOfNonFungibles Bucket(0u32) Array<NonFungibleLocalId>(#123u64#, )
+5 of 22: CreateProofFromBucketOfAll Bucket(0u32)
+6 of 22: CloneProof Proof(2u32)
+7 of 22: DropProof Proof(3u32)
+8 of 22: DropProof Proof(2u32)
+10 of 22: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "create_proof_of_amount" Tuple(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), Decimal(5), )
+12 of 22: DropProof Proof(4u32)
+13 of 22: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "create_proof_of_amount" Tuple(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), Decimal(5), )
+14 of 22: CreateProofFromAuthZoneOfAmount Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al) Decimal(1)
+15 of 22: CreateProofFromAuthZoneOfNonFungibles Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq) Array<NonFungibleLocalId>(#123u64#, )
+16 of 22: CreateProofFromAuthZoneOfAll Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq)
+22 of 22: CallMethod Enum<0u8>(Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta), ) "deposit_batch" Tuple(Expression(ENTIRE_WORKTOP), )
 "##,
             &DetectedTxType::Other(None),
         );

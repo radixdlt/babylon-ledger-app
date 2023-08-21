@@ -5,36 +5,70 @@
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Instruction {
-    TakeAllFromWorktop,                    // { resource_address: ResourceAddress },
-    TakeFromWorktop, // { resource_address: ResourceAddress, amount: Decimal, },
-    TakeNonFungiblesFromWorktop, // { resource_address: ResourceAddress, ids: Vec<NonFungibleLocalId>, },
-    ReturnToWorktop,             // { bucket_id: ManifestBucket },
-    AssertWorktopContains,       // { resource_address: ResourceAddress, amount: Decimal, },
-    AssertWorktopContainsAny,    // { resource_address: ResourceAddress, },
-    AssertWorktopContainsNonFungibles, // { resource_address: ResourceAddress, ids: Vec<NonFungibleLocalId>, },
-    PopFromAuthZone,                   //,
-    PushToAuthZone,                    // { proof_id: ManifestProof },
-    ClearAuthZone,                     //,
-    CreateProofFromAuthZone,           // { resource_address: ResourceAddress },
-    CreateProofFromAuthZoneOfAmount,   // { resource_address: ResourceAddress, amount: Decimal, },
-    CreateProofFromAuthZoneOfNonFungibles, // { resource_address: ResourceAddress, ids: Vec<NonFungibleLocalId>, },
-    CreateProofFromAuthZoneOfAll,          // { resource_address: ResourceAddress },
-    ClearSignatureProofs,                  //,
-    CreateProofFromBucket,                 // { bucket_id: ManifestBucket },
-    CreateProofFromBucketOfAmount,         // { bucket_id: ManifestBucket, amount: Decimal, },
-    CreateProofFromBucketOfNonFungibles, // { bucket_id: ManifestBucket, ids: Vec<NonFungibleLocalId>, },
-    CreateProofFromBucketOfAll,          // { bucket_id: ManifestBucket },
-    BurnResource,                        // { bucket_id: ManifestBucket },
-    CloneProof,                          // { proof_id: ManifestProof },
-    DropProof,                           // { proof_id: ManifestProof },
-    CallFunction, // { package_address: DynamicPackageAddress, blueprint_name: String, function_name: String, args: ManifestValue, },
-    CallMethod,   // { address: DynamicGlobalAddress, method_name: String, args: ManifestValue, },
-    CallRoyaltyMethod, // { address: DynamicGlobalAddress, method_name: String, args: ManifestValue, },
-    CallMetadataMethod, // { address: DynamicGlobalAddress, method_name: String, args: ManifestValue, },
-    CallRoleAssignmentMethod, // { address: DynamicGlobalAddress, method_name: String, args: ManifestValue, },
-    CallDirectVaultMethod, // { address: InternalAddress, method_name: String, args: ManifestValue, },
-    DropAllProofs,         //,
-    AllocateGlobalAddress, // { package_address: PackageAddress, blueprint_name: String, },
+    // TakeAllFromWorktop,                    // { resource_address: ResourceAddress },
+    // TakeFromWorktop, // { resource_address: ResourceAddress, amount: Decimal, },
+    // TakeNonFungiblesFromWorktop, // { resource_address: ResourceAddress, ids: Vec<NonFungibleLocalId>, },
+    // ReturnToWorktop,             // { bucket_id: ManifestBucket },
+    // AssertWorktopContains,       // { resource_address: ResourceAddress, amount: Decimal, },
+    // AssertWorktopContainsAny,    // { resource_address: ResourceAddress, },
+    // AssertWorktopContainsNonFungibles, // { resource_address: ResourceAddress, ids: Vec<NonFungibleLocalId>, },
+    // PopFromAuthZone,                   //,
+    // PushToAuthZone,                    // { proof_id: ManifestProof },
+    // ClearAuthZone,                     //,
+    // CreateProofFromAuthZone,           // { resource_address: ResourceAddress },
+    // CreateProofFromAuthZoneOfAmount,   // { resource_address: ResourceAddress, amount: Decimal, },
+    // CreateProofFromAuthZoneOfNonFungibles, // { resource_address: ResourceAddress, ids: Vec<NonFungibleLocalId>, },
+    // CreateProofFromAuthZoneOfAll,          // { resource_address: ResourceAddress },
+    // ClearSignatureProofs,                  //,
+    // CreateProofFromBucket,                 // { bucket_id: ManifestBucket },
+    // CreateProofFromBucketOfAmount,         // { bucket_id: ManifestBucket, amount: Decimal, },
+    // CreateProofFromBucketOfNonFungibles, // { bucket_id: ManifestBucket, ids: Vec<NonFungibleLocalId>, },
+    // CreateProofFromBucketOfAll,          // { bucket_id: ManifestBucket },
+    // BurnResource,                        // { bucket_id: ManifestBucket },
+    // CloneProof,                          // { proof_id: ManifestProof },
+    // DropProof,                           // { proof_id: ManifestProof },
+    // CallFunction, // { package_address: DynamicPackageAddress, blueprint_name: String, function_name: String, args: ManifestValue, },
+    // CallMethod,   // { address: DynamicGlobalAddress, method_name: String, args: ManifestValue, },
+    // CallRoyaltyMethod, // { address: DynamicGlobalAddress, method_name: String, args: ManifestValue, },
+    // CallMetadataMethod, // { address: DynamicGlobalAddress, method_name: String, args: ManifestValue, },
+    // CallRoleAssignmentMethod, // { address: DynamicGlobalAddress, method_name: String, args: ManifestValue, },
+    // CallDirectVaultMethod, // { address: InternalAddress, method_name: String, args: ManifestValue, },
+    // DropAllProofs,         //,
+    // AllocateGlobalAddress, // { package_address: PackageAddress, blueprint_name: String, },
+    TakeAllFromWorktop = INSTRUCTION_TAKE_ALL_FROM_WORKTOP_DISCRIMINATOR,
+    TakeFromWorktop = INSTRUCTION_TAKE_FROM_WORKTOP_DISCRIMINATOR,
+    TakeNonFungiblesFromWorktop = INSTRUCTION_TAKE_NON_FUNGIBLES_FROM_WORKTOP_DISCRIMINATOR,
+    ReturnToWorktop = INSTRUCTION_RETURN_TO_WORKTOP_DISCRIMINATOR,
+    AssertWorktopContainsAny = INSTRUCTION_ASSERT_WORKTOP_CONTAINS_ANY_DISCRIMINATOR,
+    AssertWorktopContains = INSTRUCTION_ASSERT_WORKTOP_CONTAINS_DISCRIMINATOR,
+    AssertWorktopContainsNonFungibles =
+        INSTRUCTION_ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES_DISCRIMINATOR,
+    PopFromAuthZone = INSTRUCTION_POP_FROM_AUTH_ZONE_DISCRIMINATOR,
+    PushToAuthZone = INSTRUCTION_PUSH_TO_AUTH_ZONE_DISCRIMINATOR,
+    CreateProofFromAuthZoneOfAmount =
+        INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT_DISCRIMINATOR,
+    CreateProofFromAuthZoneOfNonFungibles =
+        INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES_DISCRIMINATOR,
+    CreateProofFromAuthZoneOfAll = INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL_DISCRIMINATOR,
+    DropAuthZoneProofs = INSTRUCTION_DROP_AUTH_ZONE_PROOFS_DISCRIMINATOR,
+    DropAuthZoneRegularProofs = INSTRUCTION_DROP_AUTH_ZONE_REGULAR_PROOFS_DISCRIMINATOR,
+    DropAuthZoneSignatureProofs = INSTRUCTION_DROP_AUTH_ZONE_SIGNATURE_PROOFS_DISCRIMINATOR,
+    CreateProofFromBucketOfAmount = INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_AMOUNT_DISCRIMINATOR,
+    CreateProofFromBucketOfNonFungibles =
+        INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES_DISCRIMINATOR,
+    CreateProofFromBucketOfAll = INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_ALL_DISCRIMINATOR,
+    BurnResource = INSTRUCTION_BURN_RESOURCE_DISCRIMINATOR,
+    CloneProof = INSTRUCTION_CLONE_PROOF_DISCRIMINATOR,
+    DropProof = INSTRUCTION_DROP_PROOF_DISCRIMINATOR,
+    CallFunction = INSTRUCTION_CALL_FUNCTION_DISCRIMINATOR,
+    CallMethod = INSTRUCTION_CALL_METHOD_DISCRIMINATOR,
+    CallRoyaltyMethod = INSTRUCTION_CALL_ROYALTY_METHOD_DISCRIMINATOR,
+    CallMetadataMethod = INSTRUCTION_CALL_METADATA_METHOD_DISCRIMINATOR,
+    CallRoleAssignmentMethod = INSTRUCTION_CALL_ROLE_ASSIGNMENT_METHOD_DISCRIMINATOR,
+    CallDirectVaultMethod = INSTRUCTION_CALL_DIRECT_VAULT_METHOD_DISCRIMINATOR,
+    DropNamedProofs = INSTRUCTION_DROP_NAMED_PROOFS_DISCRIMINATOR,
+    DropAllProofs = INSTRUCTION_DROP_ALL_PROOFS_DISCRIMINATOR,
+    AllocateGlobalAddress = INSTRUCTION_ALLOCATE_GLOBAL_ADDRESS_DISCRIMINATOR,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -61,13 +95,13 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
             instruction: Instruction::ReturnToWorktop,
             name: b"ReturnToWorktop",
         }),
-        INSTRUCTION_ASSERT_WORKTOP_CONTAINS_DISCRIMINATOR => Some(InstructionInfo {
-            instruction: Instruction::AssertWorktopContains,
-            name: b"AssertWorktopContains",
-        }),
         INSTRUCTION_ASSERT_WORKTOP_CONTAINS_ANY_DISCRIMINATOR => Some(InstructionInfo {
             instruction: Instruction::AssertWorktopContainsAny,
             name: b"AssertWorktopContainsAny",
+        }),
+        INSTRUCTION_ASSERT_WORKTOP_CONTAINS_DISCRIMINATOR => Some(InstructionInfo {
+            instruction: Instruction::AssertWorktopContains,
+            name: b"AssertWorktopContains",
         }),
         INSTRUCTION_ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES_DISCRIMINATOR => Some(InstructionInfo {
             instruction: Instruction::AssertWorktopContainsNonFungibles,
@@ -80,14 +114,6 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
         INSTRUCTION_PUSH_TO_AUTH_ZONE_DISCRIMINATOR => Some(InstructionInfo {
             instruction: Instruction::PushToAuthZone,
             name: b"PushToAuthZone",
-        }),
-        INSTRUCTION_CLEAR_AUTH_ZONE_DISCRIMINATOR => Some(InstructionInfo {
-            instruction: Instruction::ClearAuthZone,
-            name: b"ClearAuthZone",
-        }),
-        INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_DISCRIMINATOR => Some(InstructionInfo {
-            instruction: Instruction::CreateProofFromAuthZone,
-            name: b"CreateProofFromAuthZone",
         }),
         INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT_DISCRIMINATOR => Some(InstructionInfo {
             instruction: Instruction::CreateProofFromAuthZoneOfAmount,
@@ -103,13 +129,17 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
             instruction: Instruction::CreateProofFromAuthZoneOfAll,
             name: b"CreateProofFromAuthZoneOfAll",
         }),
-        INSTRUCTION_CLEAR_SIGNATURE_PROOFS_DISCRIMINATOR => Some(InstructionInfo {
-            instruction: Instruction::ClearSignatureProofs,
-            name: b"ClearSignatureProofs",
+        INSTRUCTION_DROP_AUTH_ZONE_PROOFS_DISCRIMINATOR => Some(InstructionInfo {
+            instruction: Instruction::DropAuthZoneProofs,
+            name: b"DropAuthZoneProofs",
         }),
-        INSTRUCTION_CREATE_PROOF_FROM_BUCKET_DISCRIMINATOR => Some(InstructionInfo {
-            instruction: Instruction::CreateProofFromBucket,
-            name: b"CreateProofFromBucket",
+        INSTRUCTION_DROP_AUTH_ZONE_REGULAR_PROOFS_DISCRIMINATOR => Some(InstructionInfo {
+            instruction: Instruction::DropAuthZoneRegularProofs,
+            name: b"DropAuthZoneRegularProofs",
+        }),
+        INSTRUCTION_DROP_AUTH_ZONE_SIGNATURE_PROOFS_DISCRIMINATOR => Some(InstructionInfo {
+            instruction: Instruction::DropAuthZoneSignatureProofs,
+            name: b"DropAuthZoneSignatureProofs",
         }),
         INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_AMOUNT_DISCRIMINATOR => Some(InstructionInfo {
             instruction: Instruction::CreateProofFromBucketOfAmount,
@@ -161,6 +191,10 @@ pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
             instruction: Instruction::CallDirectVaultMethod,
             name: b"CallDirectVaultMethod",
         }),
+        INSTRUCTION_DROP_NAMED_PROOFS_DISCRIMINATOR => Some(InstructionInfo {
+            instruction: Instruction::DropNamedProofs,
+            name: b"DropNamedProofs",
+        }),
         INSTRUCTION_DROP_ALL_PROOFS_DISCRIMINATOR => Some(InstructionInfo {
             instruction: Instruction::DropAllProofs,
             name: b"DropAllProofs",
@@ -190,17 +224,16 @@ pub const INSTRUCTION_ASSERT_WORKTOP_CONTAINS_ANY_DISCRIMINATOR: u8 = 0x06;
 //==============
 pub const INSTRUCTION_POP_FROM_AUTH_ZONE_DISCRIMINATOR: u8 = 0x10;
 pub const INSTRUCTION_PUSH_TO_AUTH_ZONE_DISCRIMINATOR: u8 = 0x11;
-pub const INSTRUCTION_CLEAR_AUTH_ZONE_DISCRIMINATOR: u8 = 0x12;
-pub const INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_DISCRIMINATOR: u8 = 0x13;
 pub const INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT_DISCRIMINATOR: u8 = 0x14;
 pub const INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES_DISCRIMINATOR: u8 = 0x15;
 pub const INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL_DISCRIMINATOR: u8 = 0x16;
-pub const INSTRUCTION_CLEAR_SIGNATURE_PROOFS_DISCRIMINATOR: u8 = 0x17;
+pub const INSTRUCTION_DROP_AUTH_ZONE_PROOFS_DISCRIMINATOR: u8 = 0x12;
+pub const INSTRUCTION_DROP_AUTH_ZONE_REGULAR_PROOFS_DISCRIMINATOR: u8 = 0x13;
+pub const INSTRUCTION_DROP_AUTH_ZONE_SIGNATURE_PROOFS_DISCRIMINATOR: u8 = 0x17;
 
 //==============
 // Named bucket
 //==============
-pub const INSTRUCTION_CREATE_PROOF_FROM_BUCKET_DISCRIMINATOR: u8 = 0x20;
 pub const INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_AMOUNT_DISCRIMINATOR: u8 = 0x21;
 pub const INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES_DISCRIMINATOR: u8 = 0x22;
 pub const INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_ALL_DISCRIMINATOR: u8 = 0x23;
@@ -225,5 +258,6 @@ pub const INSTRUCTION_CALL_DIRECT_VAULT_METHOD_DISCRIMINATOR: u8 = 0x45;
 //==============
 // Complex
 //==============
+pub const INSTRUCTION_DROP_NAMED_PROOFS_DISCRIMINATOR: u8 = 0x52;
 pub const INSTRUCTION_DROP_ALL_PROOFS_DISCRIMINATOR: u8 = 0x50;
 pub const INSTRUCTION_ALLOCATE_GLOBAL_ADDRESS_DISCRIMINATOR: u8 = 0x51;
