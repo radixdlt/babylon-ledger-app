@@ -292,17 +292,23 @@ mod tests {
 
     impl InstructionHandler for InstructionFormatter {
         fn handle(&mut self, event: ExtractorEvent) {
-            if let ExtractorEvent::InstructionStart(info, count, total) = event {
-                self.instructions[self.instruction_count] = info.instruction;
-                self.instruction_count += 1;
-                println!(
-                    "Instruction::{:?} {} of {},",
-                    info.instruction,
-                    count + 1,
-                    total
-                );
-            } else {
-                // println!("Event: {:?}", event);
+            match event {
+                ExtractorEvent::InstructionStart(info, count, total) => {
+                    self.instructions[self.instruction_count] = info.instruction;
+                    self.instruction_count += 1;
+                    println!(
+                        "Instruction::{:?} {} of {},",
+                        info.instruction,
+                        count + 1,
+                        total
+                    );
+                }
+                ExtractorEvent::UnknownInstruction(_)
+                | ExtractorEvent::InvalidEventSequence
+                | ExtractorEvent::UnknownParameterType(_) => {
+                    assert!(false, "Should not receive this event {:?}", event)
+                }
+                _ => {}
             }
         }
     }
@@ -592,7 +598,7 @@ mod tests {
                 Instruction::CloneProof,
                 Instruction::DropProof,
                 Instruction::DropProof,
-                Instruction::ClearAuthZone,
+                Instruction::DropAuthZoneProofs,
                 Instruction::CallMethod,
                 Instruction::PopFromAuthZone,
                 Instruction::DropProof,
@@ -600,8 +606,10 @@ mod tests {
                 Instruction::CreateProofFromAuthZoneOfAmount,
                 Instruction::CreateProofFromAuthZoneOfNonFungibles,
                 Instruction::CreateProofFromAuthZoneOfAll,
-                Instruction::ClearAuthZone,
-                Instruction::ClearSignatureProofs,
+                Instruction::DropAuthZoneSignatureProofs,
+                Instruction::DropAuthZoneRegularProofs,
+                Instruction::DropAuthZoneProofs,
+                Instruction::DropNamedProofs,
                 Instruction::DropAllProofs,
                 Instruction::CallMethod,
             ],
@@ -680,6 +688,6 @@ mod tests {
 
     #[test]
     pub fn test_hc_intent() {
-        check_partial_decoding(&TX_HC_INTENT, &[Instruction::ClearAuthZone]);
+        check_partial_decoding(&TX_HC_INTENT, &[Instruction::DropAuthZoneProofs]);
     }
 }
