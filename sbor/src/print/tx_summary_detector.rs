@@ -117,7 +117,7 @@ const fn max(a: usize, b: usize) -> usize {
 }
 
 //Max of address length and decimal length
-const MAX_TX_DATA_SIZE: usize = max(Decimal::SIZE_IN_BYTES, ADDRESS_STATIC_LEN as usize);
+const MAX_TX_DATA_SIZE: usize = 40;
 
 #[derive(Copy, Clone, Debug)]
 pub struct Address {
@@ -474,8 +474,7 @@ impl TxSummaryDetector {
             FeePhase::Name => {
                 if self.data.as_slice() == b"lock_fee" {
                     self.fee_phase = FeePhase::Value;
-                }
-                if self.data.as_slice() == b"lock_fee_and_withdraw"
+                } else if self.data.as_slice() == b"lock_fee_and_withdraw"
                     || self.data.as_slice() == b"lock_fee_and_withdraw_non_fungibles"
                 {
                     self.fee_phase = FeePhase::ValueStart;
