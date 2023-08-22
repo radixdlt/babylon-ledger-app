@@ -378,6 +378,10 @@ mod tests {
         calculate_hash_and_compare(&TX_SIMPLE_TRANSFER, &TX_SIMPLE_TRANSFER_HASH);
     }
     #[test]
+    fn test_tx_simple_transfer_new_format() {
+        calculate_hash_and_compare(&TX_SIMPLE_TRANSFER_NEW_FORMAT, &TX_SIMPLE_TRANSFER_NEW_FORMAT_HASH);
+    }
+    #[test]
     fn test_tx_simple_transfer_nft() {
         calculate_hash_and_compare(&TX_SIMPLE_TRANSFER_NFT, &TX_SIMPLE_TRANSFER_NFT_HASH);
     }

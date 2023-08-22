@@ -933,6 +933,37 @@ br##"
         );
     }
     #[test]
+    fn test_simple_transfer_new_format() {
+        check_partial_decoding_with_type(
+            &TX_SIMPLE_TRANSFER_NEW_FORMAT,
+br##"
+1 of 3: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "lock_fee_and_withdraw" Tuple(Decimal(25), Address(resource_loc1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxvq32hv), Decimal(123), )
+2 of 3: TakeFromWorktop Address(resource_loc1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxvq32hv) Decimal(123)
+3 of 3: CallMethod Address(account_loc1cyzfj6p254jy6lhr237s7pcp8qqz6c8ahq9mn6nkdjxxxat5pjq9xc) "try_deposit_or_abort" Tuple(Bucket(0u32), )
+"##,
+            &DetectedTxType::Transfer {
+                fee: Some(Decimal::whole(25)),
+                src_address: Address::from_array([
+                    0xc1, 0x18, 0x83, 0x46, 0x2f, 0x39, 0x79, 0x6d, 0xa8, 0x3f, 0x2f, 0x82, 0xca,
+                    0xef, 0xa6, 0x79, 0xaa, 0xf1, 0xf1, 0x89, 0x25, 0x7e, 0xbd, 0x3c, 0x8c, 0x27,
+                    0x7d, 0x5a, 0xe1, 0x99,
+                ]),
+                dst_address: Address::from_array([
+                    0xc1, 0x04, 0x99, 0x68, 0x2a, 0xa5, 0x64, 0x4d, 0x7e, 0xe3, 0x54, 0x7d, 0x0f,
+                    0x07, 0x01, 0x38, 0x00, 0x2d, 0x60, 0xfd, 0xb8, 0x0b, 0xb9, 0xea, 0x76, 0x6c,
+                    0x8c, 0x63, 0x75, 0x74,
+                ]),
+                res_address: Address::from_array([
+                    0x5d, 0xa6, 0x63, 0x18, 0xc6, 0x31, 0x8c, 0x61, 0xf5, 0xa6, 0x1b, 0x4c, 0x63,
+                    0x18, 0xc6, 0x31, 0x8c, 0xf7, 0x94, 0xaa, 0x8d, 0x29, 0x5f, 0x14, 0xe6, 0x31,
+                    0x8c, 0x63, 0x18, 0xc6,
+                ]),
+                amount: Decimal::whole(123),
+            },
+            TxIntentType::Transfer,
+        );
+    }
+    #[test]
     fn test_simple_transfer_with_multiple_locked_fees() {
         check_partial_decoding_with_type(
             &TX_SIMPLE_TRANSFER_WITH_MULTIPLE_LOCKED_FEES,

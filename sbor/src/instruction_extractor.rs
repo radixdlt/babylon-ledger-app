@@ -630,6 +630,18 @@ mod tests {
     }
 
     #[test]
+    pub fn test_simple_transfer_new_format() {
+        check_partial_decoding(
+            &TX_SIMPLE_TRANSFER_NEW_FORMAT,
+            &[
+                Instruction::CallMethod,
+                Instruction::TakeFromWorktop,
+                Instruction::CallMethod,
+            ],
+        );
+    }
+
+    #[test]
     pub fn test_simple_transfer_nft() {
         check_partial_decoding(
             &TX_SIMPLE_TRANSFER_NFT,
