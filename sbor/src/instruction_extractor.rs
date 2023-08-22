@@ -505,6 +505,14 @@ mod tests {
     }
 
     #[test]
+    pub fn test_resource_recall_nonfungibles() {
+        check_partial_decoding(
+            &TX_RESOURCE_RECALL_NONFUNGIBLES,
+            &[Instruction::CallDirectVaultMethod],
+        );
+    }
+
+    #[test]
     pub fn test_resource_worktop() {
         check_partial_decoding(
             &TX_RESOURCE_WORKTOP,
@@ -630,6 +638,18 @@ mod tests {
     }
 
     #[test]
+    pub fn test_simple_transfer_new_format() {
+        check_partial_decoding(
+            &TX_SIMPLE_TRANSFER_NEW_FORMAT,
+            &[
+                Instruction::CallMethod,
+                Instruction::TakeFromWorktop,
+                Instruction::CallMethod,
+            ],
+        );
+    }
+
+    #[test]
     pub fn test_simple_transfer_nft() {
         check_partial_decoding(
             &TX_SIMPLE_TRANSFER_NFT,
@@ -643,11 +663,35 @@ mod tests {
     }
 
     #[test]
+    pub fn test_simple_transfer_nft_new_format() {
+        check_partial_decoding(
+            &TX_SIMPLE_TRANSFER_NFT_NEW_FORMAT,
+            &[
+                Instruction::CallMethod,
+                Instruction::TakeFromWorktop,
+                Instruction::CallMethod,
+            ],
+        );
+    }
+
+    #[test]
     pub fn test_simple_transfer_nft_by_id() {
         check_partial_decoding(
             &TX_SIMPLE_TRANSFER_NFT_BY_ID,
             &[
                 Instruction::CallMethod,
+                Instruction::CallMethod,
+                Instruction::TakeNonFungiblesFromWorktop,
+                Instruction::CallMethod,
+            ],
+        );
+    }
+
+    #[test]
+    pub fn test_simple_transfer_nft_by_id_new_format() {
+        check_partial_decoding(
+            &TX_SIMPLE_TRANSFER_NFT_BY_ID_NEW_FORMAT,
+            &[
                 Instruction::CallMethod,
                 Instruction::TakeNonFungiblesFromWorktop,
                 Instruction::CallMethod,

@@ -366,6 +366,13 @@ mod tests {
         calculate_hash_and_compare(&TX_RESOURCE_RECALL, &TX_RESOURCE_RECALL_HASH);
     }
     #[test]
+    fn test_tx_resource_recall_nonfungibles() {
+        calculate_hash_and_compare(
+            &TX_RESOURCE_RECALL_NONFUNGIBLES,
+            &TX_RESOURCE_RECALL_NONFUNGIBLES_HASH,
+        );
+    }
+    #[test]
     fn test_tx_resource_worktop() {
         calculate_hash_and_compare(&TX_RESOURCE_WORKTOP, &TX_RESOURCE_WORKTOP_HASH);
     }
@@ -378,14 +385,35 @@ mod tests {
         calculate_hash_and_compare(&TX_SIMPLE_TRANSFER, &TX_SIMPLE_TRANSFER_HASH);
     }
     #[test]
+    fn test_tx_simple_transfer_new_format() {
+        calculate_hash_and_compare(
+            &TX_SIMPLE_TRANSFER_NEW_FORMAT,
+            &TX_SIMPLE_TRANSFER_NEW_FORMAT_HASH,
+        );
+    }
+    #[test]
     fn test_tx_simple_transfer_nft() {
         calculate_hash_and_compare(&TX_SIMPLE_TRANSFER_NFT, &TX_SIMPLE_TRANSFER_NFT_HASH);
+    }
+    #[test]
+    fn test_tx_simple_transfer_nft_new_format() {
+        calculate_hash_and_compare(
+            &TX_SIMPLE_TRANSFER_NFT_NEW_FORMAT,
+            &TX_SIMPLE_TRANSFER_NFT_NEW_FORMAT_HASH,
+        );
     }
     #[test]
     fn test_tx_simple_transfer_nft_by_id() {
         calculate_hash_and_compare(
             &TX_SIMPLE_TRANSFER_NFT_BY_ID,
             &TX_SIMPLE_TRANSFER_NFT_BY_ID_HASH,
+        );
+    }
+    #[test]
+    fn test_tx_simple_transfer_nft_by_id_new_format() {
+        calculate_hash_and_compare(
+            &TX_SIMPLE_TRANSFER_NFT_BY_ID_NEW_FORMAT,
+            &TX_SIMPLE_TRANSFER_NFT_BY_ID_NEW_FORMAT_HASH,
         );
     }
     #[test]

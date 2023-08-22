@@ -19,6 +19,7 @@ pub enum FeePhase {
     Name,
     Tuple,
     Value,
+    ValueStart,
 }
 
 #[derive(Copy, Clone, PartialEq)]
@@ -116,7 +117,7 @@ const fn max(a: usize, b: usize) -> usize {
 }
 
 //Max of address length and decimal length
-const MAX_TX_DATA_SIZE: usize = max(Decimal::SIZE_IN_BYTES, ADDRESS_STATIC_LEN as usize);
+const MAX_TX_DATA_SIZE: usize = 40;
 
 #[derive(Copy, Clone, Debug)]
 pub struct Address {
@@ -374,6 +375,19 @@ impl TxSummaryDetector {
                 self.amount = Decimal::whole(len.into());
                 self.decoding_phase = DecodingPhase::ValueDepositDone;
             }
+            SborEvent::Start { type_id, .. } if self.fee_phase == FeePhase::ValueStart => {
+                if type_id == TYPE_DECIMAL {
+                    self.data.clear();
+                    self.fee_phase = FeePhase::Value;
+                }
+            }
+            SborEvent::End { type_id, .. } if self.fee_phase == FeePhase::Value => {
+                if type_id == TYPE_DECIMAL {
+                    let fee = self.extract_decimal();
+                    self.fee.accumulate(&fee);
+                    self.fee_phase = FeePhase::Start;
+                }
+            }
             _ => {}
         }
     }
@@ -403,9 +417,11 @@ impl TxSummaryDetector {
             }
 
             DecodingPhase::ExpectWithdraw => {
-                if self.data.as_slice() == b"withdraw" {
-                    self.decoding_phase = DecodingPhase::WithdrawDone;
-                } else if self.data.as_slice() == b"withdraw_non_fungibles" {
+                if self.data.as_slice() == b"withdraw"
+                    || self.data.as_slice() == b"withdraw_non_fungibles"
+                    || self.data.as_slice() == b"lock_fee_and_withdraw"
+                    || self.data.as_slice() == b"lock_fee_and_withdraw_non_fungibles"
+                {
                     self.decoding_phase = DecodingPhase::WithdrawDone;
                 } else {
                     // Restart decoding
@@ -458,6 +474,10 @@ impl TxSummaryDetector {
             FeePhase::Name => {
                 if self.data.as_slice() == b"lock_fee" {
                     self.fee_phase = FeePhase::Value;
+                } else if self.data.as_slice() == b"lock_fee_and_withdraw"
+                    || self.data.as_slice() == b"lock_fee_and_withdraw_non_fungibles"
+                {
+                    self.fee_phase = FeePhase::ValueStart;
                 } else {
                     self.fee_phase = FeePhase::Start;
                 }
