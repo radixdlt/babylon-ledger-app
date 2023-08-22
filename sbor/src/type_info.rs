@@ -1,5 +1,6 @@
 // SBOR type information
 
+use crate::math::{Decimal, PreciseDecimal};
 use core::option::Option;
 use core::prelude::rust_2024::derive;
 
@@ -47,8 +48,8 @@ pub const ID_LEN: u8 = 4;
 pub const BUCKET_LEN: u8 = ID_LEN;
 pub const PROOF_LEN: u8 = ID_LEN;
 pub const BLOB_LEN: u8 = 32;
-pub const DECIMAL_LEN: u8 = 32; // 256 bits
-pub const PRECISE_DECIMAL_LEN: u8 = 64; // 512 bits
+pub const DECIMAL_LEN: u8 = Decimal::SIZE_IN_BYTES as u8;
+pub const PRECISE_DECIMAL_LEN: u8 = PreciseDecimal::SIZE_IN_BYTES as u8;
 
 // Non-fungible local ID discriminators
 pub const NFL_STRING: u8 = 0;

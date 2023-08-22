@@ -14,7 +14,8 @@ impl<const N: usize> BigInt<N>
 where
     [(); ceil_div(N, u32::BITS as usize)]:,
 {
-    const NUM_BYTES: usize = ceil_div(N, u8::BITS as usize);
+    pub const NUM_BITS: usize = N;
+    pub const NUM_BYTES: usize = ceil_div(N, u8::BITS as usize);
     const NUM_LIMBS: usize = ceil_div(N, u32::BITS as usize);
 
     pub const fn new() -> Self {
@@ -132,6 +133,21 @@ pub enum BigIntError {
     TooShortInput,
 }
 
+impl From<u128> for BigInt<192> {
+    fn from(value: u128) -> Self {
+        Self {
+            limbs: [
+                (value & 0xFFFFFFFF) as u32,
+                ((value >> 32) & 0xFFFFFFFF) as u32,
+                ((value >> 64) & 0xFFFFFFFF) as u32,
+                (value >> 96) as u32,
+                0,
+                0,
+            ],
+        }
+    }
+}
+
 impl From<u128> for BigInt<256> {
     fn from(value: u128) -> Self {
         Self {
@@ -140,31 +156,6 @@ impl From<u128> for BigInt<256> {
                 ((value >> 32) & 0xFFFFFFFF) as u32,
                 ((value >> 64) & 0xFFFFFFFF) as u32,
                 (value >> 96) as u32,
-                0,
-                0,
-                0,
-                0,
-            ],
-        }
-    }
-}
-
-impl From<u128> for BigInt<512> {
-    fn from(value: u128) -> Self {
-        Self {
-            limbs: [
-                (value & 0xFFFFFFFF) as u32,
-                ((value >> 32) & 0xFFFFFFFF) as u32,
-                ((value >> 64) & 0xFFFFFFFF) as u32,
-                (value >> 96) as u32,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
                 0,
                 0,
                 0,

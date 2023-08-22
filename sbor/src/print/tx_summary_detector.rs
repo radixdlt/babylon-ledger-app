@@ -26,9 +26,7 @@ pub enum FeePhase {
 pub enum DecodingPhase {
     Start,
     CallMethod,
-    AddressWithdrawStart, //Outer enum
     AddressWithdraw,
-    AddressWithdrawEnd,
     ExpectWithdraw,
     WithdrawDone,
     ValueDepositCount, //Outer array
@@ -39,9 +37,7 @@ pub enum DecodingPhase {
     ValueDepositDone,
     ExpectDepositCall,
     ExpectAddressDeposit,
-    AddressDepositStart, //Outer enum
     AddressDeposit,
-    AddressDepositEnd,
     ExpectDeposit,
     DoneTransfer,
     NonConformingTransaction,
@@ -343,14 +339,14 @@ impl TxSummaryDetector {
 
         if let SborEvent::Start { type_id, .. } = event {
             match (self.decoding_phase, param_count, type_id) {
-                (DecodingPhase::CallMethod, 0, TYPE_ENUM) => {
-                    self.decoding_phase = DecodingPhase::AddressWithdrawStart;
+                (DecodingPhase::CallMethod, 0, TYPE_ADDRESS) => {
+                    self.decoding_phase = DecodingPhase::AddressWithdraw;
                 }
                 (DecodingPhase::AddressWithdraw, 1, TYPE_STRING) => {
                     self.decoding_phase = DecodingPhase::ExpectWithdraw;
                 }
-                (DecodingPhase::ExpectAddressDeposit, 0, TYPE_ENUM) => {
-                    self.decoding_phase = DecodingPhase::AddressDepositStart;
+                (DecodingPhase::ExpectAddressDeposit, 0, TYPE_ADDRESS) => {
+                    self.decoding_phase = DecodingPhase::AddressDeposit;
                 }
                 (DecodingPhase::ValueDepositCount, 1, TYPE_ARRAY) => {
                     self.decoding_phase = DecodingPhase::ValueDepositCountIds;
@@ -378,45 +374,6 @@ impl TxSummaryDetector {
                 self.amount = Decimal::whole(len.into());
                 self.decoding_phase = DecodingPhase::ValueDepositDone;
             }
-            SborEvent::Start { type_id, .. } => {
-                self.data.clear();
-
-                if type_id == TYPE_ADDRESS {
-                    match self.decoding_phase {
-                        DecodingPhase::AddressWithdrawStart => {
-                            self.decoding_phase = DecodingPhase::AddressWithdraw;
-                        }
-                        DecodingPhase::AddressDepositStart => {
-                            self.decoding_phase = DecodingPhase::AddressDeposit;
-                        }
-                        _ => {}
-                    }
-                }
-            }
-            SborEvent::End { type_id, .. } => {
-                if type_id == TYPE_ADDRESS {
-                    match self.decoding_phase {
-                        DecodingPhase::AddressWithdraw => {
-                            if self.data.len() == ADDRESS_STATIC_LEN as usize {
-                                self.src_address.copy_from_slice(self.data.as_slice());
-                                self.decoding_phase = DecodingPhase::AddressWithdrawEnd;
-                            } else {
-                                self.decoding_phase = DecodingPhase::DecodingError;
-                            }
-                        }
-
-                        DecodingPhase::AddressDeposit => {
-                            if self.data.len() == ADDRESS_STATIC_LEN as usize {
-                                self.dst_address.copy_from_slice(self.data.as_slice());
-                                self.decoding_phase = DecodingPhase::AddressDepositEnd;
-                            } else {
-                                self.decoding_phase = DecodingPhase::DecodingError;
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-            }
             _ => {}
         }
     }
@@ -427,12 +384,24 @@ impl TxSummaryDetector {
 
     fn parameter_end(&mut self) {
         match self.decoding_phase {
-            DecodingPhase::AddressWithdrawEnd => {
-                self.decoding_phase = DecodingPhase::ExpectWithdraw;
+            DecodingPhase::AddressWithdraw => {
+                if self.data.len() == ADDRESS_STATIC_LEN as usize {
+                    self.src_address.copy_from_slice(self.data.as_slice());
+                    self.decoding_phase = DecodingPhase::ExpectWithdraw;
+                } else {
+                    self.decoding_phase = DecodingPhase::DecodingError;
+                }
             }
-            DecodingPhase::AddressDepositEnd => {
-                self.decoding_phase = DecodingPhase::ExpectDeposit;
+
+            DecodingPhase::AddressDeposit => {
+                if self.data.len() == ADDRESS_STATIC_LEN as usize {
+                    self.dst_address.copy_from_slice(self.data.as_slice());
+                    self.decoding_phase = DecodingPhase::ExpectDeposit;
+                } else {
+                    self.decoding_phase = DecodingPhase::DecodingError;
+                }
             }
+
             DecodingPhase::ExpectWithdraw => {
                 if self.data.as_slice() == b"withdraw" {
                     self.decoding_phase = DecodingPhase::WithdrawDone;
@@ -445,7 +414,10 @@ impl TxSummaryDetector {
             }
 
             DecodingPhase::ExpectDeposit => {
-                if self.data.as_slice() == b"try_deposit_or_abort" {
+                if self.data.as_slice() == b"deposit"
+                    || self.data.as_slice() == b"try_deposit_or_abort"
+                    || self.data.as_slice() == b"try_deposit_or_refund"
+                {
                     self.decoding_phase = DecodingPhase::DoneTransfer;
                 } else {
                     self.decoding_phase = DecodingPhase::NonConformingTransaction;
