@@ -86,6 +86,10 @@ pub mod tests {
             data: &TX_SIMPLE_TRANSFER,
         },
         Blob {
+            name: "simple_transfer_new_format",
+            data: &TX_SIMPLE_TRANSFER_NEW_FORMAT,
+        },
+        Blob {
             name: "simple_transfer_nft",
             data: &TX_SIMPLE_TRANSFER_NFT,
         },
