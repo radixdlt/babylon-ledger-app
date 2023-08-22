@@ -381,7 +381,7 @@ impl TxSummaryDetector {
                     self.fee_phase = FeePhase::Value;
                 }
             }
-            SborEvent::End { type_id, ..} if self.fee_phase == FeePhase::Value => {
+            SborEvent::End { type_id, .. } if self.fee_phase == FeePhase::Value => {
                 if type_id == TYPE_DECIMAL {
                     let fee = self.extract_decimal();
                     self.fee.accumulate(&fee);

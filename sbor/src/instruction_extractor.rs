@@ -506,7 +506,10 @@ mod tests {
 
     #[test]
     pub fn test_resource_recall_nonfungibles() {
-        check_partial_decoding(&TX_RESOURCE_RECALL_NONFUNGIBLES, &[Instruction::CallDirectVaultMethod]);
+        check_partial_decoding(
+            &TX_RESOURCE_RECALL_NONFUNGIBLES,
+            &[Instruction::CallDirectVaultMethod],
+        );
     }
 
     #[test]
