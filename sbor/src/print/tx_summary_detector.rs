@@ -19,6 +19,7 @@ pub enum FeePhase {
     Name,
     Tuple,
     Value,
+    ValueStart,
 }
 
 #[derive(Copy, Clone, PartialEq)]
@@ -59,6 +60,26 @@ pub enum DetectedTxType {
     },
     Other(Option<Decimal>),
     Error(Option<Decimal>),
+}
+
+trait SameString {
+    fn eq(&self, other: &[u8]) -> bool;
+}
+
+impl SameString for StaticVec<u8, { MAX_TX_DATA_SIZE }> {
+    fn eq(&self, other: &[u8]) -> bool {
+        let data = self.as_slice();
+
+        if data.len() != other.len() {
+            return false;
+        }
+        for i in 0..data.len() {
+            if data[i] != other[i] {
+                return false;
+            }
+        }
+        true
+    }
 }
 
 #[cfg(test)]
@@ -114,13 +135,8 @@ impl DetectedTxType {
     }
 }
 
-#[inline(always)]
-const fn max(a: usize, b: usize) -> usize {
-    [a, b][(a < b) as usize]
-}
-
 //Max of address length and decimal length
-const MAX_TX_DATA_SIZE: usize = max(Decimal::SIZE_IN_BYTES, ADDRESS_STATIC_LEN as usize);
+const MAX_TX_DATA_SIZE: usize = 40;
 
 #[derive(Copy, Clone, Debug)]
 pub struct Address {
@@ -381,6 +397,10 @@ impl TxSummaryDetector {
             SborEvent::Start { type_id, .. } => {
                 self.data.clear();
 
+                if type_id == TYPE_DECIMAL && self.fee_phase == FeePhase::ValueStart {
+                    self.fee_phase = FeePhase::Value;
+                }
+
                 if type_id == TYPE_ADDRESS {
                     match self.decoding_phase {
                         DecodingPhase::AddressWithdrawStart => {
@@ -394,6 +414,12 @@ impl TxSummaryDetector {
                 }
             }
             SborEvent::End { type_id, .. } => {
+                if type_id == TYPE_DECIMAL && self.fee_phase == FeePhase::Value {
+                    let fee = self.extract_decimal();
+                    self.fee.accumulate(&fee);
+                    self.fee_phase = FeePhase::Start;
+                }
+
                 if type_id == TYPE_ADDRESS {
                     match self.decoding_phase {
                         DecodingPhase::AddressWithdraw => {
@@ -434,9 +460,11 @@ impl TxSummaryDetector {
                 self.decoding_phase = DecodingPhase::ExpectDeposit;
             }
             DecodingPhase::ExpectWithdraw => {
-                if self.data.as_slice() == b"withdraw" {
-                    self.decoding_phase = DecodingPhase::WithdrawDone;
-                } else if self.data.as_slice() == b"withdraw_non_fungibles" {
+                if self.data.eq(b"withdraw")
+                    || self.data.eq(b"withdraw_non_fungibles")
+                    || self.data.eq(b"lock_fee_and_withdraw")
+                    || self.data.eq(b"lock_fee_and_withdraw_non_fungibles")
+                {
                     self.decoding_phase = DecodingPhase::WithdrawDone;
                 } else {
                     // Restart decoding
@@ -445,7 +473,10 @@ impl TxSummaryDetector {
             }
 
             DecodingPhase::ExpectDeposit => {
-                if self.data.as_slice() == b"try_deposit_or_abort" {
+                if self.data.eq(b"deposit")
+                    || self.data.eq(b"try_deposit_or_abort")
+                    || self.data.eq(b"try_deposit_or_refund")
+                {
                     self.decoding_phase = DecodingPhase::DoneTransfer;
                 } else {
                     self.decoding_phase = DecodingPhase::NonConformingTransaction;
@@ -484,8 +515,12 @@ impl TxSummaryDetector {
 
         match self.fee_phase {
             FeePhase::Name => {
-                if self.data.as_slice() == b"lock_fee" {
+                if self.data.eq(b"lock_fee") {
                     self.fee_phase = FeePhase::Value;
+                } else if self.data.eq(b"lock_fee_and_withdraw")
+                    || self.data.eq(b"lock_fee_and_withdraw_non_fungibles")
+                {
+                    self.fee_phase = FeePhase::ValueStart;
                 } else {
                     self.fee_phase = FeePhase::Start;
                 }

@@ -70,6 +70,10 @@ pub mod tests {
             data: &TX_RESOURCE_RECALL,
         },
         Blob {
+            name: "resource_recall_nonfungibles",
+            data: &TX_RESOURCE_RECALL_NONFUNGIBLES,
+        },
+        Blob {
             name: "resource_worktop",
             data: &TX_RESOURCE_WORKTOP,
         },
@@ -86,12 +90,24 @@ pub mod tests {
             data: &TX_SIMPLE_TRANSFER,
         },
         Blob {
+            name: "simple_transfer_new_format",
+            data: &TX_SIMPLE_TRANSFER_NEW_FORMAT,
+        },
+        Blob {
             name: "simple_transfer_nft",
             data: &TX_SIMPLE_TRANSFER_NFT,
         },
         Blob {
+            name: "simple_transfer_nft_new_format",
+            data: &TX_SIMPLE_TRANSFER_NFT_NEW_FORMAT,
+        },
+        Blob {
             name: "simple_transfer_nft_by_id",
             data: &TX_SIMPLE_TRANSFER_NFT_BY_ID,
+        },
+        Blob {
+            name: "simple_transfer_nft_by_id_new_format",
+            data: &TX_SIMPLE_TRANSFER_NFT_BY_ID_NEW_FORMAT,
         },
         Blob {
             name: "simple_transfer_with_multiple_locked_fees",

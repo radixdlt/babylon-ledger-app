@@ -6,14 +6,14 @@ use sbor::utilities::conversion::{to_hex_str, to_str};
 pub mod version;
 
 pub fn debug_u32(value: u32) {
-    debug_prepared_message(&to_str(value));
+    debug_print_u8(&to_str(value));
 }
 
 pub fn debug_u32_hex(value: u32) {
-    debug_prepared_message(&to_hex_str(value));
+    debug_print_u8(&to_hex_str(value));
 }
 
-pub fn debug_prepared_message(message: &[u8]) {
+pub fn debug_print_u8(message: &[u8]) {
     debug_print(from_utf8(message).unwrap());
     debug_print("\n");
 }
