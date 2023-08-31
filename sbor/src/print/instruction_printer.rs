@@ -1,3 +1,4 @@
+use crate::bech32::address::Address;
 use crate::bech32::network::*;
 use crate::instruction::InstructionInfo;
 use crate::instruction_extractor::ExtractorEvent;
@@ -14,7 +15,6 @@ use crate::print::primitives::*;
 use crate::print::state::{ParameterPrinterState, ValueState};
 use crate::print::tty::TTY;
 use crate::print::tuple::TUPLE_PARAMETER_PRINTER;
-use crate::bech32::address::Address;
 use crate::sbor_decoder::{SborEvent, SubTypeKind};
 use crate::type_info::*;
 
@@ -342,9 +342,9 @@ impl Dispatcher {
 
 #[cfg(test)]
 mod tests {
+    use crate::bech32::address::Address;
     use core::cmp::min;
     use core::str::from_utf8;
-    use crate::bech32::address::Address;
 
     use crate::bech32::network::NetworkId;
     use crate::instruction_extractor::*;

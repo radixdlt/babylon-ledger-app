@@ -1,4 +1,5 @@
 use nanos_sdk::io::Comm;
+use sbor::bech32::address::Address;
 use sbor::decoder_error::DecoderError;
 use sbor::digest::digest::Digest;
 use sbor::math::Decimal;
@@ -7,7 +8,6 @@ use sbor::print::tx_intent_type::TxIntentType;
 use sbor::print::tx_summary_detector::DetectedTxType;
 use sbor::sbor_decoder::{DecodingOutcome, SborDecoder};
 use sbor::utilities::conversion::{lower_as_hex, upper_as_hex};
-use sbor::bech32::address::Address;
 
 use crate::app_error::AppError;
 use crate::command_class::CommandClass;

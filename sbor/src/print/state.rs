@@ -1,9 +1,9 @@
 use core::ops::Range;
 
+use crate::bech32::address::Address;
 use crate::bech32::network::*;
 use crate::print::primitives::print_u32;
 use crate::print::tty::TTY;
-use crate::bech32::address::Address;
 use crate::sbor_decoder::STACK_DEPTH;
 use crate::static_vec::StaticVec;
 

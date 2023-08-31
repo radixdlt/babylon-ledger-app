@@ -1,6 +1,6 @@
-use core::ptr::write_bytes;
 use crate::bech32::address::Address;
 use crate::type_info::ADDRESS_STATIC_LEN;
+use core::ptr::write_bytes;
 
 use crate::utilities::conversion::{lower_as_hex, upper_as_hex};
 
@@ -37,12 +37,12 @@ impl Digest {
         }
         output
     }
-    
+
     pub fn as_address(&self, entity_type: u8) -> Address {
         let mut address = Address::new();
         address.copy_from_slice(&self.0[COPY_FROM..COPY_TO]);
         address.set_entity_type(entity_type);
-        
+
         address
     }
 }

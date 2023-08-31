@@ -1,10 +1,10 @@
+use crate::sign::tx_state::info_message;
+use crate::ui::multipage_validator::MultipageValidator;
 use nanos_sdk::io::Comm;
 use sbor::bech32::address::Address;
 use sbor::bech32::encoder::Bech32;
 use sbor::bech32::network::NetworkId;
 use sbor::static_vec::StaticVec;
-use crate::sign::tx_state::info_message;
-use crate::ui::multipage_validator::MultipageValidator;
 
 pub fn verify_address(address: Address, network_id: NetworkId, comm: &mut Comm) {
     let mut vec = StaticVec::<u8, { Bech32::MAX_LEN }>::new(0);

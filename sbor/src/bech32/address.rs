@@ -53,7 +53,7 @@ impl Address {
         self.address.copy_from_slice(src);
         self.is_set = true;
     }
-    
+
     pub fn copy_from_other(&mut self, other: &Address) {
         self.is_set = other.is_set;
 
