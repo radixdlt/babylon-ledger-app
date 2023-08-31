@@ -1,3 +1,4 @@
+use crate::bech32::address::Address;
 use crate::bech32::network::*;
 use crate::instruction::InstructionInfo;
 use crate::instruction_extractor::ExtractorEvent;
@@ -14,7 +15,6 @@ use crate::print::primitives::*;
 use crate::print::state::{ParameterPrinterState, ValueState};
 use crate::print::tty::TTY;
 use crate::print::tuple::TUPLE_PARAMETER_PRINTER;
-use crate::print::tx_summary_detector::Address;
 use crate::sbor_decoder::{SborEvent, SubTypeKind};
 use crate::type_info::*;
 
@@ -342,6 +342,7 @@ impl Dispatcher {
 
 #[cfg(test)]
 mod tests {
+    use crate::bech32::address::Address;
     use core::cmp::min;
     use core::str::from_utf8;
 
@@ -350,7 +351,7 @@ mod tests {
     use crate::print::fanout::Fanout;
     use crate::print::tty::TTY;
     use crate::print::tx_intent_type::TxIntentType;
-    use crate::print::tx_summary_detector::{Address, DetectedTxType, TxSummaryDetector};
+    use crate::print::tx_summary_detector::{DetectedTxType, TxSummaryDetector};
     use crate::sbor_decoder::*;
     use crate::static_vec::AsSlice;
     use crate::tx_intent_test_data::tests::*;
@@ -615,7 +616,7 @@ br##"
             &TX_CREATE_ACCESS_CONTROLLER,
 br##"
 1 of 2: TakeAllFromWorktop Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq)
-2 of 2: CallFunction Address(package_loc1pkgxxxxxxxxxcntrlrxxxxxxxxx000648572295xxxxxxxxxhwh0tz) "AccessController" "create_global" Tuple(Bucket(0u32), Tuple(Enum<1u8>(), Enum<1u8>(), Enum<1u8>(), ), Enum<0u8>(), )
+2 of 2: CallFunction Address(package_loc1pkgxxxxxxxxxcntrlrxxxxxxxxx000648572295xxxxxxxxxhwh0tz) "AccessController" "create" Tuple(Bucket(0u32), Tuple(Enum<1u8>(), Enum<1u8>(), Enum<1u8>(), ), Enum<0u8>(), )
 "##,
             &DetectedTxType::Other(None),
         );
@@ -671,7 +672,7 @@ br##"
             &TX_CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY,
 br##"
 1 of 3: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "lock_fee" Tuple(Decimal(500), )
-2 of 3: CallFunction Address(package_loc1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxvyv0vc) "NonFungibleResourceManager" "create_with_initial_supply" Tuple(Enum<0u8>(), Enum<1u8>(), true, Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>(), ), Enum<0u8>(66u8, ), Array<String>(), ), Map<NonFungibleLocalId, Tuple>({#12u64#, Tuple(Tuple(), )}, ), Tuple(Enum<1u8>(Tuple(Enum<1u8>(Enum<0u8>(), ), Enum<1u8>(Enum<1u8>(), ), ), ), Enum<0u8>(), Enum<0u8>(), Enum<0u8>(), Enum<0u8>(), Enum<0u8>(), Enum<0u8>(), ), Tuple(Map<String, Tuple>({"name", Tuple(Enum<1u8>(Enum<0u8>("MyResource", ), ), true, )}, ), Map<String, Enum>({"metadata_setter", Enum<1u8>(Enum<0u8>(), )}, {"metadata_setter_updater", Enum<0u8>()}, {"metadata_locker", Enum<1u8>(Enum<1u8>(), )}, {"metadata_locker_updater", Enum<0u8>()}, ), ), Enum<0u8>(), )
+2 of 3: CallFunction Address(package_loc1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxvyv0vc) "NonFungibleResourceManager" "create_with_initial_supply" Tuple(Enum<0u8>(), Enum<1u8>(), true, Tuple(Enum<0u8>(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>(), ), ), Enum<0u8>(66u8, ), Array<String>(), ), Map<NonFungibleLocalId, Tuple>({#12u64#, Tuple(Tuple(), )}, ), Tuple(Enum<1u8>(Tuple(Enum<1u8>(Enum<0u8>(), ), Enum<1u8>(Enum<1u8>(), ), ), ), Enum<0u8>(), Enum<0u8>(), Enum<0u8>(), Enum<0u8>(), Enum<0u8>(), Enum<0u8>(), ), Tuple(Map<String, Tuple>({"name", Tuple(Enum<1u8>(Enum<0u8>("MyResource", ), ), true, )}, ), Map<String, Enum>({"metadata_setter", Enum<1u8>(Enum<0u8>(), )}, {"metadata_setter_updater", Enum<0u8>()}, {"metadata_locker", Enum<1u8>(Enum<1u8>(), )}, {"metadata_locker_updater", Enum<0u8>()}, ), ), Enum<0u8>(), )
 3 of 3: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "deposit_batch" Tuple(Expression(ENTIRE_WORKTOP), )
 "##,
             &DetectedTxType::Other(Some(Decimal::whole(500))),
@@ -683,7 +684,7 @@ br##"
             &TX_CREATE_NON_FUNGIBLE_RESOURCE_WITH_NO_INITIAL_SUPPLY,
 br##"
 1 of 2: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "lock_fee" Tuple(Decimal(500), )
-2 of 2: CallFunction Address(package_loc1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxvyv0vc) "NonFungibleResourceManager" "create" Tuple(Enum<0u8>(), Enum<1u8>(), true, Tuple(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>(), ), Enum<0u8>(66u8, ), Array<String>(), ), Tuple(Enum<1u8>(Tuple(Enum<1u8>(Enum<0u8>(), ), Enum<1u8>(Enum<1u8>(), ), ), ), Enum<0u8>(), Enum<0u8>(), Enum<0u8>(), Enum<0u8>(), Enum<0u8>(), Enum<0u8>(), ), Tuple(Map<String, Tuple>({"name", Tuple(Enum<1u8>(Enum<0u8>("MyResource", ), ), true, )}, ), Map<String, Enum>({"metadata_setter", Enum<1u8>(Enum<0u8>(), )}, {"metadata_setter_updater", Enum<0u8>()}, {"metadata_locker", Enum<1u8>(Enum<1u8>(), )}, {"metadata_locker_updater", Enum<0u8>()}, ), ), Enum<0u8>(), )
+2 of 2: CallFunction Address(package_loc1pkgxxxxxxxxxresrcexxxxxxxxx000538436477xxxxxxxxxvyv0vc) "NonFungibleResourceManager" "create" Tuple(Enum<0u8>(), Enum<1u8>(), true, Tuple(Enum<0u8>(Tuple(Array<Enum>(), Array<Tuple>(), Array<Enum>(), ), ), Enum<0u8>(66u8, ), Array<String>(), ), Tuple(Enum<1u8>(Tuple(Enum<1u8>(Enum<0u8>(), ), Enum<1u8>(Enum<1u8>(), ), ), ), Enum<0u8>(), Enum<0u8>(), Enum<0u8>(), Enum<0u8>(), Enum<0u8>(), Enum<0u8>(), ), Tuple(Map<String, Tuple>({"name", Tuple(Enum<1u8>(Enum<0u8>("MyResource", ), ), true, )}, ), Map<String, Enum>({"metadata_setter", Enum<1u8>(Enum<0u8>(), )}, {"metadata_setter_updater", Enum<0u8>()}, {"metadata_locker", Enum<1u8>(Enum<1u8>(), )}, {"metadata_locker_updater", Enum<0u8>()}, ), ), Enum<0u8>(), )
 "##,
             &DetectedTxType::Other(Some(Decimal::whole(500))),
         );

@@ -16,6 +16,8 @@ pub enum Command {
     SignTxSecp256k1Summary,
     SignAuthEd25519,
     SignAuthSecp256k1,
+    VerifyAddressEd25519,
+    VerifyAddressSecp256k1,
     BadCommand,
 }
 
@@ -37,6 +39,8 @@ impl TryFrom<ApduHeader> for Command {
             0x52 => Ok(Command::SignTxSecp256k1Summary),
             0x61 => Ok(Command::SignAuthEd25519),
             0x71 => Ok(Command::SignAuthSecp256k1),
+            0x81 => Ok(Command::VerifyAddressEd25519),
+            0x91 => Ok(Command::VerifyAddressSecp256k1),
             _ => Err(AppError::NotImplemented),
         }
     }

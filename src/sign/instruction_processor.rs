@@ -1,4 +1,5 @@
 use nanos_sdk::io::Comm;
+use sbor::bech32::address::Address;
 use sbor::bech32::network::NetworkId;
 use sbor::digest::digest::Digest;
 use sbor::digest::tx_hash_calculator::TxHashCalculator;
@@ -8,7 +9,7 @@ use sbor::print::fanout::Fanout;
 use sbor::print::instruction_printer::InstructionPrinter;
 use sbor::print::tty::TTY;
 use sbor::print::tx_intent_type::TxIntentType;
-use sbor::print::tx_summary_detector::{Address, DetectedTxType, TxSummaryDetector};
+use sbor::print::tx_summary_detector::{DetectedTxType, TxSummaryDetector};
 use sbor::sbor_decoder::{SborEvent, SborEventHandler};
 
 use crate::app_error::AppError;

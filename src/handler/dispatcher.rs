@@ -27,6 +27,8 @@ pub fn dispatcher<T: Copy>(
         Command::SignTxSecp256k1Summary => sign_tx_secp256k1_summary::handle(comm, class, state),
         Command::SignAuthEd25519 => sign_auth_ed25519::handle(comm, class, state),
         Command::SignAuthSecp256k1 => sign_auth_secp256k1::handle(comm, class, state),
+        Command::VerifyAddressEd25519 => verify_address_ed25519::handle(comm),
+        Command::VerifyAddressSecp256k1 => verify_address_secp256k1::handle(comm),
         Command::BadCommand => Err(AppError::NotImplemented),
     }
 }
