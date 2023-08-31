@@ -143,6 +143,21 @@ impl KeyPairSecp256k1 {
         comm.append(&self.origin.public.W[1..1 + PUB_KEY_X_COORDINATE_SIZE]);
     }
 
+    pub fn public_bytes(&self) -> [u8; SECP256K1_PUBLIC_KEY_LEN] {
+        let mut pk = [0u8; SECP256K1_PUBLIC_KEY_LEN];
+
+        let key_parity = if self.origin.public.W[PUB_KEY_UNCOMPRESSED_LAST_BYTE] % 2 == 0 {
+            PUB_KEY_TYPE_COMPRESSED_Y_EVEN
+        } else {
+            PUB_KEY_TYPE_COMPRESSED_Y_ODD
+        };
+
+        pk[0] = key_parity;
+        pk[1..].copy_from_slice(&self.origin.public.W[1..1 + PUB_KEY_X_COORDINATE_SIZE]);
+
+        pk
+    }
+
     pub fn private(&self) -> &[u8] {
         &self.origin.private.d
     }

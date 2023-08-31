@@ -4,9 +4,10 @@ use sbor::digest::digest::Digest;
 use sbor::math::Decimal;
 use sbor::print::tty::TTY;
 use sbor::print::tx_intent_type::TxIntentType;
-use sbor::print::tx_summary_detector::{Address, DetectedTxType};
+use sbor::print::tx_summary_detector::DetectedTxType;
 use sbor::sbor_decoder::{DecodingOutcome, SborDecoder};
 use sbor::utilities::conversion::{lower_as_hex, upper_as_hex};
+use sbor::bech32::address::Address;
 
 use crate::app_error::AppError;
 use crate::command_class::CommandClass;
@@ -17,7 +18,7 @@ use crate::ui::multiline_scroller::MultilineMessageScroller;
 use crate::ui::multipage_validator::MultipageValidator;
 use crate::ui::single_message::SingleMessage;
 
-fn info_message(title: &[u8], message: &[u8]) {
+pub fn info_message(title: &[u8], message: &[u8]) {
     MultilineMessageScroller::with_title(
         core::str::from_utf8(title).unwrap(),
         core::str::from_utf8(message).unwrap(),

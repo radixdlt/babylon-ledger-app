@@ -14,7 +14,7 @@ use crate::print::primitives::*;
 use crate::print::state::{ParameterPrinterState, ValueState};
 use crate::print::tty::TTY;
 use crate::print::tuple::TUPLE_PARAMETER_PRINTER;
-use crate::print::tx_summary_detector::Address;
+use crate::bech32::address::Address;
 use crate::sbor_decoder::{SborEvent, SubTypeKind};
 use crate::type_info::*;
 
@@ -344,13 +344,14 @@ impl Dispatcher {
 mod tests {
     use core::cmp::min;
     use core::str::from_utf8;
+    use crate::bech32::address::Address;
 
     use crate::bech32::network::NetworkId;
     use crate::instruction_extractor::*;
     use crate::print::fanout::Fanout;
     use crate::print::tty::TTY;
     use crate::print::tx_intent_type::TxIntentType;
-    use crate::print::tx_summary_detector::{Address, DetectedTxType, TxSummaryDetector};
+    use crate::print::tx_summary_detector::{DetectedTxType, TxSummaryDetector};
     use crate::sbor_decoder::*;
     use crate::static_vec::AsSlice;
     use crate::tx_intent_test_data::tests::*;
