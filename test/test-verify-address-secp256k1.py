@@ -31,7 +31,7 @@ def call_and_check(path, expected_pub_key):
     response = dongle.exchange(bytes.fromhex(instructionClass + instructionCode + p1 + p2 + data_length + data))
     pk = response.decode('utf-8')[1:]
     assert pk == expected_pub_key, "Invalid address\nExpected: " + expected_pub_key + "\nReceived: " + pk
-    print("Success")
+    print(path, " - Success")
 
 
 # --------------------------------------------------------------------------------------------
@@ -71,28 +71,5 @@ test_vectors = [
     ("m/44H/1022H/0H/0/9", "account_rdx168l3drrzhjnlc9a57hmvt6rykhj5l3hrljpj7juu52rgdcyuey7xft"),
 ]
 
-print("Testing", "VerifyAddressEd25519", instructionCode)
-
 for vector in test_vectors:
     call_and_check(vector[0], vector[1])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
