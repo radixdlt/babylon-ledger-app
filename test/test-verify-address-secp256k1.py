@@ -73,24 +73,3 @@ test_vectors = [
 
 for vector in test_vectors:
     call_and_check(vector[0], vector[1])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

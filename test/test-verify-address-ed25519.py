@@ -33,6 +33,7 @@ def call_and_check(path, expected_pub_key):
     assert pk == expected_pub_key, "Invalid address\nExpected: " + expected_pub_key + "\nReceived: " + pk
     print(path, " - Success")
 
+
 # --------------------------------------------------------------------------------------------
 # disable printing stack trace
 sys.tracebacklimit = 0
@@ -68,21 +69,3 @@ test_vectors = [
 
 for vector in test_vectors:
     call_and_check(vector[0], vector[1])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
