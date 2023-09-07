@@ -1,6 +1,6 @@
 [package]
 name = "babylon-ledger-app"
-version = "0.5.8"
+version = "0.5.9-rcnet-v3.1"
 authors = ["siy"]
 edition = "2021"
 description = "Radix Babylon"

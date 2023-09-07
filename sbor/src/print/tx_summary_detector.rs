@@ -56,6 +56,26 @@ pub enum DetectedTxType {
     Error(Option<Decimal>),
 }
 
+trait SameString {
+    fn eq(&self, other: &[u8]) -> bool;
+}
+
+impl SameString for StaticVec<u8, { MAX_TX_DATA_SIZE }> {
+    fn eq(&self, other: &[u8]) -> bool {
+        let data = self.as_slice();
+
+        if data.len() != other.len() {
+            return false;
+        }
+        for i in 0..data.len() {
+            if data[i] != other[i] {
+                return false;
+            }
+        }
+        true
+    }
+}
+
 #[cfg(test)]
 impl DetectedTxType {
     pub fn is_same(&self, other: &DetectedTxType) -> bool {
@@ -316,10 +336,10 @@ impl TxSummaryDetector {
             }
 
             DecodingPhase::ExpectWithdraw => {
-                if self.data.as_slice() == b"withdraw"
-                    || self.data.as_slice() == b"withdraw_non_fungibles"
-                    || self.data.as_slice() == b"lock_fee_and_withdraw"
-                    || self.data.as_slice() == b"lock_fee_and_withdraw_non_fungibles"
+                if self.data.eq(b"withdraw")
+                    || self.data.eq(b"withdraw_non_fungibles")
+                    || self.data.eq(b"lock_fee_and_withdraw")
+                    || self.data.eq(b"lock_fee_and_withdraw_non_fungibles")
                 {
                     self.decoding_phase = DecodingPhase::WithdrawDone;
                 } else {
@@ -329,9 +349,9 @@ impl TxSummaryDetector {
             }
 
             DecodingPhase::ExpectDeposit => {
-                if self.data.as_slice() == b"deposit"
-                    || self.data.as_slice() == b"try_deposit_or_abort"
-                    || self.data.as_slice() == b"try_deposit_or_refund"
+                if self.data.eq(b"deposit")
+                    || self.data.eq(b"try_deposit_or_abort")
+                    || self.data.eq(b"try_deposit_or_refund")
                 {
                     self.decoding_phase = DecodingPhase::DoneTransfer;
                 } else {
@@ -371,10 +391,10 @@ impl TxSummaryDetector {
 
         match self.fee_phase {
             FeePhase::Name => {
-                if self.data.as_slice() == b"lock_fee" {
+                if self.data.eq(b"lock_fee") {
                     self.fee_phase = FeePhase::Value;
-                } else if self.data.as_slice() == b"lock_fee_and_withdraw"
-                    || self.data.as_slice() == b"lock_fee_and_withdraw_non_fungibles"
+                } else if self.data.eq(b"lock_fee_and_withdraw")
+                    || self.data.eq(b"lock_fee_and_withdraw_non_fungibles")
                 {
                     self.fee_phase = FeePhase::ValueStart;
                 } else {

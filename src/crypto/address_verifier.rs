@@ -11,8 +11,7 @@ pub fn verify_address(address: Address, network_id: NetworkId, comm: &mut Comm) 
     address.format(&mut vec, network_id);
 
     info_message(b"Address:", vec.as_slice());
-
-    let rc = MultipageValidator::new(&[&"Address Correct?"], &[&"Yes"], &[&"No"]).ask();
+    let rc = MultipageValidator::new(&[&"Address", &"Correct?"], &[&"Yes"], &[&"No"]).ask();
 
     if rc {
         comm.append(&[0x01])
