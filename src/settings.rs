@@ -1,6 +1,5 @@
 use nanos_sdk::nvm::{AtomicStorage, SingleStorage};
 use nanos_sdk::Pic;
-use sbor::debug::debug_print;
 
 const BIT_VERBOSE_MODE: u32 = 0x01;
 const BIT_HASH_SIGN: u32 = 0x02;
@@ -16,15 +15,8 @@ pub struct Settings {
 
 impl Settings {
     pub fn get() -> Self {
-        debug_print("Settings::get 1\n");
-
         let settings = unsafe { SETTINGS.get_mut() };
-
-        debug_print("Settings::get 2\n");
-
         let value = *settings.get_ref();
-
-        debug_print("Settings::get 3\n");
 
         Settings {
             verbose_mode: (value & BIT_VERBOSE_MODE) == 0,

@@ -7,8 +7,8 @@ use crate::command_class::CommandClass;
 use crate::crypto::bip32::Bip32Path;
 use crate::crypto::ed25519::KeyPair25519;
 use crate::crypto::secp256k1::KeyPairSecp256k1;
-use crate::sign::sign_outcome::SignOutcome;
 use crate::sign::sign_mode::SignMode;
+use crate::sign::sign_outcome::SignOutcome;
 
 #[repr(align(4))]
 pub struct SigningFlowState {

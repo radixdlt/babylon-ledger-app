@@ -73,9 +73,9 @@ impl<T: Copy> TxState<T> {
 
         let sign_mode = match (curve, settings.verbose_mode) {
             (Curve::Ed25519, true) => SignMode::Ed25519Verbose,
-            (Curve::Secp256k1, true) => SignMode::Ed25519Verbose,
+            (Curve::Secp256k1, true) => SignMode::Secp256k1Verbose,
             (Curve::Ed25519, false) => SignMode::Ed25519Summary,
-            (Curve::Secp256k1, false) => SignMode::Ed25519Summary,
+            (Curve::Secp256k1, false) => SignMode::Secp256k1Summary,
         };
 
         self.process_sign_with_mode(comm, class, sign_mode, TxIntentType::Transfer)
@@ -272,7 +272,7 @@ impl<T: Copy> TxState<T> {
                         utils::info_message(b"TX Hash:", &digest.as_hex());
                         Ok(self.show_transaction_fee(&detected_type))
                     } else {
-                        utils::error_message("Blind signing must be enabled in Settings");
+                        utils::error_message("\nBlind signing must\nbe enabled in Settings");
                         Err(AppError::BadTxSignHashSignState)
                     }
                 }

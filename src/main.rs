@@ -9,7 +9,6 @@
 use nanos_sdk::io::{Comm, Event};
 use nanos_ui::bagls::{CERTIFICATE_ICON, COGGLE_ICON, DASHBOARD_X_ICON, PROCESSING_ICON};
 use nanos_ui::ui::clear_screen;
-use sbor::debug::debug_print;
 
 use handler::dispatcher;
 
@@ -53,19 +52,15 @@ fn version_menu_action() -> bool {
 }
 
 fn get_verbose_mode_state() -> bool {
-    debug_print("get_verbose_mode_state\n");
     Settings::get().verbose_mode
 }
 
 fn get_blind_signing_state() -> bool {
-    debug_print("get_blind_signing_state\n");
     Settings::get().blind_signing
 }
 
 fn settings_menu_action() -> bool {
-    debug_print("settings_menu_action\n");
     clear_screen();
-    debug_print("screen cleared\n");
 
     let menu = [
         MenuItem::new(
@@ -125,7 +120,6 @@ fn blind_signing_setting_action() -> bool {
 }
 
 fn back_from_setting_action() -> bool {
-    clear_screen();
     true
 }
 

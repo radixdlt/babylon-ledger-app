@@ -3,7 +3,6 @@ use nanos_ui::bagls::{Icon, LEFT_ARROW, LEFT_S_ARROW, RIGHT_ARROW, RIGHT_S_ARROW
 use nanos_ui::layout::Draw;
 use nanos_ui::screen_util::screen_update;
 use nanos_ui::ui::{clear_screen, get_event};
-use sbor::debug::debug_print;
 
 use crate::ui::utils::{CenteredText, LeftAlignedMiddle};
 
@@ -120,7 +119,6 @@ impl<'a> Menu<'a> {
             ButtonEvent::BothButtonsRelease => {
                 LEFT_S_ARROW.erase();
                 RIGHT_S_ARROW.erase();
-                debug_print("invoke menu action\n");
                 let result = (self.items[self.current].action)();
                 self.display();
                 result

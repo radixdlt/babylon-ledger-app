@@ -37,7 +37,7 @@ pub enum AppError {
     BadTxSignType = 0x6e35,
     BadTxSignDigestState = 0x6e36,
     BadTxSignRequestedState = 0x6e37,
-    BadTxSignHashSignState = 0x6e38,    // Hash signing is disabled
+    BadTxSignHashSignState = 0x6e38, // Hash signing is disabled
 
     BadTxSignDecoderErrorInvalidInput = 0x6e41,
     BadTxSignDecoderErrorInvalidLen = 0x6e42,

@@ -1,8 +1,10 @@
-use crate::ui::utils::CenteredText;
 use nanos_sdk::buttons::{ButtonEvent, ButtonsState};
 use nanos_ui::bagls::{Icon, RIGHT_ARROW, RIGHT_S_ARROW};
 use nanos_ui::layout::Draw;
 use nanos_ui::ui::{clear_screen, get_event};
+use nanos_ui::SCREEN_WIDTH;
+
+use crate::ui::utils::CenteredText;
 
 pub enum MessageFeature<'a> {
     Plain,
@@ -54,7 +56,7 @@ impl<'a> SingleMessage<'a> {
             MessageFeature::WithIcon(icon) => {
                 let new_icon = Icon {
                     icon: icon.icon,
-                    pos: (18, icon.pos.1),
+                    pos: ((SCREEN_WIDTH / 2) as i16, 0),
                 };
 
                 new_icon.display();

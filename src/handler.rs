@@ -1,6 +1,6 @@
 pub mod dispatcher;
-mod get_app_version;
 mod get_app_settings;
+mod get_app_version;
 mod get_device_id;
 mod get_device_model;
 mod get_public_key_ed25519;

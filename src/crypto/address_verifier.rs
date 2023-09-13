@@ -1,5 +1,5 @@
-use crate::ui::utils::info_message;
 use crate::ui::multipage_validator::MultipageValidator;
+use crate::ui::utils::info_message;
 use nanos_sdk::io::Comm;
 use sbor::bech32::address::Address;
 use sbor::bech32::encoder::Bech32;

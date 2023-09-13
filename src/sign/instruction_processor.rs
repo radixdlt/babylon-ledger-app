@@ -15,8 +15,8 @@ use sbor::sbor_decoder::{SborEvent, SborEventHandler};
 use crate::app_error::AppError;
 use crate::command_class::CommandClass;
 use crate::crypto::hash::Blake2bHasher;
-use crate::sign::sign_outcome::SignOutcome;
 use crate::sign::sign_mode::SignMode;
+use crate::sign::sign_outcome::SignOutcome;
 use crate::sign::signing_flow_state::SigningFlowState;
 
 pub struct InstructionProcessor<T: Copy> {
