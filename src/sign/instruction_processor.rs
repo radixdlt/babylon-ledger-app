@@ -15,8 +15,8 @@ use sbor::sbor_decoder::{SborEvent, SborEventHandler};
 use crate::app_error::AppError;
 use crate::command_class::CommandClass;
 use crate::crypto::hash::Blake2bHasher;
+use crate::sign::sign_mode::SignMode;
 use crate::sign::sign_outcome::SignOutcome;
-use crate::sign::sign_type::SignType;
 use crate::sign::signing_flow_state::SigningFlowState;
 
 pub struct InstructionProcessor<T: Copy> {
@@ -53,10 +53,10 @@ impl<T: Copy> InstructionProcessor<T> {
     pub fn sign_tx(
         &self,
         comm: &mut Comm,
-        tx_type: SignType,
+        sign_mode: SignMode,
         digest: &Digest,
     ) -> Result<SignOutcome, AppError> {
-        self.state.sign_tx(comm, tx_type, digest)
+        self.state.sign_tx(comm, sign_mode, digest)
     }
 
     pub fn auth_digest(
@@ -73,12 +73,12 @@ impl<T: Copy> InstructionProcessor<T> {
     }
 
     pub fn set_network(&mut self) -> Result<(), AppError> {
-        match self.state.sign_type() {
-            SignType::Ed25519 | SignType::Ed25519Summary | SignType::AuthEd25519 => {
+        match self.state.sign_mode() {
+            SignMode::Ed25519Verbose | SignMode::Ed25519Summary | SignMode::AuthEd25519 => {
                 let network_id = self.state.network_id()?;
                 self.printer.set_network(network_id);
             }
-            SignType::Secp256k1 | SignType::Secp256k1Summary | SignType::AuthSecp256k1 => {
+            SignMode::Secp256k1Verbose | SignMode::Secp256k1Summary | SignMode::AuthSecp256k1 => {
                 self.printer.set_network(NetworkId::OlympiaMainNet);
             }
         };
@@ -86,14 +86,14 @@ impl<T: Copy> InstructionProcessor<T> {
     }
 
     pub fn set_show_instructions(&mut self) {
-        match self.state.sign_type() {
-            SignType::Secp256k1Summary
-            | SignType::Ed25519Summary
-            | SignType::AuthEd25519
-            | SignType::AuthSecp256k1 => {
+        match self.state.sign_mode() {
+            SignMode::Secp256k1Summary
+            | SignMode::Ed25519Summary
+            | SignMode::AuthEd25519
+            | SignMode::AuthSecp256k1 => {
                 self.printer.set_show_instructions(false);
             }
-            SignType::Secp256k1 | SignType::Ed25519 => {
+            SignMode::Secp256k1Verbose | SignMode::Ed25519Verbose => {
                 self.printer.set_show_instructions(true);
             }
         };
@@ -119,15 +119,15 @@ impl<T: Copy> InstructionProcessor<T> {
         &mut self,
         comm: &mut Comm,
         class: CommandClass,
-        tx_type: SignType,
+        sign_mode: SignMode,
     ) -> Result<(), AppError> {
         match class {
             CommandClass::Regular => {
-                self.state.init_sign(comm, tx_type)?;
+                self.state.init_sign(comm, sign_mode)?;
                 self.calculator.start()
             }
             CommandClass::Continuation | CommandClass::LastData => {
-                self.state.continue_sign(comm, class, tx_type)
+                self.state.continue_sign(comm, class, sign_mode)
             }
         }
     }
