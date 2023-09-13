@@ -1,4 +1,4 @@
-use crate::sign::tx_state::info_message;
+use crate::ui::utils::info_message;
 use crate::ui::multipage_validator::MultipageValidator;
 use nanos_sdk::io::Comm;
 use sbor::bech32::address::Address;

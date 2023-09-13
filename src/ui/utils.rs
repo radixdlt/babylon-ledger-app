@@ -1,5 +1,5 @@
-use nanos_ui::bagls::Icon;
-use nanos_ui::bitmaps::Glyph;
+use nanos_ui::bagls::{CROSS_ICON, Icon};
+use nanos_ui::bitmaps::{BACK, Glyph};
 use nanos_ui::layout::{Draw, Layout, Location, StringPlace};
 
 pub trait CenteredText {
@@ -47,8 +47,23 @@ impl LeftAlignedMiddle for Icon<'_> {
     }
 }
 
-use crate::ui::multiline_scroller::{LINE1_Y, LINE2_Y, LINE3_Y};
+use crate::ui::multiline_scroller::{LINE1_Y, LINE2_Y, LINE3_Y, MultilineMessageScroller};
 use include_gif::include_gif;
+use crate::ui::single_message::SingleMessage;
 
 pub const RADIX_LOGO: Glyph = Glyph::from_include(include_gif!("icons/nanox_app_radix.gif"));
 pub const RADIX_LOGO_ICON: Icon = Icon::from(&RADIX_LOGO);
+pub const BACK_ICON: Icon = Icon::from(&BACK);
+
+pub fn info_message(title: &[u8], message: &[u8]) {
+    MultilineMessageScroller::with_title(
+        core::str::from_utf8(title).unwrap(),
+        core::str::from_utf8(message).unwrap(),
+        true,
+    )
+    .event_loop();
+}
+
+pub fn error_message(message: &str) {
+    SingleMessage::with_icon(message, CROSS_ICON).show_and_wait();
+}

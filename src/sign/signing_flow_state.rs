@@ -8,11 +8,11 @@ use crate::crypto::bip32::Bip32Path;
 use crate::crypto::ed25519::KeyPair25519;
 use crate::crypto::secp256k1::KeyPairSecp256k1;
 use crate::sign::sign_outcome::SignOutcome;
-use crate::sign::sign_type::SignType;
+use crate::sign::sign_mode::SignMode;
 
 #[repr(align(4))]
 pub struct SigningFlowState {
-    sign_type: SignType,
+    sign_mode: SignMode,
     tx_packet_count: u32,
     tx_size: usize,
     path: Bip32Path,
@@ -21,7 +21,7 @@ pub struct SigningFlowState {
 impl SigningFlowState {
     pub fn new() -> Self {
         Self {
-            sign_type: SignType::Ed25519,
+            sign_mode: SignMode::Ed25519Verbose,
             tx_packet_count: 0,
             tx_size: 0,
             path: Bip32Path::new(0),
@@ -32,26 +32,26 @@ impl SigningFlowState {
         &mut self,
         comm: &mut Comm,
         class: CommandClass,
-        tx_type: SignType,
+        sign_mode: SignMode,
     ) -> Result<(), AppError> {
-        self.validate(class, tx_type)?;
+        self.validate(class, sign_mode)?;
         let data = comm.get_data()?;
         self.update_counters(data.len());
 
         Ok(())
     }
 
-    pub fn init_sign(&mut self, comm: &mut Comm, tx_type: SignType) -> Result<(), AppError> {
-        let path = match tx_type {
-            SignType::Ed25519 | SignType::Ed25519Summary | SignType::AuthEd25519 => {
+    pub fn init_sign(&mut self, comm: &mut Comm, sign_mode: SignMode) -> Result<(), AppError> {
+        let path = match sign_mode {
+            SignMode::Ed25519Verbose | SignMode::Ed25519Summary | SignMode::AuthEd25519 => {
                 Bip32Path::read_cap26(comm)
             }
-            SignType::Secp256k1 | SignType::Secp256k1Summary | SignType::AuthSecp256k1 => {
+            SignMode::Secp256k1Verbose | SignMode::Secp256k1Summary | SignMode::AuthSecp256k1 => {
                 Bip32Path::read_olympia(comm)
             }
         }?;
 
-        self.start(tx_type, path);
+        self.start(sign_mode, path);
         self.update_counters(0); // First packet contains no data
         Ok(())
     }
@@ -67,19 +67,19 @@ impl SigningFlowState {
     }
 
     #[inline(always)]
-    pub fn sign_type(&self) -> SignType {
-        self.sign_type
+    pub fn sign_mode(&self) -> SignMode {
+        self.sign_mode
     }
 
     pub fn reset(&mut self) {
         self.tx_packet_count = 0;
         self.tx_size = 0;
-        self.sign_type = SignType::Ed25519;
+        self.sign_mode = SignMode::Ed25519Summary;
         self.path = Bip32Path::new(0);
     }
 
-    fn start(&mut self, sign_type: SignType, path: Bip32Path) {
-        self.sign_type = sign_type;
+    fn start(&mut self, sign_mode: SignMode, path: Bip32Path) {
+        self.sign_mode = sign_mode;
         self.path = path;
     }
 
@@ -88,9 +88,9 @@ impl SigningFlowState {
         self.tx_packet_count != 0
     }
 
-    fn validate(&self, class: CommandClass, sign_type: SignType) -> Result<(), AppError> {
+    fn validate(&self, class: CommandClass, sign_mode: SignMode) -> Result<(), AppError> {
         if self.sign_started() {
-            self.validate_intermediate(class, sign_type)
+            self.validate_intermediate(class, sign_mode)
         } else {
             self.validate_initial(class)
         }
@@ -99,9 +99,9 @@ impl SigningFlowState {
     fn validate_intermediate(
         &self,
         class: CommandClass,
-        sign_type: SignType,
+        sign_mode: SignMode,
     ) -> Result<(), AppError> {
-        if self.sign_type != sign_type {
+        if self.sign_mode != sign_mode {
             return Err(AppError::BadTxSignType);
         }
 
@@ -122,16 +122,16 @@ impl SigningFlowState {
     pub fn sign_tx(
         &self,
         comm: &mut Comm,
-        tx_type: SignType,
+        sign_mode: SignMode,
         digest: &Digest,
     ) -> Result<SignOutcome, AppError> {
-        match tx_type {
-            SignType::Ed25519 | SignType::Ed25519Summary | SignType::AuthEd25519 => {
+        match sign_mode {
+            SignMode::Ed25519Verbose | SignMode::Ed25519Summary | SignMode::AuthEd25519 => {
                 KeyPair25519::derive(&self.path)
                     .and_then(|keypair| keypair.sign(comm, digest.as_bytes()))
             }
 
-            SignType::Secp256k1 | SignType::Secp256k1Summary | SignType::AuthSecp256k1 => {
+            SignMode::Secp256k1Verbose | SignMode::Secp256k1Summary | SignMode::AuthSecp256k1 => {
                 KeyPairSecp256k1::derive(&self.path)
                     .and_then(|keypair| keypair.sign(comm, digest.as_bytes()))
             }
