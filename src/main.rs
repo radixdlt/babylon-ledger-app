@@ -99,7 +99,7 @@ fn verbose_mode_setting_action() -> bool {
     }
     .update();
 
-    false
+    true
 }
 
 fn blind_signing_setting_action() -> bool {
@@ -116,7 +116,7 @@ fn blind_signing_setting_action() -> bool {
     }
     .update();
 
-    false
+    true
 }
 
 fn back_from_setting_action() -> bool {
