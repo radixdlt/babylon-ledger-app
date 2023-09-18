@@ -27,6 +27,14 @@ impl<'a> SingleMessage<'a> {
         }
     }
 
+    pub fn with_bold(message: &'a str) -> Self {
+        SingleMessage {
+            message,
+            bold: true,
+            feature: MessageFeature::Plain,
+        }
+    }
+
     pub fn with_right_arrow(message: &'a str) -> Self {
         SingleMessage {
             message,
