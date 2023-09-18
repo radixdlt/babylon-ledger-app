@@ -250,12 +250,11 @@ APDU:
 |------|------|------|------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | 0xAA | 0x81 | 0x00 | 0x00 | Derivation path in the following format:<br>byte 0 - number of elements in derivation path<br>bytes 1-5 - first element of derivation path in big endian format<br>bytes 6-9 - second element of derivation path in big endian format<br>... - remaining elements of derivation path |
 
-Response (32 bytes):
+Response:
 
-| Data        | Description                                                                                                                  |
-|-------------|------------------------------------------------------------------------------------------------------------------------------|
-| byte 0      | Result of confirmation of address by user:<br>0 - Address does not match expected one<br>1 - Address does match expected one |    
-| byte 1-...  | bech32m address calculated by the device                                                                                     |    
+| Data       | Description                              |
+|------------|------------------------------------------|
+| byte 0-... | bech32m address calculated by the device |    
 
 ## VerifyAddressSecp256k1
 Verify bech32m address for a given derivation path using Secp256k1 curve.
@@ -266,10 +265,9 @@ APDU:
 |------|------|------|------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | 0xAA | 0x91 | 0x00 | 0x00 | Derivation path in the following format:<br>byte 0 - number of elements in derivation path<br>bytes 1-5 - first element of derivation path in big endian format<br>bytes 6-9 - second element of derivation path in big endian format<br>... - remaining elements of derivation path |
 
-Response (32 bytes):
+Response:
 
-| Data        | Description                                                                                                                  |
-|-------------|------------------------------------------------------------------------------------------------------------------------------|
-| byte 0      | Result of confirmation of address by user:<br>0 - Address does not match expected one<br>1 - Address does match expected one |    
-| byte 1-...  | bech32m address calculated by the device                                                                                     |    
+| Data       | Description                              |
+|------------|------------------------------------------|
+| byte 0-... | bech32m address calculated by the device |    
 
