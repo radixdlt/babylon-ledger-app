@@ -68,6 +68,8 @@ extern "C" fn sample_main() {
     let mut main_menu = Menu::new(&menu);
     let mut ticker = 0i8;
 
+    nanos_ui::ui::popup("Pending Review");
+
     main_menu.display();
 
     loop {
