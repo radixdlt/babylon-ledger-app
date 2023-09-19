@@ -62,12 +62,11 @@ impl<'a> SingleMessage<'a> {
                 RIGHT_S_ARROW.display();
             }
             MessageFeature::WithIcon(icon) => {
-                let new_icon = Icon {
+                Icon {
                     icon: icon.icon,
-                    pos: ((SCREEN_WIDTH / 2) as i16, 0),
-                };
-
-                new_icon.display();
+                    pos: ((SCREEN_WIDTH / 2) as i16, 5),
+                }
+                .display();
             }
         }
     }

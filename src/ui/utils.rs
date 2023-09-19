@@ -40,14 +40,14 @@ pub const DEFAULT_ICON_HEIGHT: usize = 14;
 
 impl LeftAlignedMiddle for Icon<'_> {
     fn draw_left_aligned_middle(&self) {
-        let icon = Icon {
+        Icon {
             icon: self.icon,
-            pos: self.pos,
-        };
-
-        icon.set_x(DEFAULT_PADDING as i16)
-            .set_y(Location::Middle.get_y(DEFAULT_ICON_HEIGHT) as i16)
-            .display();
+            pos: (
+                DEFAULT_PADDING as i16,
+                Location::Middle.get_y(DEFAULT_ICON_HEIGHT) as i16,
+            ),
+        }
+        .display();
     }
 }
 
