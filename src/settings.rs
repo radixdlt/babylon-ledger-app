@@ -1,12 +1,12 @@
 use nanos_sdk::nvm::{AtomicStorage, SingleStorage};
-use nanos_sdk::Pic;
+use nanos_sdk::NVMData;
 
 const BIT_VERBOSE_MODE: u32 = 0x01;
 const BIT_HASH_SIGN: u32 = 0x02;
 
 // Note that bits are stored in inverse mode (0 = true, 1 = false)
 #[link_section = ".nvm_data"]
-static mut SETTINGS: Pic<AtomicStorage<u32>> = Pic::new(AtomicStorage::new(&3));
+static mut SETTINGS: NVMData<AtomicStorage<u32>> = NVMData::new(AtomicStorage::new(&3));
 
 pub struct Settings {
     pub verbose_mode: bool,
