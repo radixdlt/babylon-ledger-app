@@ -102,5 +102,6 @@ jobs:
       - uses: actions/checkout@v2
       - name: Unit tests
         run: |
+          rm -rf .cargo
           cd sbor
           cargo test
