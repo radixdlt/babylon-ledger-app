@@ -1,5 +1,6 @@
 // SBOR type information
 
+use crate::math::{Decimal, PreciseDecimal};
 use core::option::Option;
 use core::prelude::rust_2024::derive;
 
@@ -33,51 +34,33 @@ pub const TYPE_BLOB: u8 = 0x84;
 pub const TYPE_DECIMAL: u8 = 0x85;
 pub const TYPE_PRECISE_DECIMAL: u8 = 0x86;
 pub const TYPE_NON_FUNGIBLE_LOCAL_ID: u8 = 0x87;
-
-pub const SIMPLE_TYPES: [u8; 20] = [
-    TYPE_BOOL,
-    TYPE_I8,
-    TYPE_I16,
-    TYPE_I32,
-    TYPE_I64,
-    TYPE_I128,
-    TYPE_U8,
-    TYPE_U16,
-    TYPE_U32,
-    TYPE_U64,
-    TYPE_U128,
-    TYPE_STRING,
-    TYPE_ADDRESS,
-    TYPE_BUCKET,
-    TYPE_PROOF,
-    TYPE_EXPRESSION,
-    TYPE_BLOB,
-    TYPE_DECIMAL,
-    TYPE_PRECISE_DECIMAL,
-    TYPE_NON_FUNGIBLE_LOCAL_ID,
-];
+pub const TYPE_ADDRESS_RESERVATION: u8 = 0x88;
 
 // end of custom types
-pub const ADDRESS_LEN: u8 = 27; // 1 byte discriminator + 26 bytes address
+pub const ADDRESS_STATIC_LEN: u8 = 30; // 1 byte discriminator + 29 bytes address
+pub const ADDRESS_NAMED_LEN: u8 = 4;
 pub const COMPONENT_LEN: u8 = 36;
 
 pub const INTEGER_LEN: u8 = 8;
-pub const UUID_LEN: u8 = 16;
+pub const RUID_LEN: u8 = 32;
 
 pub const ID_LEN: u8 = 4;
-const BUCKET_LEN: u8 = ID_LEN;
-const PROOF_LEN: u8 = ID_LEN;
-const BLOB_LEN: u8 = 32;
-const DECIMAL_LEN: u8 = 32; // 256 bits
-const PRECISE_DECIMAL_LEN: u8 = 64; // 512 bits
-
-pub const TYPE_DATA_BUFFER_SIZE: usize = 256;
+pub const BUCKET_LEN: u8 = ID_LEN;
+pub const PROOF_LEN: u8 = ID_LEN;
+pub const BLOB_LEN: u8 = 32;
+pub const DECIMAL_LEN: u8 = Decimal::SIZE_IN_BYTES as u8;
+pub const PRECISE_DECIMAL_LEN: u8 = PreciseDecimal::SIZE_IN_BYTES as u8;
 
 // Non-fungible local ID discriminators
 pub const NFL_STRING: u8 = 0;
 pub const NFL_INTEGER: u8 = 1;
 pub const NFL_BYTES: u8 = 2;
-pub const NFL_UUID: u8 = 3;
+pub const NFL_RUID: u8 = 3;
+pub const NFL_MAX_STRING_LENG: usize = 64;
+
+// Address discriminators
+pub const ADDRESS_STATIC: u8 = 0;
+pub const ADDRESS_NAMED: u8 = 1;
 
 #[repr(u8)]
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -90,6 +73,7 @@ pub enum DecoderPhase {
     ReadingData,
     ReadingDiscriminator,
     ReadingNFLDiscriminator,
+    ReadingAddressDiscriminator,
 }
 
 #[repr(C, align(4))]
@@ -138,6 +122,12 @@ const NON_FUNGIBLE_LOCAL_ID_ENCODING: [DecoderPhase; 4] = [
     DecoderPhase::ReadingTypeId,
     DecoderPhase::ReadingNFLDiscriminator,
     DecoderPhase::ReadingLen,
+    DecoderPhase::ReadingData,
+];
+
+const ADDRESS_ENCODING: [DecoderPhase; 3] = [
+    DecoderPhase::ReadingTypeId,
+    DecoderPhase::ReadingAddressDiscriminator,
     DecoderPhase::ReadingData,
 ];
 
@@ -232,8 +222,8 @@ pub fn to_type_info(byte: u8) -> Option<TypeInfo> {
 
         TYPE_ADDRESS => Some(TypeInfo {
             type_id: TYPE_ADDRESS,
-            next_phases: &FIXED_LEN_DECODING,
-            fixed_len: ADDRESS_LEN,
+            next_phases: &ADDRESS_ENCODING,
+            fixed_len: 0,
         }),
 
         TYPE_BUCKET => Some(TypeInfo {
@@ -270,6 +260,11 @@ pub fn to_type_info(byte: u8) -> Option<TypeInfo> {
             type_id: TYPE_NON_FUNGIBLE_LOCAL_ID,
             next_phases: &NON_FUNGIBLE_LOCAL_ID_ENCODING, // Mix of fixed/variable len encoding
             fixed_len: 0,
+        }),
+        TYPE_ADDRESS_RESERVATION => Some(TypeInfo {
+            type_id: TYPE_ADDRESS_RESERVATION,
+            next_phases: &FIXED_LEN_DECODING, // Mix of fixed/variable len encoding
+            fixed_len: 4,
         }),
         _ => None,
     }

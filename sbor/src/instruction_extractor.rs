@@ -2,7 +2,7 @@
 
 use crate::instruction::{to_instruction, InstructionInfo};
 use crate::sbor_decoder::SborEvent;
-use crate::type_info::{to_type_info, TypeInfo, TYPE_ARRAY, TYPE_ENUM, TYPE_NONE, TYPE_TUPLE};
+use crate::type_info::{to_type_info, TypeInfo, TYPE_ENUM, TYPE_NONE, TYPE_TUPLE};
 
 #[repr(u8)]
 #[derive(Copy, Clone, Debug)]
@@ -10,7 +10,6 @@ pub enum ExtractorPhase {
     Init,
     IntentShell,
     HeaderShell,
-    ManifestShell,
     InstructionShell,
     Instruction,
     InstructionParameter,
@@ -78,7 +77,7 @@ impl InstructionExtractor {
     pub fn handle_event(&mut self, handler: &mut impl InstructionHandler, event: SborEvent) {
         match self.phase {
             ExtractorPhase::Init => {
-                if Self::is_start(event, TYPE_TUPLE, 0) {
+                if Self::is_start(event, TYPE_ENUM, 0) {
                     self.phase = ExtractorPhase::IntentShell;
                 }
             }
@@ -88,12 +87,7 @@ impl InstructionExtractor {
                 }
             }
             ExtractorPhase::HeaderShell => {
-                if Self::is_start(event, TYPE_TUPLE, 1) {
-                    self.phase = ExtractorPhase::ManifestShell;
-                }
-            }
-            ExtractorPhase::ManifestShell => {
-                if Self::is_start(event, TYPE_ARRAY, 2) {
+                if Self::is_end(event, TYPE_TUPLE, 1) {
                     self.phase = ExtractorPhase::InstructionShell;
                 }
             }
@@ -106,12 +100,12 @@ impl InstructionExtractor {
                     _ => {}
                 };
 
-                if Self::is_start(event, TYPE_ENUM, 3) {
+                if Self::is_start(event, TYPE_ENUM, 2) {
                     self.phase = ExtractorPhase::Instruction;
                     self.start_instruction();
                 }
 
-                if Self::is_end(event, TYPE_NONE, 2) {
+                if Self::is_end(event, TYPE_NONE, 1) {
                     self.phase = ExtractorPhase::Done;
                 }
             }
@@ -120,18 +114,18 @@ impl InstructionExtractor {
                     return;
                 }
 
-                if Self::is_start(event, TYPE_NONE, 4) {
+                if Self::is_start(event, TYPE_NONE, 3) {
                     self.phase = ExtractorPhase::InstructionParameter;
                     self.process_parameter_start(handler, event);
                 }
 
-                if Self::is_end(event, TYPE_NONE, 3) {
+                if Self::is_end(event, TYPE_NONE, 2) {
                     self.phase = ExtractorPhase::InstructionShell;
                     self.instruction_count += 1;
                 }
             }
             ExtractorPhase::InstructionParameter => {
-                if Self::is_end(event, TYPE_NONE, 4) {
+                if Self::is_end(event, TYPE_NONE, 3) {
                     self.phase = ExtractorPhase::Instruction;
                     handler.handle(ExtractorEvent::ParameterEnd(event));
                     self.parameter_count += 1;
@@ -267,7 +261,7 @@ mod tests {
     }
 
     impl InstructionFormatter {
-        pub const SIZE: usize = 20;
+        pub const SIZE: usize = 50;
         pub fn new() -> Self {
             Self {
                 instruction_count: 0,
@@ -298,17 +292,23 @@ mod tests {
 
     impl InstructionHandler for InstructionFormatter {
         fn handle(&mut self, event: ExtractorEvent) {
-            if let ExtractorEvent::InstructionStart(info, count, total) = event {
-                self.instructions[self.instruction_count] = info.instruction;
-                self.instruction_count += 1;
-                println!(
-                    "Instruction::{:?} {} of {},",
-                    info.instruction,
-                    count + 1,
-                    total
-                );
-            } else {
-                println!("Event: {:?}", event);
+            match event {
+                ExtractorEvent::InstructionStart(info, count, total) => {
+                    self.instructions[self.instruction_count] = info.instruction;
+                    self.instruction_count += 1;
+                    println!(
+                        "Instruction::{:?} {} of {},",
+                        info.instruction,
+                        count + 1,
+                        total
+                    );
+                }
+                ExtractorEvent::UnknownInstruction(_)
+                | ExtractorEvent::InvalidEventSequence
+                | ExtractorEvent::UnknownParameterType(_) => {
+                    assert!(false, "Should not receive this event {:?}", event)
+                }
+                _ => {}
             }
         }
     }
@@ -320,7 +320,7 @@ mod tests {
         let mut handler = InstructionProcessor::new();
 
         let mut start = 0;
-        let mut end = CHUNK_SIZE;
+        let mut end = core::cmp::min(CHUNK_SIZE, input.len());
 
         while start < input.len() {
             match decoder.decode(&mut handler, &input[start..end]) {
@@ -351,7 +351,14 @@ mod tests {
 
     #[test]
     pub fn test_access_rule() {
-        check_partial_decoding(&TX_ACCESS_RULE, &[Instruction::SetMethodAccessRule]);
+        check_partial_decoding(
+            &TX_ACCESS_RULE,
+            &[
+                Instruction::CallRoleAssignmentMethod,
+                Instruction::CallRoleAssignmentMethod,
+                Instruction::CallRoleAssignmentMethod,
+            ],
+        );
     }
 
     #[test]
@@ -361,20 +368,31 @@ mod tests {
 
     #[test]
     pub fn test_call_method() {
-        check_partial_decoding(&TX_CALL_METHOD, &[Instruction::CallMethod]);
+        check_partial_decoding(
+            &TX_CALL_METHOD,
+            &[
+                Instruction::CallMethod,
+                Instruction::CallRoyaltyMethod,
+                Instruction::CallMetadataMethod,
+                Instruction::CallRoleAssignmentMethod,
+            ],
+        );
     }
 
     #[test]
     pub fn test_create_access_controller() {
         check_partial_decoding(
             &TX_CREATE_ACCESS_CONTROLLER,
-            &[Instruction::TakeFromWorktop, Instruction::CallFunction],
+            &[Instruction::TakeAllFromWorktop, Instruction::CallFunction],
         );
     }
 
     #[test]
     pub fn test_create_account() {
-        check_partial_decoding(&TX_CREATE_ACCOUNT, &[Instruction::CallFunction]);
+        check_partial_decoding(
+            &TX_CREATE_ACCOUNT,
+            &[Instruction::CallFunction, Instruction::CallFunction],
+        );
     }
 
     #[test]
@@ -399,7 +417,10 @@ mod tests {
 
     #[test]
     pub fn test_create_identity() {
-        check_partial_decoding(&TX_CREATE_IDENTITY, &[Instruction::CallFunction]);
+        check_partial_decoding(
+            &TX_CREATE_IDENTITY,
+            &[Instruction::CallFunction, Instruction::CallFunction],
+        );
     }
 
     #[test]
@@ -415,26 +436,31 @@ mod tests {
         check_partial_decoding(
             &TX_METADATA,
             &[
-                Instruction::SetMetadata,
-                Instruction::SetMetadata,
-                Instruction::SetMetadata,
-                Instruction::SetMetadata,
-                Instruction::SetMetadata,
-                Instruction::SetMetadata,
-                Instruction::SetMetadata,
-                Instruction::SetMetadata,
-                Instruction::SetMetadata,
-                Instruction::SetMetadata,
-                Instruction::SetMetadata,
-                Instruction::SetMetadata,
-                Instruction::SetMetadata,
-                Instruction::SetMetadata,
-                Instruction::SetMetadata,
-                Instruction::SetMetadata,
-                Instruction::SetMetadata,
-                Instruction::RemoveMetadata,
-                Instruction::RemoveMetadata,
-                Instruction::RemoveMetadata,
+                Instruction::CallMetadataMethod,
+                Instruction::CallMetadataMethod,
+                Instruction::CallMetadataMethod,
+                Instruction::CallMetadataMethod,
+                Instruction::CallMetadataMethod,
+                Instruction::CallMetadataMethod,
+                Instruction::CallMetadataMethod,
+                Instruction::CallMetadataMethod,
+                Instruction::CallMetadataMethod,
+                Instruction::CallMetadataMethod,
+                Instruction::CallMetadataMethod,
+                Instruction::CallMetadataMethod,
+                Instruction::CallMetadataMethod,
+                Instruction::CallMetadataMethod,
+                Instruction::CallMetadataMethod,
+                Instruction::CallMetadataMethod,
+                Instruction::CallMetadataMethod,
+                Instruction::CallMetadataMethod,
+                Instruction::CallMetadataMethod,
+                Instruction::CallMetadataMethod,
+                Instruction::CallMetadataMethod,
+                Instruction::CallMetadataMethod,
+                Instruction::CallMetadataMethod,
+                Instruction::CallMetadataMethod,
+                Instruction::CallMetadataMethod,
             ],
         );
     }
@@ -446,7 +472,7 @@ mod tests {
             &[
                 Instruction::CallMethod,
                 Instruction::CallMethod,
-                Instruction::MintFungible,
+                Instruction::CallMethod,
                 Instruction::CallMethod,
             ],
         );
@@ -459,7 +485,7 @@ mod tests {
             &[
                 Instruction::CallMethod,
                 Instruction::CallMethod,
-                Instruction::MintNonFungible,
+                Instruction::CallMethod,
                 Instruction::CallMethod,
             ],
         );
@@ -469,13 +495,21 @@ mod tests {
     pub fn test_publish_package() {
         check_partial_decoding(
             &TX_PUBLISH_PACKAGE,
-            &[Instruction::CallMethod, Instruction::PublishPackage],
+            &[Instruction::CallMethod, Instruction::CallFunction],
         );
     }
 
     #[test]
     pub fn test_resource_recall() {
-        check_partial_decoding(&TX_RESOURCE_RECALL, &[Instruction::RecallResource]);
+        check_partial_decoding(&TX_RESOURCE_RECALL, &[Instruction::CallDirectVaultMethod]);
+    }
+
+    #[test]
+    pub fn test_resource_recall_nonfungibles() {
+        check_partial_decoding(
+            &TX_RESOURCE_RECALL_NONFUNGIBLES,
+            &[Instruction::CallDirectVaultMethod],
+        );
     }
 
     #[test]
@@ -484,13 +518,13 @@ mod tests {
             &TX_RESOURCE_WORKTOP,
             &[
                 Instruction::CallMethod,
-                Instruction::TakeFromWorktopByAmount,
-                Instruction::CallMethod,
-                Instruction::AssertWorktopContainsByAmount,
-                Instruction::AssertWorktopContains,
                 Instruction::TakeFromWorktop,
+                Instruction::CallMethod,
+                Instruction::AssertWorktopContainsAny,
+                Instruction::AssertWorktopContains,
+                Instruction::TakeAllFromWorktop,
                 Instruction::ReturnToWorktop,
-                Instruction::TakeFromWorktopByIds,
+                Instruction::TakeNonFungiblesFromWorktop,
                 Instruction::CallMethod,
             ],
         );
@@ -501,10 +535,10 @@ mod tests {
         check_partial_decoding(
             &TX_ROYALTY,
             &[
-                Instruction::SetPackageRoyaltyConfig,
-                Instruction::SetComponentRoyaltyConfig,
-                Instruction::ClaimPackageRoyalty,
-                Instruction::ClaimComponentRoyalty,
+                Instruction::CallRoyaltyMethod,
+                Instruction::CallRoyaltyMethod,
+                Instruction::CallMethod,
+                Instruction::CallRoyaltyMethod,
             ],
         );
     }
@@ -514,9 +548,77 @@ mod tests {
         check_partial_decoding(
             &TX_VALUES,
             &[
-                Instruction::TakeFromWorktop,
-                Instruction::CreateProofFromAuthZone,
+                Instruction::TakeAllFromWorktop,
+                Instruction::CreateProofFromAuthZoneOfAll,
                 Instruction::CallMethod,
+                Instruction::CallMethod,
+            ],
+        );
+    }
+
+    #[test]
+    pub fn test_address_allocation() {
+        check_partial_decoding(
+            &TX_ADDRESS_ALLOCATION,
+            &[
+                Instruction::CallMethod,
+                Instruction::AllocateGlobalAddress,
+                Instruction::CallFunction,
+                Instruction::CallFunction,
+            ],
+        );
+    }
+
+    #[test]
+    pub fn test_create_non_fungible_resource_with_initial_supply() {
+        check_partial_decoding(
+            &TX_CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY,
+            &[
+                Instruction::CallMethod,
+                Instruction::CallFunction,
+                Instruction::CallMethod,
+            ],
+        );
+    }
+
+    #[test]
+    pub fn test_create_validator() {
+        check_partial_decoding(
+            &TX_CREATE_VALIDATOR,
+            &[
+                Instruction::CallMethod,
+                Instruction::TakeFromWorktop,
+                Instruction::CallMethod,
+            ],
+        );
+    }
+
+    #[test]
+    pub fn test_resource_auth_zone() {
+        check_partial_decoding(
+            &TX_RESOURCE_AUTH_ZONE,
+            &[
+                Instruction::CallMethod,
+                Instruction::TakeAllFromWorktop,
+                Instruction::CreateProofFromBucketOfAmount,
+                Instruction::CreateProofFromBucketOfNonFungibles,
+                Instruction::CreateProofFromBucketOfAll,
+                Instruction::CloneProof,
+                Instruction::DropProof,
+                Instruction::DropProof,
+                Instruction::DropAuthZoneProofs,
+                Instruction::CallMethod,
+                Instruction::PopFromAuthZone,
+                Instruction::DropProof,
+                Instruction::CallMethod,
+                Instruction::CreateProofFromAuthZoneOfAmount,
+                Instruction::CreateProofFromAuthZoneOfNonFungibles,
+                Instruction::CreateProofFromAuthZoneOfAll,
+                Instruction::DropAuthZoneSignatureProofs,
+                Instruction::DropAuthZoneRegularProofs,
+                Instruction::DropAuthZoneProofs,
+                Instruction::DropNamedProofs,
+                Instruction::DropAllProofs,
                 Instruction::CallMethod,
             ],
         );
@@ -529,7 +631,69 @@ mod tests {
             &[
                 Instruction::CallMethod,
                 Instruction::CallMethod,
-                Instruction::TakeFromWorktopByAmount,
+                Instruction::TakeFromWorktop,
+                Instruction::CallMethod,
+            ],
+        );
+    }
+
+    #[test]
+    pub fn test_simple_transfer_new_format() {
+        check_partial_decoding(
+            &TX_SIMPLE_TRANSFER_NEW_FORMAT,
+            &[
+                Instruction::CallMethod,
+                Instruction::TakeFromWorktop,
+                Instruction::CallMethod,
+            ],
+        );
+    }
+
+    #[test]
+    pub fn test_simple_transfer_nft() {
+        check_partial_decoding(
+            &TX_SIMPLE_TRANSFER_NFT,
+            &[
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+                Instruction::TakeFromWorktop,
+                Instruction::CallMethod,
+            ],
+        );
+    }
+
+    #[test]
+    pub fn test_simple_transfer_nft_new_format() {
+        check_partial_decoding(
+            &TX_SIMPLE_TRANSFER_NFT_NEW_FORMAT,
+            &[
+                Instruction::CallMethod,
+                Instruction::TakeFromWorktop,
+                Instruction::CallMethod,
+            ],
+        );
+    }
+
+    #[test]
+    pub fn test_simple_transfer_nft_by_id() {
+        check_partial_decoding(
+            &TX_SIMPLE_TRANSFER_NFT_BY_ID,
+            &[
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+                Instruction::TakeNonFungiblesFromWorktop,
+                Instruction::CallMethod,
+            ],
+        );
+    }
+
+    #[test]
+    pub fn test_simple_transfer_nft_by_id_new_format() {
+        check_partial_decoding(
+            &TX_SIMPLE_TRANSFER_NFT_BY_ID_NEW_FORMAT,
+            &[
+                Instruction::CallMethod,
+                Instruction::TakeNonFungiblesFromWorktop,
                 Instruction::CallMethod,
             ],
         );
@@ -542,10 +706,32 @@ mod tests {
             &[
                 Instruction::CallMethod,
                 Instruction::CallMethod,
-                Instruction::TakeFromWorktopByAmount,
+                Instruction::TakeFromWorktop,
                 Instruction::CallMethod,
                 Instruction::CallMethod,
             ],
         );
+    }
+
+    #[test]
+    pub fn test_vault_freeze() {
+        check_partial_decoding(
+            &TX_VAULT_FREEZE,
+            &[
+                Instruction::CallDirectVaultMethod,
+                Instruction::CallDirectVaultMethod,
+                Instruction::CallDirectVaultMethod,
+                Instruction::CallDirectVaultMethod,
+                Instruction::CallDirectVaultMethod,
+                Instruction::CallDirectVaultMethod,
+                Instruction::CallDirectVaultMethod,
+                Instruction::CallDirectVaultMethod,
+            ],
+        );
+    }
+
+    #[test]
+    pub fn test_hc_intent() {
+        check_partial_decoding(&TX_HC_INTENT, &[Instruction::DropAuthZoneProofs]);
     }
 }

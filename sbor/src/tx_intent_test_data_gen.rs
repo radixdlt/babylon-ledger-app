@@ -70,6 +70,10 @@ pub mod tests {
             data: &TX_RESOURCE_RECALL,
         },
         Blob {
+            name: "resource_recall_nonfungibles",
+            data: &TX_RESOURCE_RECALL_NONFUNGIBLES,
+        },
+        Blob {
             name: "resource_worktop",
             data: &TX_RESOURCE_WORKTOP,
         },
@@ -86,16 +90,40 @@ pub mod tests {
             data: &TX_SIMPLE_TRANSFER,
         },
         Blob {
+            name: "simple_transfer_new_format",
+            data: &TX_SIMPLE_TRANSFER_NEW_FORMAT,
+        },
+        Blob {
             name: "simple_transfer_nft",
             data: &TX_SIMPLE_TRANSFER_NFT,
+        },
+        Blob {
+            name: "simple_transfer_nft_new_format",
+            data: &TX_SIMPLE_TRANSFER_NFT_NEW_FORMAT,
         },
         Blob {
             name: "simple_transfer_nft_by_id",
             data: &TX_SIMPLE_TRANSFER_NFT_BY_ID,
         },
         Blob {
+            name: "simple_transfer_nft_by_id_new_format",
+            data: &TX_SIMPLE_TRANSFER_NFT_BY_ID_NEW_FORMAT,
+        },
+        Blob {
             name: "simple_transfer_with_multiple_locked_fees",
             data: &TX_SIMPLE_TRANSFER_WITH_MULTIPLE_LOCKED_FEES,
+        },
+        Blob {
+            name: "address_allocation",
+            data: &TX_ADDRESS_ALLOCATION,
+        },
+        Blob {
+            name: "create_non_fungible_resource_with_initial_supply",
+            data: &TX_CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY,
+        },
+        Blob {
+            name: "create_validator",
+            data: &TX_CREATE_VALIDATOR,
         },
     ];
 

@@ -7,11 +7,14 @@ pub struct BlobParameterPrinter;
 pub struct ExpressionParameterPrinter;
 pub struct BucketParameterPrinter;
 pub struct ProofParameterPrinter;
+pub struct AddressReservationParameterPrinter;
 
 pub const BLOB_PARAMETER_PRINTER: BlobParameterPrinter = BlobParameterPrinter {};
 pub const EXPRESSION_PARAMETER_PRINTER: ExpressionParameterPrinter = ExpressionParameterPrinter {};
 pub const BUCKET_PARAMETER_PRINTER: BucketParameterPrinter = BucketParameterPrinter {};
 pub const PROOF_PARAMETER_PRINTER: ProofParameterPrinter = ProofParameterPrinter {};
+pub const ADDRESS_RESERVATION_PARAMETER_PRINTER: AddressReservationParameterPrinter =
+    AddressReservationParameterPrinter {};
 
 impl<T: Copy> ParameterPrinter<T> for BlobParameterPrinter {
     fn handle_data(&self, state: &mut ParameterPrinterState<T>, event: SborEvent) {
@@ -30,17 +33,20 @@ impl<T: Copy> ParameterPrinter<T> for BlobParameterPrinter {
 }
 
 impl<T: Copy> ParameterPrinter<T> for ExpressionParameterPrinter {
-    fn handle_data(&self, state: &mut ParameterPrinterState<T>, event: SborEvent) {
-        if let SborEvent::Data(byte) = event {
-            state.print_hex_byte(byte);
-        }
-    }
-
     fn start(&self, state: &mut ParameterPrinterState<T>) {
         state.print_text(b"Expression(");
     }
 
     fn end(&self, state: &mut ParameterPrinterState<T>) {
+        if state.data.len() != 1 {
+            state.print_text(b"<unknown>");
+        } else {
+            state.print_text(match state.data.as_slice()[0] {
+                0 => b"ENTIRE_WORKTOP",
+                1 => b"ENTIRE_AUTH_ZONE",
+                _ => b"<unknown>",
+            });
+        }
         state.print_byte(b')');
     }
 }
@@ -59,6 +65,17 @@ impl<T: Copy> ParameterPrinter<T> for BucketParameterPrinter {
 impl<T: Copy> ParameterPrinter<T> for ProofParameterPrinter {
     fn start(&self, state: &mut ParameterPrinterState<T>) {
         state.print_text(b"Proof(");
+    }
+
+    fn end(&self, state: &mut ParameterPrinterState<T>) {
+        U32_PARAMETER_PRINTER.end(state);
+        state.print_byte(b')');
+    }
+}
+
+impl<T: Copy> ParameterPrinter<T> for AddressReservationParameterPrinter {
+    fn start(&self, state: &mut ParameterPrinterState<T>) {
+        state.print_text(b"AddressReservation(");
     }
 
     fn end(&self, state: &mut ParameterPrinterState<T>) {

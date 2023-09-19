@@ -1,4 +1,4 @@
-use crate::utilities::conversion::bytes_to_number;
+use sbor::utilities::conversion::bytes_to_number;
 
 // Note that CLion Rust plugin marks all choices as inactive, there is no way to configure this
 #[cfg(target_os = "nanos")]

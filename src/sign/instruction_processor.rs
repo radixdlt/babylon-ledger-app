@@ -1,33 +1,37 @@
 use nanos_sdk::io::Comm;
+use sbor::bech32::address::Address;
 use sbor::bech32::network::NetworkId;
+use sbor::digest::digest::Digest;
+use sbor::digest::tx_hash_calculator::TxHashCalculator;
 use sbor::instruction_extractor::InstructionExtractor;
 use sbor::math::Decimal;
 use sbor::print::fanout::Fanout;
 use sbor::print::instruction_printer::InstructionPrinter;
 use sbor::print::tty::TTY;
-use sbor::print::tx_printer::{Address, DetectedTxType};
+use sbor::print::tx_intent_type::TxIntentType;
+use sbor::print::tx_summary_detector::{DetectedTxType, TxSummaryDetector};
 use sbor::sbor_decoder::{SborEvent, SborEventHandler};
 
 use crate::app_error::AppError;
 use crate::command_class::CommandClass;
-use crate::crypto::hash::Digest;
+use crate::crypto::hash::Blake2bHasher;
+use crate::sign::sign_mode::SignMode;
 use crate::sign::sign_outcome::SignOutcome;
-use crate::sign::sign_type::SignType;
 use crate::sign::signing_flow_state::SigningFlowState;
-use sbor::print::tx_intent_type::TxIntentType;
-use sbor::print::tx_printer::TxIntentPrinter;
 
 pub struct InstructionProcessor<T: Copy> {
     state: SigningFlowState,
     extractor: InstructionExtractor,
-    ins_printer: InstructionPrinter<T>,
-    tx_printer: TxIntentPrinter,
+    printer: InstructionPrinter<T>,
+    detector: TxSummaryDetector,
+    calculator: TxHashCalculator<Blake2bHasher>,
 }
 
 impl<T: Copy> SborEventHandler for InstructionProcessor<T> {
     fn handle(&mut self, evt: SborEvent) {
-        let mut fanout = Fanout::new(&mut self.ins_printer, &mut self.tx_printer);
+        let mut fanout = Fanout::new(&mut self.printer, &mut self.detector);
         self.extractor.handle_event(&mut fanout, evt);
+        self.calculator.handle(evt);
     }
 }
 
@@ -36,26 +40,32 @@ impl<T: Copy> InstructionProcessor<T> {
         Self {
             state: SigningFlowState::new(),
             extractor: InstructionExtractor::new(),
-            ins_printer: InstructionPrinter::new(NetworkId::LocalNet, tty),
-            tx_printer: TxIntentPrinter::new(),
+            printer: InstructionPrinter::new(NetworkId::LocalNet, tty),
+            detector: TxSummaryDetector::new(),
+            calculator: TxHashCalculator::<Blake2bHasher>::new(),
         }
     }
 
     pub fn set_intent_type(&mut self, intent_type: TxIntentType) {
-        self.tx_printer.set_intent_type(intent_type);
+        self.detector.set_intent_type(intent_type);
     }
 
-    pub fn sign_tx(&self, tx_type: SignType, digest: Digest) -> Result<SignOutcome, AppError> {
-        self.state.sign_tx(tx_type, digest)
+    pub fn sign_tx(
+        &self,
+        comm: &mut Comm,
+        sign_mode: SignMode,
+        digest: &Digest,
+    ) -> Result<SignOutcome, AppError> {
+        self.state.sign_tx(comm, sign_mode, digest)
     }
 
     pub fn auth_digest(
         &mut self,
-        nonce: &[u8],
+        challenge: &[u8],
         address: &[u8],
         origin: &[u8],
     ) -> Result<Digest, AppError> {
-        self.state.auth_digest(nonce, address, origin)
+        self.calculator.auth_digest(challenge, address, origin)
     }
 
     pub fn tx_size(&self) -> usize {
@@ -63,65 +73,74 @@ impl<T: Copy> InstructionProcessor<T> {
     }
 
     pub fn set_network(&mut self) -> Result<(), AppError> {
-        match self.state.sign_type() {
-            SignType::Ed25519 | SignType::Ed25519Summary | SignType::AuthEd25519 => {
+        match self.state.sign_mode() {
+            SignMode::Ed25519Verbose | SignMode::Ed25519Summary | SignMode::AuthEd25519 => {
                 let network_id = self.state.network_id()?;
-                self.ins_printer.set_network(network_id);
+                self.printer.set_network(network_id);
             }
-            SignType::Secp256k1 | SignType::Secp256k1Summary | SignType::AuthSecp256k1 => {
-                self.ins_printer.set_network(NetworkId::OlympiaMainNet);
+            SignMode::Secp256k1Verbose | SignMode::Secp256k1Summary | SignMode::AuthSecp256k1 => {
+                self.printer.set_network(NetworkId::OlympiaMainNet);
             }
         };
         Ok(())
     }
 
     pub fn set_show_instructions(&mut self) {
-        match self.state.sign_type() {
-            SignType::Secp256k1Summary
-            | SignType::Ed25519Summary
-            | SignType::AuthEd25519
-            | SignType::AuthSecp256k1 => {
-                self.ins_printer.set_show_instructions(false);
+        match self.state.sign_mode() {
+            SignMode::Secp256k1Summary
+            | SignMode::Ed25519Summary
+            | SignMode::AuthEd25519
+            | SignMode::AuthSecp256k1 => {
+                self.printer.set_show_instructions(false);
             }
-            SignType::Secp256k1 | SignType::Ed25519 => {
-                self.ins_printer.set_show_instructions(true);
+            SignMode::Secp256k1Verbose | SignMode::Ed25519Verbose => {
+                self.printer.set_show_instructions(true);
             }
         };
     }
 
     pub fn set_tty(&mut self, tty: TTY<T>) {
-        self.ins_printer.set_tty(tty);
+        self.printer.set_tty(tty);
     }
 
     pub fn reset(&mut self) {
         self.state.reset();
+        self.calculator.reset();
         self.extractor.reset();
-        self.ins_printer.reset();
-        self.tx_printer.reset();
+        self.printer.reset();
+        self.detector.reset();
     }
 
     pub fn finalize(&mut self) -> Result<Digest, AppError> {
-        self.state.finalize()
+        self.calculator.finalize()
     }
 
     pub fn process_sign(
         &mut self,
         comm: &mut Comm,
         class: CommandClass,
-        tx_type: SignType,
+        sign_mode: SignMode,
     ) -> Result<(), AppError> {
-        self.state.process_sign(comm, class, tx_type)
+        match class {
+            CommandClass::Regular => {
+                self.state.init_sign(comm, sign_mode)?;
+                self.calculator.start()
+            }
+            CommandClass::Continuation | CommandClass::LastData => {
+                self.state.continue_sign(comm, class, sign_mode)
+            }
+        }
     }
 
     pub fn get_detected_tx_type(&self) -> DetectedTxType {
-        self.tx_printer.get_detected_tx_type()
+        self.detector.get_detected_tx_type()
     }
 
     pub fn format_decimal(&mut self, value: &Decimal, suffix: &[u8]) -> &[u8] {
-        self.ins_printer.format_decimal(value, suffix)
+        self.printer.format_decimal(value, suffix)
     }
 
     pub fn format_address(&mut self, address: &Address) -> &[u8] {
-        self.ins_printer.format_address(address)
+        self.printer.format_address(address)
     }
 }

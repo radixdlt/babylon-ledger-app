@@ -6,7 +6,6 @@ use paste::paste;
 
 use crate::print::parameter_printer::ParameterPrinter;
 use crate::print::state::ParameterPrinterState;
-use crate::print::state::TITLE_SIZE;
 use crate::sbor_decoder::SborEvent;
 use crate::static_vec::StaticVec;
 
@@ -51,6 +50,30 @@ pub struct StringParameterPrinter {}
 pub const STRING_PARAMETER_PRINTER: StringParameterPrinter = StringParameterPrinter {};
 
 impl<T: Copy> ParameterPrinter<T> for StringParameterPrinter {
+    fn handle_data(&self, state: &mut ParameterPrinterState<T>, event: SborEvent) {
+        if let SborEvent::Data(byte) = event {
+            match byte {
+                b'\t' => {
+                    state.push_byte(b'\\');
+                    state.push_byte(b't')
+                }
+                b'\r' => {
+                    state.push_byte(b'\\');
+                    state.push_byte(b'r')
+                }
+                b'\n' => {
+                    state.push_byte(b'\\');
+                    state.push_byte(b'n')
+                }
+                b'\"' => {
+                    state.push_byte(b'\\');
+                    state.push_byte(b'"')
+                }
+                _ => state.push_byte(byte),
+            }
+        }
+    }
+
     fn end(&self, state: &mut ParameterPrinterState<T>) {
         state.print_byte(b'"');
         state.print_data_as_text();
@@ -241,7 +264,7 @@ printer_for_itype!(i64, u64);
 printer_for_itype!(i128, u128);
 
 // Standalone printer for u32
-pub fn print_u32(output: &mut StaticVec<u8, { TITLE_SIZE }>, number: u32) {
+pub fn print_u32<const N: usize>(output: &mut StaticVec<u8, N>, number: u32) {
     let mut buf = [MaybeUninit::<u8>::uninit(); 12];
     let bytes = uxx!(number, buf);
 

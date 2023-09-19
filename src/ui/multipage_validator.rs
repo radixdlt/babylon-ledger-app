@@ -30,7 +30,7 @@ impl<'a> MultipageValidator<'a> {
 
     pub fn ask(&self) -> bool {
         clear_screen();
-        let page_count = &self.message.len() + 2;
+        let page_count = 3;
         let mut cur_page = 0;
 
         let draw_icon_and_text = |icon: Icon, strings: &[&str], bold: bool| {

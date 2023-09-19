@@ -11,18 +11,19 @@ impl<T: Copy> ParameterPrinter<T> for EnumParameterPrinter {
     fn handle_data(&self, state: &mut ParameterPrinterState<T>, event: SborEvent) {
         if let SborEvent::Discriminator(discriminator) = event {
             U8ParameterPrinter::print(state, discriminator);
+            state.print_text(b">(");
         }
     }
 
     fn start(&self, state: &mut ParameterPrinterState<T>) {
-        state.print_text(b"Enum(");
+        state.print_text(b"Enum<");
     }
 
     fn end(&self, state: &mut ParameterPrinterState<T>) {
         state.print_byte(b')');
     }
 
-    fn subcomponent_start(&self, state: &mut ParameterPrinterState<T>) {
+    fn subcomponent_end(&self, state: &mut ParameterPrinterState<T>) {
         state.print_text(b", ");
     }
 }
