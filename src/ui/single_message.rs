@@ -1,13 +1,21 @@
-use crate::ui::utils::CenteredText;
 use nanos_sdk::buttons::{ButtonEvent, ButtonsState};
-use nanos_ui::bagls::{RIGHT_ARROW, RIGHT_S_ARROW};
+use nanos_ui::bagls::{Icon, RIGHT_ARROW, RIGHT_S_ARROW};
 use nanos_ui::layout::Draw;
 use nanos_ui::ui::{clear_screen, get_event};
+use nanos_ui::SCREEN_WIDTH;
+
+use crate::ui::utils::CenteredText;
+
+pub enum MessageFeature<'a> {
+    Plain,
+    WithRightArrow,
+    WithIcon(Icon<'a>),
+}
 
 pub struct SingleMessage<'a> {
     message: &'a str,
     bold: bool,
-    show_right_arrow: bool,
+    feature: MessageFeature<'a>,
 }
 
 impl<'a> SingleMessage<'a> {
@@ -15,7 +23,15 @@ impl<'a> SingleMessage<'a> {
         SingleMessage {
             message,
             bold: false,
-            show_right_arrow: false,
+            feature: MessageFeature::Plain,
+        }
+    }
+
+    pub fn with_bold(message: &'a str) -> Self {
+        SingleMessage {
+            message,
+            bold: true,
+            feature: MessageFeature::Plain,
         }
     }
 
@@ -23,16 +39,35 @@ impl<'a> SingleMessage<'a> {
         SingleMessage {
             message,
             bold: false,
-            show_right_arrow: true,
+            feature: MessageFeature::WithRightArrow,
+        }
+    }
+
+    pub fn with_icon(message: &'a str, icon: Icon<'a>) -> Self {
+        SingleMessage {
+            message,
+            bold: false,
+            feature: MessageFeature::WithIcon(icon),
         }
     }
 
     pub fn show(&self) {
         clear_screen();
         self.message.draw_centered(self.bold);
-        if self.show_right_arrow {
-            RIGHT_ARROW.display();
-            RIGHT_S_ARROW.display();
+
+        match &self.feature {
+            MessageFeature::Plain => {}
+            MessageFeature::WithRightArrow => {
+                RIGHT_ARROW.display();
+                RIGHT_S_ARROW.display();
+            }
+            MessageFeature::WithIcon(icon) => {
+                Icon {
+                    icon: icon.icon,
+                    pos: ((SCREEN_WIDTH / 2) as i16, -1),
+                }
+                .display();
+            }
         }
     }
 

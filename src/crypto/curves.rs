@@ -8,10 +8,16 @@ use nanos_sdk::bindings::{
 pub use nanos_sdk::bindings::{
     cx_ecfp_private_key_t, cx_ecfp_public_key_t, cx_err_t, cx_md_t, size_t, CX_SHA512,
 };
+use sbor::bech32::address::Address;
+use sbor::bech32::hrp::{GLOBAL_VIRTUAL_ED25519_ACCOUNT, GLOBAL_VIRTUAL_SECP256K1_ACCOUNT};
+use sbor::bech32::network::NetworkId;
 
 use crate::app_error::{to_result, AppError};
 use crate::crypto::bip32::Bip32Path;
+use crate::crypto::ed25519::KeyPair25519;
+use crate::crypto::hash::Blake2bHasher;
 use crate::crypto::key_pair::InternalKeyPair;
+use crate::crypto::secp256k1::KeyPairSecp256k1;
 
 pub const INTERNAL_SEED_SIZE: usize = 32;
 
@@ -83,6 +89,33 @@ impl Curve {
         };
 
         to_result(rc).map(|_| key_pair)
+    }
+
+    pub fn to_address(&self, path: &Bip32Path) -> Result<(Address, NetworkId), AppError> {
+        let key_pair = self.key_pair(path)?;
+
+        let digest = match self {
+            Curve::Secp256k1 => {
+                let arr = KeyPairSecp256k1::from(key_pair).public_bytes();
+                Blake2bHasher::one_step(&arr)
+            }
+            Curve::Ed25519 => {
+                let arr = KeyPair25519::from(key_pair).public_bytes();
+                Blake2bHasher::one_step(&arr)
+            }
+        }?;
+
+        let entity_type = match self {
+            Curve::Secp256k1 => GLOBAL_VIRTUAL_SECP256K1_ACCOUNT,
+            Curve::Ed25519 => GLOBAL_VIRTUAL_ED25519_ACCOUNT,
+        };
+
+        let network_id = match self {
+            Curve::Secp256k1 => NetworkId::OlympiaMainNet,
+            Curve::Ed25519 => path.network_id()?,
+        };
+
+        Ok((digest.as_address(entity_type), network_id))
     }
 
     fn init_public_key(&self) -> Result<cx_ecfp_public_key_t, AppError> {

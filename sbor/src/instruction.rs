@@ -2,78 +2,43 @@
 // Keep in sync with
 // https://raw.githubusercontent.com/radixdlt/radixdlt-scrypto/develop/transaction/src/model/instruction.rs
 
-const TAKE_FROM_WORKTOP: u8 = 00;
-const TAKE_FROM_WORKTOP_BY_AMOUNT: u8 = 01;
-const TAKE_FROM_WORKTOP_BY_IDS: u8 = 02;
-const RETURN_TO_WORKTOP: u8 = 03;
-const ASSERT_WORKTOP_CONTAINS: u8 = 04;
-const ASSERT_WORKTOP_CONTAINS_BY_AMOUNT: u8 = 05;
-const ASSERT_WORKTOP_CONTAINS_BY_IDS: u8 = 06;
-const POP_FROM_AUTH_ZONE: u8 = 07;
-const PUSH_TO_AUTH_ZONE: u8 = 08;
-const CLEAR_AUTH_ZONE: u8 = 09;
-const CREATE_PROOF_FROM_AUTH_ZONE: u8 = 10;
-const CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT: u8 = 11;
-const CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS: u8 = 12;
-const CREATE_PROOF_FROM_BUCKET: u8 = 13;
-const CLONE_PROOF: u8 = 14;
-const DROP_PROOF: u8 = 15;
-const DROP_ALL_PROOFS: u8 = 16;
-const CLEAR_SIGNATURE_PROOFS: u8 = 17;
-const PUBLISH_PACKAGE: u8 = 18;
-const BURN_RESOURCE: u8 = 19;
-const RECALL_RESOURCE: u8 = 20;
-const SET_METADATA: u8 = 21;
-const REMOVE_METADATA: u8 = 22;
-const SET_PACKAGE_ROYALTY_CONFIG: u8 = 23;
-const SET_COMPONENT_ROYALTY_CONFIG: u8 = 24;
-const CLAIM_PACKAGE_ROYALTY: u8 = 25;
-const CLAIM_COMPONENT_ROYALTY: u8 = 26;
-const SET_METHOD_ACCESS_RULE: u8 = 27;
-const MINT_FUNGIBLE: u8 = 28;
-const MINT_NON_FUNGIBLE: u8 = 29;
-const MINT_UUID_NON_FUNGIBLE: u8 = 30;
-const ASSERT_ACCESS_RULE: u8 = 31;
-const CALL_FUNCTION: u8 = 32;
-const CALL_METHOD: u8 = 33;
-
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Instruction {
-    TakeFromWorktop,               //{ resource_address: ResourceAddress, },
-    TakeFromWorktopByAmount,       // { amount: Decimal, resource_address: ResourceAddress, },
-    TakeFromWorktopByIds, // { ids: BTreeSet<NonFungibleLocalId>, resource_address: ResourceAddress, },
-    ReturnToWorktop,      // { bucket_id: ManifestBucket, },
-    AssertWorktopContains, // { resource_address: ResourceAddress, },
-    AssertWorktopContainsByAmount, // { amount: Decimal, resource_address: ResourceAddress, },
-    AssertWorktopContainsByIds, // { ids: BTreeSet<NonFungibleLocalId>, resource_address: ResourceAddress, },
-    PopFromAuthZone,
-    PushToAuthZone, // { proof_id: ManifestProof, },
-    ClearAuthZone,
-    CreateProofFromAuthZone, // { resource_address: ResourceAddress, },
-    CreateProofFromAuthZoneByAmount, // { amount: Decimal, resource_address: ResourceAddress, },
-    CreateProofFromAuthZoneByIds, // { ids: BTreeSet<NonFungibleLocalId>, resource_address: ResourceAddress, },
-    CreateProofFromBucket,        // { bucket_id: ManifestBucket, },
-    CloneProof,                   // { proof_id: ManifestProof, },
-    DropProof,                    // { proof_id: ManifestProof, },
-    DropAllProofs,
-    ClearSignatureProofs,
-    PublishPackage, // { code: ManifestBlobRef, schema: ManifestBlobRef, royalty_config: BTreeMap<String, RoyaltyConfig>, metadata: BTreeMap<String, String>, },
-    BurnResource,   // { bucket_id: ManifestBucket, },
-    RecallResource, // { vault_id: ObjectId, amount: Decimal, },
-    SetMetadata,    // { entity_address: ManifestAddress, key: String, value: String, },
-    RemoveMetadata, // { entity_address: ManifestAddress, key: String, },
-    SetPackageRoyaltyConfig, // { package_address: PackageAddress, royalty_config: BTreeMap<String, RoyaltyConfig>, },
-    SetComponentRoyaltyConfig, // { component_address: ComponentAddress, royalty_config: RoyaltyConfig, },
-    ClaimPackageRoyalty,       // { package_address: PackageAddress, },
-    ClaimComponentRoyalty,     // { component_address: ComponentAddress, },
-    SetMethodAccessRule, // { entity_address: ManifestAddress, key: MethodKey, rule: AccessRule, },
-    MintFungible,        // { resource_address: ResourceAddress, amount: Decimal, },
-    MintNonFungible,     // { resource_address: ResourceAddress, args: ManifestValue, },
-    MintUuidNonFungible, // { resource_address: ResourceAddress, args: ManifestValue, },
-    AsserAccessRule,     // { access_rule, AccessRule, },
-    CallFunction, // { package_address: PackageAddress, blueprint_name: String, function_name: String, args: ManifestValue, },
-    CallMethod, // { component_address: ComponentAddress, method_name: String, args: ManifestValue, },
+    TakeAllFromWorktop = INSTRUCTION_TAKE_ALL_FROM_WORKTOP_DISCRIMINATOR,
+    TakeFromWorktop = INSTRUCTION_TAKE_FROM_WORKTOP_DISCRIMINATOR,
+    TakeNonFungiblesFromWorktop = INSTRUCTION_TAKE_NON_FUNGIBLES_FROM_WORKTOP_DISCRIMINATOR,
+    ReturnToWorktop = INSTRUCTION_RETURN_TO_WORKTOP_DISCRIMINATOR,
+    AssertWorktopContainsAny = INSTRUCTION_ASSERT_WORKTOP_CONTAINS_ANY_DISCRIMINATOR,
+    AssertWorktopContains = INSTRUCTION_ASSERT_WORKTOP_CONTAINS_DISCRIMINATOR,
+    AssertWorktopContainsNonFungibles =
+        INSTRUCTION_ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES_DISCRIMINATOR,
+    PopFromAuthZone = INSTRUCTION_POP_FROM_AUTH_ZONE_DISCRIMINATOR,
+    PushToAuthZone = INSTRUCTION_PUSH_TO_AUTH_ZONE_DISCRIMINATOR,
+    CreateProofFromAuthZoneOfAmount =
+        INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT_DISCRIMINATOR,
+    CreateProofFromAuthZoneOfNonFungibles =
+        INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES_DISCRIMINATOR,
+    CreateProofFromAuthZoneOfAll = INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL_DISCRIMINATOR,
+    DropAuthZoneProofs = INSTRUCTION_DROP_AUTH_ZONE_PROOFS_DISCRIMINATOR,
+    DropAuthZoneRegularProofs = INSTRUCTION_DROP_AUTH_ZONE_REGULAR_PROOFS_DISCRIMINATOR,
+    DropAuthZoneSignatureProofs = INSTRUCTION_DROP_AUTH_ZONE_SIGNATURE_PROOFS_DISCRIMINATOR,
+    CreateProofFromBucketOfAmount = INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_AMOUNT_DISCRIMINATOR,
+    CreateProofFromBucketOfNonFungibles =
+        INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES_DISCRIMINATOR,
+    CreateProofFromBucketOfAll = INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_ALL_DISCRIMINATOR,
+    BurnResource = INSTRUCTION_BURN_RESOURCE_DISCRIMINATOR,
+    CloneProof = INSTRUCTION_CLONE_PROOF_DISCRIMINATOR,
+    DropProof = INSTRUCTION_DROP_PROOF_DISCRIMINATOR,
+    CallFunction = INSTRUCTION_CALL_FUNCTION_DISCRIMINATOR,
+    CallMethod = INSTRUCTION_CALL_METHOD_DISCRIMINATOR,
+    CallRoyaltyMethod = INSTRUCTION_CALL_ROYALTY_METHOD_DISCRIMINATOR,
+    CallMetadataMethod = INSTRUCTION_CALL_METADATA_METHOD_DISCRIMINATOR,
+    CallRoleAssignmentMethod = INSTRUCTION_CALL_ROLE_ASSIGNMENT_METHOD_DISCRIMINATOR,
+    CallDirectVaultMethod = INSTRUCTION_CALL_DIRECT_VAULT_METHOD_DISCRIMINATOR,
+    DropNamedProofs = INSTRUCTION_DROP_NAMED_PROOFS_DISCRIMINATOR,
+    DropAllProofs = INSTRUCTION_DROP_ALL_PROOFS_DISCRIMINATOR,
+    AllocateGlobalAddress = INSTRUCTION_ALLOCATE_GLOBAL_ADDRESS_DISCRIMINATOR,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -84,142 +49,185 @@ pub struct InstructionInfo {
 
 pub fn to_instruction(input: u8) -> Option<InstructionInfo> {
     match input {
-        TAKE_FROM_WORKTOP => Some(InstructionInfo {
+        INSTRUCTION_TAKE_ALL_FROM_WORKTOP_DISCRIMINATOR => Some(InstructionInfo {
+            instruction: Instruction::TakeAllFromWorktop,
+            name: b"TakeAllFromWorktop",
+        }),
+        INSTRUCTION_TAKE_FROM_WORKTOP_DISCRIMINATOR => Some(InstructionInfo {
             instruction: Instruction::TakeFromWorktop,
             name: b"TakeFromWorktop",
         }),
-        TAKE_FROM_WORKTOP_BY_AMOUNT => Some(InstructionInfo {
-            instruction: Instruction::TakeFromWorktopByAmount,
-            name: b"TakeFromWorktopByAmount",
+        INSTRUCTION_TAKE_NON_FUNGIBLES_FROM_WORKTOP_DISCRIMINATOR => Some(InstructionInfo {
+            instruction: Instruction::TakeNonFungiblesFromWorktop,
+            name: b"TakeNonFungiblesFromWorktop",
         }),
-        TAKE_FROM_WORKTOP_BY_IDS => Some(InstructionInfo {
-            instruction: Instruction::TakeFromWorktopByIds,
-            name: b"TakeFromWorktopByIds",
-        }),
-        RETURN_TO_WORKTOP => Some(InstructionInfo {
+        INSTRUCTION_RETURN_TO_WORKTOP_DISCRIMINATOR => Some(InstructionInfo {
             instruction: Instruction::ReturnToWorktop,
             name: b"ReturnToWorktop",
         }),
-        ASSERT_WORKTOP_CONTAINS => Some(InstructionInfo {
+        INSTRUCTION_ASSERT_WORKTOP_CONTAINS_ANY_DISCRIMINATOR => Some(InstructionInfo {
+            instruction: Instruction::AssertWorktopContainsAny,
+            name: b"AssertWorktopContainsAny",
+        }),
+        INSTRUCTION_ASSERT_WORKTOP_CONTAINS_DISCRIMINATOR => Some(InstructionInfo {
             instruction: Instruction::AssertWorktopContains,
             name: b"AssertWorktopContains",
         }),
-        ASSERT_WORKTOP_CONTAINS_BY_AMOUNT => Some(InstructionInfo {
-            instruction: Instruction::AssertWorktopContainsByAmount,
-            name: b"AssertWorktopContainsByAmount",
+        INSTRUCTION_ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES_DISCRIMINATOR => Some(InstructionInfo {
+            instruction: Instruction::AssertWorktopContainsNonFungibles,
+            name: b"AssertWorktopContainsNonFungibles",
         }),
-        ASSERT_WORKTOP_CONTAINS_BY_IDS => Some(InstructionInfo {
-            instruction: Instruction::AssertWorktopContainsByIds,
-            name: b"AssertWorktopContainsByIds",
-        }),
-        POP_FROM_AUTH_ZONE => Some(InstructionInfo {
+        INSTRUCTION_POP_FROM_AUTH_ZONE_DISCRIMINATOR => Some(InstructionInfo {
             instruction: Instruction::PopFromAuthZone,
             name: b"PopFromAuthZone",
         }),
-        PUSH_TO_AUTH_ZONE => Some(InstructionInfo {
+        INSTRUCTION_PUSH_TO_AUTH_ZONE_DISCRIMINATOR => Some(InstructionInfo {
             instruction: Instruction::PushToAuthZone,
             name: b"PushToAuthZone",
         }),
-        CLEAR_AUTH_ZONE => Some(InstructionInfo {
-            instruction: Instruction::ClearAuthZone,
-            name: b"ClearAuthZone",
+        INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT_DISCRIMINATOR => Some(InstructionInfo {
+            instruction: Instruction::CreateProofFromAuthZoneOfAmount,
+            name: b"CreateProofFromAuthZoneOfAmount",
         }),
-        CREATE_PROOF_FROM_AUTH_ZONE => Some(InstructionInfo {
-            instruction: Instruction::CreateProofFromAuthZone,
-            name: b"CreateProofFromAuthZone",
+        INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES_DISCRIMINATOR => {
+            Some(InstructionInfo {
+                instruction: Instruction::CreateProofFromAuthZoneOfNonFungibles,
+                name: b"CreateProofFromAuthZoneOfNonFungibles",
+            })
+        }
+        INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL_DISCRIMINATOR => Some(InstructionInfo {
+            instruction: Instruction::CreateProofFromAuthZoneOfAll,
+            name: b"CreateProofFromAuthZoneOfAll",
         }),
-        CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT => Some(InstructionInfo {
-            instruction: Instruction::CreateProofFromAuthZoneByAmount,
-            name: b"CreateProofFromAuthZoneByAmount",
+        INSTRUCTION_DROP_AUTH_ZONE_PROOFS_DISCRIMINATOR => Some(InstructionInfo {
+            instruction: Instruction::DropAuthZoneProofs,
+            name: b"DropAuthZoneProofs",
         }),
-        CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS => Some(InstructionInfo {
-            instruction: Instruction::CreateProofFromAuthZoneByIds,
-            name: b"CreateProofFromAuthZoneByIds",
+        INSTRUCTION_DROP_AUTH_ZONE_REGULAR_PROOFS_DISCRIMINATOR => Some(InstructionInfo {
+            instruction: Instruction::DropAuthZoneRegularProofs,
+            name: b"DropAuthZoneRegularProofs",
         }),
-        CREATE_PROOF_FROM_BUCKET => Some(InstructionInfo {
-            instruction: Instruction::CreateProofFromBucket,
-            name: b"CreateProofFromBucket",
+        INSTRUCTION_DROP_AUTH_ZONE_SIGNATURE_PROOFS_DISCRIMINATOR => Some(InstructionInfo {
+            instruction: Instruction::DropAuthZoneSignatureProofs,
+            name: b"DropAuthZoneSignatureProofs",
         }),
-        CLONE_PROOF => Some(InstructionInfo {
-            instruction: Instruction::CloneProof,
-            name: b"CloneProof",
+        INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_AMOUNT_DISCRIMINATOR => Some(InstructionInfo {
+            instruction: Instruction::CreateProofFromBucketOfAmount,
+            name: b"CreateProofFromBucketOfAmount",
         }),
-        DROP_PROOF => Some(InstructionInfo {
-            instruction: Instruction::DropProof,
-            name: b"DropProof",
+        INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES_DISCRIMINATOR => {
+            Some(InstructionInfo {
+                instruction: Instruction::CreateProofFromBucketOfNonFungibles,
+                name: b"CreateProofFromBucketOfNonFungibles",
+            })
+        }
+        INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_ALL_DISCRIMINATOR => Some(InstructionInfo {
+            instruction: Instruction::CreateProofFromBucketOfAll,
+            name: b"CreateProofFromBucketOfAll",
         }),
-        DROP_ALL_PROOFS => Some(InstructionInfo {
-            instruction: Instruction::DropAllProofs,
-            name: b"DropAllProofs",
-        }),
-        CLEAR_SIGNATURE_PROOFS => Some(InstructionInfo {
-            instruction: Instruction::ClearSignatureProofs,
-            name: b"ClearSignatureProofs",
-        }),
-        PUBLISH_PACKAGE => Some(InstructionInfo {
-            instruction: Instruction::PublishPackage,
-            name: b"PublishPackage",
-        }),
-        BURN_RESOURCE => Some(InstructionInfo {
+        INSTRUCTION_BURN_RESOURCE_DISCRIMINATOR => Some(InstructionInfo {
             instruction: Instruction::BurnResource,
             name: b"BurnResource",
         }),
-        RECALL_RESOURCE => Some(InstructionInfo {
-            instruction: Instruction::RecallResource,
-            name: b"RecallResource",
+        INSTRUCTION_CLONE_PROOF_DISCRIMINATOR => Some(InstructionInfo {
+            instruction: Instruction::CloneProof,
+            name: b"CloneProof",
         }),
-        SET_METADATA => Some(InstructionInfo {
-            instruction: Instruction::SetMetadata,
-            name: b"SetMetadata",
+        INSTRUCTION_DROP_PROOF_DISCRIMINATOR => Some(InstructionInfo {
+            instruction: Instruction::DropProof,
+            name: b"DropProof",
         }),
-        REMOVE_METADATA => Some(InstructionInfo {
-            instruction: Instruction::RemoveMetadata,
-            name: b"RemoveMetadata",
-        }),
-        SET_PACKAGE_ROYALTY_CONFIG => Some(InstructionInfo {
-            instruction: Instruction::SetPackageRoyaltyConfig,
-            name: b"SetPackageRoyaltyConfig",
-        }),
-        SET_COMPONENT_ROYALTY_CONFIG => Some(InstructionInfo {
-            instruction: Instruction::SetComponentRoyaltyConfig,
-            name: b"SetComponentRoyaltyConfig",
-        }),
-        CLAIM_PACKAGE_ROYALTY => Some(InstructionInfo {
-            instruction: Instruction::ClaimPackageRoyalty,
-            name: b"ClaimPackageRoyalty",
-        }),
-        CLAIM_COMPONENT_ROYALTY => Some(InstructionInfo {
-            instruction: Instruction::ClaimComponentRoyalty,
-            name: b"ClaimComponentRoyalty",
-        }),
-        SET_METHOD_ACCESS_RULE => Some(InstructionInfo {
-            instruction: Instruction::SetMethodAccessRule,
-            name: b"SetMethodAccessRule",
-        }),
-        MINT_FUNGIBLE => Some(InstructionInfo {
-            instruction: Instruction::MintFungible,
-            name: b"MintFungible",
-        }),
-        MINT_NON_FUNGIBLE => Some(InstructionInfo {
-            instruction: Instruction::MintNonFungible,
-            name: b"MintNonFungible",
-        }),
-        MINT_UUID_NON_FUNGIBLE => Some(InstructionInfo {
-            instruction: Instruction::MintUuidNonFungible,
-            name: b"MintUuidNonFungible",
-        }),
-        ASSERT_ACCESS_RULE => Some(InstructionInfo {
-            instruction: Instruction::AsserAccessRule,
-            name: b"AsserAccessRule",
-        }),
-        CALL_FUNCTION => Some(InstructionInfo {
+        INSTRUCTION_CALL_FUNCTION_DISCRIMINATOR => Some(InstructionInfo {
             instruction: Instruction::CallFunction,
             name: b"CallFunction",
         }),
-        CALL_METHOD => Some(InstructionInfo {
+        INSTRUCTION_CALL_METHOD_DISCRIMINATOR => Some(InstructionInfo {
             instruction: Instruction::CallMethod,
             name: b"CallMethod",
         }),
+        INSTRUCTION_CALL_ROYALTY_METHOD_DISCRIMINATOR => Some(InstructionInfo {
+            instruction: Instruction::CallRoyaltyMethod,
+            name: b"CallRoyaltyMethod",
+        }),
+        INSTRUCTION_CALL_METADATA_METHOD_DISCRIMINATOR => Some(InstructionInfo {
+            instruction: Instruction::CallMetadataMethod,
+            name: b"CallMetadataMethod",
+        }),
+        INSTRUCTION_CALL_ROLE_ASSIGNMENT_METHOD_DISCRIMINATOR => Some(InstructionInfo {
+            instruction: Instruction::CallRoleAssignmentMethod,
+            name: b"CallRoleAssignmentMethod",
+        }),
+        INSTRUCTION_CALL_DIRECT_VAULT_METHOD_DISCRIMINATOR => Some(InstructionInfo {
+            instruction: Instruction::CallDirectVaultMethod,
+            name: b"CallDirectVaultMethod",
+        }),
+        INSTRUCTION_DROP_NAMED_PROOFS_DISCRIMINATOR => Some(InstructionInfo {
+            instruction: Instruction::DropNamedProofs,
+            name: b"DropNamedProofs",
+        }),
+        INSTRUCTION_DROP_ALL_PROOFS_DISCRIMINATOR => Some(InstructionInfo {
+            instruction: Instruction::DropAllProofs,
+            name: b"DropAllProofs",
+        }),
+        INSTRUCTION_ALLOCATE_GLOBAL_ADDRESS_DISCRIMINATOR => Some(InstructionInfo {
+            instruction: Instruction::AllocateGlobalAddress,
+            name: b"AllocateGlobalAddress",
+        }),
+
         _ => None,
     }
 }
+// From transaction/src/model/v1/instruction.rs
+//==============
+// Worktop
+//==============
+pub const INSTRUCTION_TAKE_FROM_WORKTOP_DISCRIMINATOR: u8 = 0x00;
+pub const INSTRUCTION_TAKE_NON_FUNGIBLES_FROM_WORKTOP_DISCRIMINATOR: u8 = 0x01;
+pub const INSTRUCTION_TAKE_ALL_FROM_WORKTOP_DISCRIMINATOR: u8 = 0x02;
+pub const INSTRUCTION_RETURN_TO_WORKTOP_DISCRIMINATOR: u8 = 0x03;
+pub const INSTRUCTION_ASSERT_WORKTOP_CONTAINS_DISCRIMINATOR: u8 = 0x04;
+pub const INSTRUCTION_ASSERT_WORKTOP_CONTAINS_NON_FUNGIBLES_DISCRIMINATOR: u8 = 0x05;
+pub const INSTRUCTION_ASSERT_WORKTOP_CONTAINS_ANY_DISCRIMINATOR: u8 = 0x06;
+
+//==============
+// Auth zone
+//==============
+pub const INSTRUCTION_POP_FROM_AUTH_ZONE_DISCRIMINATOR: u8 = 0x10;
+pub const INSTRUCTION_PUSH_TO_AUTH_ZONE_DISCRIMINATOR: u8 = 0x11;
+pub const INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_AMOUNT_DISCRIMINATOR: u8 = 0x14;
+pub const INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_NON_FUNGIBLES_DISCRIMINATOR: u8 = 0x15;
+pub const INSTRUCTION_CREATE_PROOF_FROM_AUTH_ZONE_OF_ALL_DISCRIMINATOR: u8 = 0x16;
+pub const INSTRUCTION_DROP_AUTH_ZONE_PROOFS_DISCRIMINATOR: u8 = 0x12;
+pub const INSTRUCTION_DROP_AUTH_ZONE_REGULAR_PROOFS_DISCRIMINATOR: u8 = 0x13;
+pub const INSTRUCTION_DROP_AUTH_ZONE_SIGNATURE_PROOFS_DISCRIMINATOR: u8 = 0x17;
+
+//==============
+// Named bucket
+//==============
+pub const INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_AMOUNT_DISCRIMINATOR: u8 = 0x21;
+pub const INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_NON_FUNGIBLES_DISCRIMINATOR: u8 = 0x22;
+pub const INSTRUCTION_CREATE_PROOF_FROM_BUCKET_OF_ALL_DISCRIMINATOR: u8 = 0x23;
+pub const INSTRUCTION_BURN_RESOURCE_DISCRIMINATOR: u8 = 0x24;
+
+//==============
+// Named proof
+//==============
+pub const INSTRUCTION_CLONE_PROOF_DISCRIMINATOR: u8 = 0x30;
+pub const INSTRUCTION_DROP_PROOF_DISCRIMINATOR: u8 = 0x31;
+
+//==============
+// Invocation
+//==============
+pub const INSTRUCTION_CALL_FUNCTION_DISCRIMINATOR: u8 = 0x40;
+pub const INSTRUCTION_CALL_METHOD_DISCRIMINATOR: u8 = 0x41;
+pub const INSTRUCTION_CALL_ROYALTY_METHOD_DISCRIMINATOR: u8 = 0x42;
+pub const INSTRUCTION_CALL_METADATA_METHOD_DISCRIMINATOR: u8 = 0x43;
+pub const INSTRUCTION_CALL_ROLE_ASSIGNMENT_METHOD_DISCRIMINATOR: u8 = 0x44;
+pub const INSTRUCTION_CALL_DIRECT_VAULT_METHOD_DISCRIMINATOR: u8 = 0x45;
+
+//==============
+// Complex
+//==============
+pub const INSTRUCTION_DROP_NAMED_PROOFS_DISCRIMINATOR: u8 = 0x52;
+pub const INSTRUCTION_DROP_ALL_PROOFS_DISCRIMINATOR: u8 = 0x50;
+pub const INSTRUCTION_ALLOCATE_GLOBAL_ADDRESS_DISCRIMINATOR: u8 = 0x51;

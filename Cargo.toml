@@ -1,6 +1,6 @@
 [package]
 name = "babylon-ledger-app"
-version = "0.3.5"
+version = "0.7.5"
 authors = ["siy"]
 edition = "2021"
 description = "Radix Babylon"
@@ -11,6 +11,9 @@ nanos_ui = { git = "https://github.com/radixdlt/ledger-nanos-ui-radix.git" }
 include_gif = { git = "https://github.com/LedgerHQ/sdk_include_gif" }
 
 sbor = { path = "./sbor", default-features = false }
+
+[dev-dependencies]
+blake2 = { version = "0.10.6", default-features = false }
 
 [profile.dev]
 opt-level = "z"

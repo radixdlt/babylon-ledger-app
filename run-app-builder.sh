@@ -1,2 +1,2 @@
 #!/bin/sh
-docker run --rm -ti -v "$(realpath .):/app" babylon-ledger-app-builder:latest
+sudo docker run --rm -ti -v "$(realpath .):/app" --privileged -v "/dev/bus/usb:/dev/bus/usb" babylon-ledger-app-builder:latest

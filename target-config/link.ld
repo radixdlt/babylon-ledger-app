@@ -48,6 +48,8 @@ SECTIONS
     _estack = ABSOLUTE(END_STACK);
   } > SRAM
 
+  .ledger.api_level (INFO): { KEEP(*(.ledger.api_level)) }
+
   .stack_sizes (INFO):
   {
     KEEP(*(.stack_sizes));

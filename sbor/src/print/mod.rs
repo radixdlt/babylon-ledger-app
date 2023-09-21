@@ -2,7 +2,7 @@ pub mod fanout;
 pub mod instruction_printer;
 pub mod tty;
 pub mod tx_intent_type;
-pub mod tx_printer;
+pub mod tx_summary_detector;
 
 mod address;
 mod array;

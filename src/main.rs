@@ -7,17 +7,19 @@
 #![feature(const_mut_refs)]
 
 use nanos_sdk::io::{Comm, Event};
-use nanos_ui::bagls::{CERTIFICATE_ICON, DASHBOARD_X_ICON, PROCESSING_ICON};
+use nanos_ui::bagls::{CERTIFICATE_ICON, COGGLE_ICON, DASHBOARD_X_ICON, PROCESSING_ICON};
 use nanos_ui::ui::clear_screen;
 
 use handler::dispatcher;
 
 use crate::app_error::AppError;
 use crate::ledger_display_io::LedgerTTY;
+use crate::settings::Settings;
 use crate::sign::tx_state::TxState;
-use crate::ui::menu::{Menu, MenuItem};
+use crate::ui::menu::{Menu, MenuFeature, MenuItem};
+use crate::ui::multipage_validator::MultipageValidator;
 use crate::ui::single_message::SingleMessage;
-use crate::ui::utils::RADIX_LOGO_ICON;
+use crate::ui::utils::{BACK_ICON, RADIX_LOGO_ICON};
 
 mod app_error;
 mod command;
@@ -25,6 +27,7 @@ mod command_class;
 mod crypto;
 mod handler;
 mod ledger_display_io;
+mod settings;
 mod sign;
 mod ui;
 mod utilities;
@@ -38,19 +41,95 @@ const APPLICATION_ABOUT: &str = concat!(
 );
 const APPLICATION_VERSION: &str = concat!("\n", env!("CARGO_PKG_VERSION"), "\n",);
 
-fn app_menu_action() {}
+fn app_menu_action() -> bool {
+    false
+}
 
-fn version_menu_action() {
+fn version_menu_action() -> bool {
     clear_screen();
     SingleMessage::new(APPLICATION_VERSION).show_and_wait();
+    false
 }
 
-fn about_menu_action() {
+fn get_verbose_mode_state() -> bool {
+    Settings::get().verbose_mode
+}
+
+fn get_blind_signing_state() -> bool {
+    Settings::get().blind_signing
+}
+
+fn settings_menu_action() -> bool {
+    clear_screen();
+
+    let menu = [
+        MenuItem::new(
+            MenuFeature::OnOffState(get_verbose_mode_state),
+            "\nVerbose Mode",
+            verbose_mode_setting_action,
+        ),
+        MenuItem::new(
+            MenuFeature::OnOffState(get_blind_signing_state),
+            "\nBlind Signing",
+            blind_signing_setting_action,
+        ),
+        MenuItem::new(
+            MenuFeature::Icon(&BACK_ICON),
+            "\nBack",
+            back_from_setting_action,
+        ),
+    ];
+
+    Menu::new(&menu).event_loop();
+
+    false
+}
+
+fn verbose_mode_setting_action() -> bool {
+    clear_screen();
+
+    Settings {
+        verbose_mode: MultipageValidator::new(
+            &[&"Set Verbose", &"Mode"],
+            &[&"Enable"],
+            &[&"Disable"],
+        )
+        .ask(),
+        blind_signing: get_blind_signing_state(),
+    }
+    .update();
+
+    true
+}
+
+fn blind_signing_setting_action() -> bool {
+    clear_screen();
+
+    Settings {
+        verbose_mode: get_verbose_mode_state(),
+        blind_signing: MultipageValidator::new(
+            &[&"Set Blind", &"Signing"],
+            &[&"Enable"],
+            &[&"Disable"],
+        )
+        .ask(),
+    }
+    .update();
+
+    true
+}
+
+fn back_from_setting_action() -> bool {
+    true
+}
+
+fn about_menu_action() -> bool {
     clear_screen();
     SingleMessage::new(APPLICATION_ABOUT).show_and_wait();
+    false
 }
 
-fn quit_menu_action() {
+fn quit_menu_action() -> bool {
     clear_screen();
     nanos_sdk::exit_app(0);
 }
@@ -58,10 +137,31 @@ fn quit_menu_action() {
 #[no_mangle]
 extern "C" fn sample_main() {
     let menu = [
-        MenuItem::new(&RADIX_LOGO_ICON, "\nRadix Babylon", app_menu_action),
-        MenuItem::new(&PROCESSING_ICON, "\nVersion", version_menu_action),
-        MenuItem::new(&CERTIFICATE_ICON, "\nAbout", about_menu_action),
-        MenuItem::new(&DASHBOARD_X_ICON, "\nQuit", quit_menu_action),
+        MenuItem::new(
+            MenuFeature::Icon(&RADIX_LOGO_ICON),
+            "\nRadix Babylon",
+            app_menu_action,
+        ),
+        MenuItem::new(
+            MenuFeature::Icon(&PROCESSING_ICON),
+            "\nVersion",
+            version_menu_action,
+        ),
+        MenuItem::new(
+            MenuFeature::Icon(&COGGLE_ICON),
+            "\nSettings",
+            settings_menu_action,
+        ),
+        MenuItem::new(
+            MenuFeature::Icon(&CERTIFICATE_ICON),
+            "\nAbout",
+            about_menu_action,
+        ),
+        MenuItem::new(
+            MenuFeature::Icon(&DASHBOARD_X_ICON),
+            "\nQuit",
+            quit_menu_action,
+        ),
     ];
     let mut comm = Comm::new();
     let mut state = TxState::new(LedgerTTY::new_tty());
@@ -76,7 +176,7 @@ extern "C" fn sample_main() {
         let event = comm.next_event();
 
         match event {
-            Event::Button(button_event) => main_menu.handle(button_event),
+            Event::Button(button_event) => _ = main_menu.handle(button_event),
             Event::Command(ins) => {
                 match dispatcher::dispatcher(&mut comm, ins, &mut state) {
                     Ok(()) => comm.reply_ok(),
