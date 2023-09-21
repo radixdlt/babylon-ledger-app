@@ -5,8 +5,8 @@ Ledger Nano S/S Plus/X app for Babylon
 ## Build
 
 Simplest way to build app is to use application builder container. To build container, use script provided
-in the `app-builder` directory. Once container is built, run it using `run-app-builder.sh` and then build
-binaries using `prepare-binaries.sh` script.
+in the `app-builder` directory. Once container is built, run it using `run-app-builder.sh`. Then build/load the
+application to your device as described [below](#compiling-and-loading-binaries-for-developmenttesting-purposes).
 
 ## Local Build Environment Setup
 
@@ -49,17 +49,7 @@ cargo install --git https://github.com/LedgerHQ/cargo-ledger
 python3 -m pip install ledgerblue
 ```
 
-## Build Commands
-
-### Production
-
-For building binaries for all supported targets, use following script:
-
-```shell
-prepare-binaries.sh
-```
-
-### Compiling and loading binaries for development/testing purposes
+## Compiling and loading binaries for development/testing purposes
 
 Following script builds debug binary for Ledger Nano S:
 ```shell
@@ -98,7 +88,7 @@ Flash commands for individual targets:
 
 Note that there are no individual scripts for Nano X since it does not support sideloading.
 
-### Development Device Setup (Nano S)
+## Development Device Setup (Nano S)
 
 > ☣️ ONLY Use a dedicated Ledger device for development. Don't use one with "funds on".
 
@@ -135,19 +125,13 @@ python3 -m ledgerblue.hostOnboard --apdu --id 0 --prefix "" --passphrase "" --pi
 
 The process takes some time (few minutes) to finish. Once process finishes, device is ready to use for testing/development purposes.
 
-### Testing
+## Testing
 
 For testing there are a number of test scripts provided in `test` directory. 
 To run tests, use following command (inside test directory):
 
 ```shell
-./test-all-release.sh
-```
-Debug builds have support for additional commands, so there are additional tests for them.
-To run tests for debug builds, use following command (inside test directory):
-
-```shell
-./test-all-debug.sh
+./test-all.sh
 ```
 
 There are also a number of tests which require user interaction. They should be run separately,
@@ -157,11 +141,9 @@ using following commands (inside test directory):
 python3 -m test-sign-auth-ed25519
 python3 -m test-sign-auth-secp256k1
 python3 -m test-sign-tx-ed25519
-python3 -m test-sign-tx-ed25519-hash
-python3 -m test-sign-tx-ed25519-summary
 python3 -m test-sign-tx-secp256k1 
-python3 -m test-sign-tx-secp256k1-hash
-python3 -m test-sign-tx-secp256k1-summary
+python3 -m test-verify-address-ed25519.py
+python3 -m test-verify-address-secp256k1.py
 ```
 
 ## License
