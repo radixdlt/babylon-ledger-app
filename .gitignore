@@ -15,3 +15,6 @@ test/__pycache__
 
 # Binaries
 *.elf
+
+# App builder image
+.bash_history
