@@ -1006,6 +1006,23 @@ br##"
         );
     }
     #[test]
+    fn test_simple_invalid_transfer() {
+        check_partial_decoding_with_type(
+            &TX_SIMPLE_INVALID_TRANSFER,
+br##"
+1 of 7: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "lock_fee" Tuple(Decimal(500), )
+2 of 7: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "withdraw" Tuple(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), Decimal(123), )
+3 of 7: TakeFromWorktop Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al) Decimal(123)
+4 of 7: CallMethod Address(account_loc1cyzfj6p254jy6lhr237s7pcp8qqz6c8ahq9mn6nkdjxxxat5pjq9xc) "deposit" Tuple(Bucket(0u32), )
+5 of 7: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "withdraw" Tuple(Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al), Decimal(321), )
+6 of 7: TakeFromWorktop Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al) Decimal(321)
+7 of 7: CallMethod Address(account_loc1cyzfj6p254jy6lhr237s7pcp8qqz6c8ahq9mn6nkdjxxxat5pjq9xc) "deposit" Tuple(Bucket(1u32), )
+"##,
+            &DetectedTxType::Other(Some(Decimal::whole(500))),
+            TxIntentType::Transfer,
+        );
+    }
+    #[test]
     fn test_simple_transfer_new_format() {
         check_partial_decoding_with_type(
             &TX_SIMPLE_TRANSFER_NEW_FORMAT,

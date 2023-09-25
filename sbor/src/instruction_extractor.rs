@@ -638,6 +638,22 @@ mod tests {
     }
 
     #[test]
+    pub fn test_simple_invalid_transfer() {
+        check_partial_decoding(
+            &TX_SIMPLE_INVALID_TRANSFER,
+            &[
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+                Instruction::TakeFromWorktop,
+                Instruction::CallMethod,
+                Instruction::CallMethod,
+                Instruction::TakeFromWorktop,
+                Instruction::CallMethod,
+            ],
+        );
+    }
+
+    #[test]
     pub fn test_simple_transfer_new_format() {
         check_partial_decoding(
             &TX_SIMPLE_TRANSFER_NEW_FORMAT,
