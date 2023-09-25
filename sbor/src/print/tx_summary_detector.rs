@@ -239,6 +239,11 @@ impl TxSummaryDetector {
             (DecodingPhase::ExpectDepositCall, Instruction::CallMethod) => {
                 self.decoding_phase = DecodingPhase::ExpectAddressDeposit;
             }
+            (DecodingPhase::DoneTransfer, _) => {
+                if info.instruction != Instruction::CallMethod {
+                    self.decoding_phase = DecodingPhase::NonConformingTransaction;
+                }
+            }
             // TODO: How to reliably detect nonconforming transaction here?
             (_, _) => {}
         }

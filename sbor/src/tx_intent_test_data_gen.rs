@@ -90,6 +90,10 @@ pub mod tests {
             data: &TX_SIMPLE_TRANSFER,
         },
         Blob {
+            name: "simple_invalid_transfer",
+            data: &TX_SIMPLE_INVALID_TRANSFER,
+        },
+        Blob {
             name: "simple_transfer_new_format",
             data: &TX_SIMPLE_TRANSFER_NEW_FORMAT,
         },
