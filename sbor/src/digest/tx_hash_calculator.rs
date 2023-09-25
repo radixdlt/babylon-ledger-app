@@ -385,6 +385,13 @@ mod tests {
         calculate_hash_and_compare(&TX_SIMPLE_TRANSFER, &TX_SIMPLE_TRANSFER_HASH);
     }
     #[test]
+    fn test_tx_simple_invalid_transfer() {
+        calculate_hash_and_compare(
+            &TX_SIMPLE_INVALID_TRANSFER,
+            &TX_SIMPLE_INVALID_TRANSFER_HASH,
+        );
+    }
+    #[test]
     fn test_tx_simple_transfer_new_format() {
         calculate_hash_and_compare(
             &TX_SIMPLE_TRANSFER_NEW_FORMAT,
