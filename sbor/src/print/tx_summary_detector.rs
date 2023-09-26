@@ -219,7 +219,9 @@ impl TxSummaryDetector {
             (FeePhase::Start, Instruction::CallMethod) => {
                 self.fee_phase = FeePhase::Address;
             }
-            (_, _) => {}
+            (_, _) => {
+                self.fee_phase = FeePhase::Start;
+            }
         }
 
         if self.intent_type != TxIntentType::Transfer {
@@ -239,8 +241,14 @@ impl TxSummaryDetector {
             (DecodingPhase::ExpectDepositCall, Instruction::CallMethod) => {
                 self.decoding_phase = DecodingPhase::ExpectAddressDeposit;
             }
-            // TODO: How to reliably detect nonconforming transaction here?
-            (_, _) => {}
+            (DecodingPhase::DoneTransfer, _) => {
+                if info.instruction != Instruction::CallMethod {
+                    self.decoding_phase = DecodingPhase::NonConformingTransaction;
+                }
+            }
+            (_, _) => {
+                self.decoding_phase = DecodingPhase::NonConformingTransaction;
+            }
         }
     }
 
@@ -354,6 +362,8 @@ impl TxSummaryDetector {
                     || self.data.eq(b"try_deposit_or_refund")
                 {
                     self.decoding_phase = DecodingPhase::DoneTransfer;
+                    self.fee_phase = FeePhase::Start;
+                    return;
                 } else {
                     self.decoding_phase = DecodingPhase::NonConformingTransaction;
                 }
@@ -399,6 +409,10 @@ impl TxSummaryDetector {
                     self.fee_phase = FeePhase::ValueStart;
                 } else {
                     self.fee_phase = FeePhase::Start;
+
+                    if self.decoding_phase == DecodingPhase::DoneTransfer {
+                        self.decoding_phase = DecodingPhase::NonConformingTransaction;
+                    }
                 }
             }
             FeePhase::Value => {

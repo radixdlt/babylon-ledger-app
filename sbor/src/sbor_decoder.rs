@@ -1420,6 +1420,10 @@ mod tests {
         check_partial_decoding(&TX_SIMPLE_TRANSFER);
     }
     #[test]
+    pub fn test_simple_invalid_transfer() {
+        check_partial_decoding(&TX_SIMPLE_INVALID_TRANSFER);
+    }
+    #[test]
     pub fn test_simple_transfer_new_format() {
         check_partial_decoding(&TX_SIMPLE_TRANSFER_NEW_FORMAT);
     }
