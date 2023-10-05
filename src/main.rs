@@ -7,6 +7,7 @@
 #![feature(const_mut_refs)]
 
 use nanos_sdk::io::{Comm, Event};
+use nanos_sdk::uxapp::UxEvent;
 use nanos_ui::bagls::{CERTIFICATE_ICON, COGGLE_ICON, DASHBOARD_X_ICON, PROCESSING_ICON};
 use nanos_ui::ui::clear_screen;
 
@@ -192,6 +193,7 @@ extern "C" fn sample_main() {
                         main_menu.display();
                     }
                 }
+                UxEvent::Event.request();
             }
         }
     }
