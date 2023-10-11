@@ -6,8 +6,10 @@ edition = "2021"
 description = "Radix Babylon"
 
 [dependencies]
-nanos_sdk = { git = "https://github.com/LedgerHQ/ledger-nanos-sdk.git" }
-nanos_ui = { git = "https://github.com/radixdlt/ledger-nanos-ui-radix.git" }
+#nanos_sdk = { git = "https://github.com/LedgerHQ/ledger-nanos-sdk.git" }
+nanos_sdk = { path = "../ledger-nanos-sdk" }
+#nanos_ui = { git = "https://github.com/radixdlt/ledger-nanos-ui-radix.git" }
+nanos_ui = { path = "../ledger-nanos-ui" }
 include_gif = { git = "https://github.com/LedgerHQ/sdk_include_gif" }
 
 sbor = { path = "./sbor", default-features = false }
