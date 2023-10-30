@@ -1,14 +1,16 @@
 use core::ptr::write_bytes;
 
-use nanos_sdk::bindings::{
-    cx_ecfp_private_key_t, cx_err_t, cx_md_t, CX_ECCINFO_PARITY_ODD, CX_LAST, CX_NONE, CX_RND_TRNG,
+use ledger_sdk_sys::{
+    cx_ecfp_private_key_t, cx_ecfp_public_key_t, cx_err_t, cx_md_t, CX_ECCINFO_PARITY_ODD, CX_LAST,
+    CX_NONE, CX_RND_TRNG,
 };
 use nanos_sdk::io::Comm;
 
 use crate::app_error::{to_result, AppError};
 use crate::crypto::bip32::Bip32Path;
-use crate::crypto::curves::{cx_ecfp_public_key_t, size_t, Curve};
+use crate::crypto::curves::Curve;
 use crate::crypto::key_pair::InternalKeyPair;
+use crate::crypto::types::size_t;
 use crate::sign::sign_outcome::SignOutcome;
 
 const PUB_KEY_TYPE_UNCOMPRESSED: u8 = 0x04;
@@ -42,7 +44,7 @@ impl From<InternalKeyPair> for KeyPairSecp256k1 {
 }
 
 fn validate_secp256k1_public_key(pub_key: &cx_ecfp_public_key_t) -> Result<(), AppError> {
-    if pub_key.W_len != PUB_KEY_UNCOMPRESSED_LEN as size_t {
+    if pub_key.W_len != PUB_KEY_UNCOMPRESSED_LEN {
         return Err(AppError::BadSecp256k1PublicKeyLen);
     }
 

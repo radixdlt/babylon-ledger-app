@@ -1,13 +1,16 @@
 [package]
 name = "babylon-ledger-app"
-version = "0.7.8"
+version = "0.7.10"
 authors = ["siy"]
 edition = "2021"
 description = "Radix Babylon"
 
 [dependencies]
-nanos_sdk = { git = "https://github.com/LedgerHQ/ledger-nanos-sdk.git" }
-nanos_ui = { git = "https://github.com/radixdlt/ledger-nanos-ui-radix.git" }
+ledger-sdk-sys = { git = "https://github.com/LedgerHQ/secure-sdk-rust" }
+# nanos_sdk = { git = "https://github.com/LedgerHQ/ledger-nanos-sdk.git" }
+nanos_sdk = { path= "../ledger-nanos-sdk" }
+# nanos_ui = { git = "https://github.com/radixdlt/ledger-nanos-ui-radix.git" }
+nanos_ui = { path = "../ledger-nanos-ui" }
 include_gif = { git = "https://github.com/LedgerHQ/sdk_include_gif" }
 
 sbor = { path = "./sbor", default-features = false }
@@ -16,11 +19,11 @@ sbor = { path = "./sbor", default-features = false }
 blake2 = { version = "0.10.6", default-features = false }
 
 [profile.dev]
-opt-level = "z"
+opt-level = "s"
 lto = false
 
 [profile.release]
-opt-level = "z"
+opt-level = "s"
 lto = false
 
 [package.metadata.ledger]

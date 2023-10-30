@@ -1,11 +1,13 @@
 use core::ptr::write_bytes;
 
+use ledger_sdk_sys::{cx_ecfp_private_key_t, cx_err_t, cx_md_t, CX_SHA512};
 use nanos_sdk::io::Comm;
 
 use crate::app_error::{to_result, AppError};
 use crate::crypto::bip32::Bip32Path;
-use crate::crypto::curves::{cx_ecfp_private_key_t, cx_err_t, cx_md_t, size_t, Curve, CX_SHA512};
+use crate::crypto::curves::Curve;
 use crate::crypto::key_pair::InternalKeyPair;
+use crate::crypto::types::size_t;
 use crate::sign::sign_outcome::SignOutcome;
 
 pub const ED25519_PUBLIC_KEY_LEN: usize = 32;

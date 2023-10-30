@@ -47,10 +47,11 @@ pub const fn bytes_to_number(bytes: &[u8]) -> u8 {
     let mut acc = 0;
 
     while i < bytes.len() {
+        acc *= 10;
         let c = bytes[i];
         match c {
             b'0'..=b'9' => {
-                acc = (c - b'0') as u32;
+                acc += (c - b'0') as u32;
             }
             _ => panic!("expected digit"),
         }
@@ -69,4 +70,20 @@ pub fn read_u32_be(bytes: &[u8]) -> u32 {
         + ((bytes[1] as u32) << 16)
         + ((bytes[2] as u32) << 8)
         + (bytes[3] as u32)
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    pub fn test_bytes_to_number() {
+        assert_eq!(bytes_to_number(b"0"), 0);
+        assert_eq!(bytes_to_number(b"1"), 1);
+        assert_eq!(bytes_to_number(b"9"), 9);
+        assert_eq!(bytes_to_number(b"10"), 10);
+        assert_eq!(bytes_to_number(b"11"), 11);
+        assert_eq!(bytes_to_number(b"19"), 19);
+        assert_eq!(bytes_to_number(b"255"), 255);
+    }
 }
