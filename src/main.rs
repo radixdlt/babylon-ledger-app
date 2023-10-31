@@ -176,11 +176,11 @@ extern "C" fn sample_main() {
 
     loop {
         let event = comm.next_event();
+        UxEvent::WakeUp.request();
 
         match event {
             Event::Button(button_event) => _ = main_menu.handle(button_event),
             Event::Command(ins) => {
-                UxEvent::WakeUp.request();
                 match dispatcher::dispatcher(&mut comm, ins, &mut state) {
                     Ok(()) => comm.reply_ok(),
                     Err(app_error) => comm.reply(app_error),
