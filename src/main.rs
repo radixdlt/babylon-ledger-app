@@ -6,7 +6,7 @@
 #![feature(cfg_version)]
 #![feature(const_mut_refs)]
 
-use ledger_sdk_sys::{BOLOS_UX_OK, os_global_pin_is_validated};
+use ledger_sdk_sys::{os_global_pin_is_validated, BOLOS_UX_OK};
 use nanos_sdk::io::{Comm, Event};
 use nanos_sdk::uxapp::UxEvent;
 use nanos_ui::bagls::{CERTIFICATE_ICON, COGGLE_ICON, DASHBOARD_X_ICON, PROCESSING_ICON};
@@ -227,7 +227,5 @@ extern "C" fn sample_main() {
 }
 
 fn check_pin_validated() -> u32 {
-    unsafe {
-        os_global_pin_is_validated() as u32
-    }
+    unsafe { os_global_pin_is_validated() as u32 }
 }
