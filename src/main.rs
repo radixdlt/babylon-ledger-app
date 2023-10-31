@@ -6,7 +6,7 @@
 #![feature(cfg_version)]
 #![feature(const_mut_refs)]
 
-use ledger_sdk_sys::BOLOS_UX_OK;
+use ledger_sdk_sys::{BOLOS_UX_OK, os_global_pin_is_validated};
 use nanos_sdk::io::{Comm, Event};
 use nanos_sdk::uxapp::UxEvent;
 use nanos_ui::bagls::{CERTIFICATE_ICON, COGGLE_ICON, DASHBOARD_X_ICON, PROCESSING_ICON};
@@ -179,11 +179,15 @@ extern "C" fn sample_main() {
 
         match event {
             Event::Button(button_event) => {
-                UxEvent::WakeUp.request();
+                if UxEvent::Event.request() == BOLOS_UX_OK {
+                    UxEvent::WakeUp.request();
+                }
                 _ = main_menu.handle(button_event);
             }
             Event::Command(ins) => {
-                UxEvent::WakeUp.request();
+                if UxEvent::Event.request() == BOLOS_UX_OK {
+                    UxEvent::WakeUp.request();
+                }
                 match dispatcher::dispatcher(&mut comm, ins, &mut state) {
                     Ok(()) => comm.reply_ok(),
                     Err(app_error) => comm.reply(app_error),
@@ -198,11 +202,16 @@ extern "C" fn sample_main() {
                         main_menu.display();
                     }
                 }
+
                 if UxEvent::Event.request() != BOLOS_UX_OK {
                     let inner_event = UxEvent::block_and_get_event(&mut comm).1;
 
                     if let Some(Event::Command(ins)) = inner_event {
-                        UxEvent::ValidatePIN.request();
+                        if check_pin_validated() == BOLOS_UX_OK {
+                            UxEvent::WakeUp.request();
+                        } else {
+                            UxEvent::ValidatePIN.request();
+                        }
                         main_menu.display();
                         match dispatcher::dispatcher(&mut comm, ins, &mut state) {
                             Ok(()) => comm.reply_ok(),
@@ -214,5 +223,11 @@ extern "C" fn sample_main() {
                 }
             }
         }
+    }
+}
+
+fn check_pin_validated() -> u32 {
+    unsafe {
+        os_global_pin_is_validated() as u32
     }
 }
