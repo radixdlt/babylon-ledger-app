@@ -4,7 +4,7 @@ use ledger_sdk_sys::{
     CX_MEMORY_FULL, CX_NOT_INVERTIBLE, CX_NOT_LOCKED, CX_NOT_UNLOCKED, CX_NO_RESIDUE, CX_OK,
     CX_OVERFLOW, CX_UNLOCKED,
 };
-use nanos_sdk::io::{Reply, StatusWords};
+use crate::io::{Reply, StatusWords};
 use sbor::decoder_error::DecoderError;
 
 #[derive(Copy, Clone, Debug)]

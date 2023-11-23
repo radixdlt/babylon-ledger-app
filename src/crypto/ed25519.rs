@@ -1,7 +1,7 @@
 use core::ptr::write_bytes;
 
 use ledger_sdk_sys::{cx_ecfp_private_key_t, cx_err_t, cx_md_t, CX_SHA512};
-use nanos_sdk::io::Comm;
+use crate::io::Comm;
 
 use crate::app_error::{to_result, AppError};
 use crate::crypto::bip32::Bip32Path;
@@ -49,20 +49,18 @@ impl KeyPair25519 {
     }
 
     pub fn sign(&self, comm: &mut Comm, message: &[u8]) -> Result<SignOutcome, AppError> {
-        let mut signature: [u8; ED25519_SIGNATURE_LEN] = [0; ED25519_SIGNATURE_LEN];
-
         let rc = unsafe {
             cx_eddsa_sign_no_throw(
                 &self.origin.private,
                 CX_SHA512,
                 message.as_ptr(),
                 message.len() as size_t,
-                signature.as_mut_ptr(),
-                signature.len() as size_t,
+                comm.work_buffer.as_mut_ptr(),
+                ED25519_SIGNATURE_LEN as size_t
             )
         };
 
-        comm.append(&signature);
+        comm.append_work_buffer(ED25519_SIGNATURE_LEN);
         self.public(comm);
         comm.append(message);
 

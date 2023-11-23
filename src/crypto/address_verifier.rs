@@ -1,5 +1,5 @@
 use crate::ui::single_message::SingleMessage;
-use nanos_sdk::io::Comm;
+use crate::io::Comm;
 use sbor::bech32::address::Address;
 use sbor::bech32::encoder::Bech32;
 use sbor::bech32::network::NetworkId;

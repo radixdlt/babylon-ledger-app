@@ -1,6 +1,7 @@
 use crate::app_error::AppError;
-use nanos_sdk::io::ApduHeader;
+use crate::io::ApduHeader;
 
+#[derive(Copy, Clone)]
 #[repr(u8)]
 pub enum Command {
     GetDeviceModel,

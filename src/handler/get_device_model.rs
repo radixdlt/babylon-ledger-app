@@ -1,4 +1,4 @@
-use nanos_sdk::io::Comm;
+use crate::io::Comm;
 
 use crate::app_error::AppError;
 use crate::handler::params_zero::ParamsZero;

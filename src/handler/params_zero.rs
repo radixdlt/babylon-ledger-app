@@ -1,5 +1,5 @@
 use crate::app_error::AppError;
-use nanos_sdk::io::Comm;
+use crate::io::Comm;
 
 pub trait ParamsZero {
     fn check_params_zero(&self) -> Result<(), AppError>;

@@ -7,8 +7,7 @@
 #![feature(const_mut_refs)]
 
 use ledger_sdk_sys::{os_global_pin_is_validated, BOLOS_UX_OK};
-use nanos_sdk::io::{Comm, Event};
-use nanos_sdk::uxapp::UxEvent;
+use crate::io::{Comm, Event, UxEvent};
 use nanos_ui::bagls::{CERTIFICATE_ICON, COGGLE_ICON, DASHBOARD_X_ICON, PROCESSING_ICON};
 use nanos_ui::ui::clear_screen;
 
@@ -33,6 +32,7 @@ mod settings;
 mod sign;
 mod ui;
 mod utilities;
+mod io;
 
 nanos_sdk::set_panic!(nanos_sdk::exiting_panic);
 
