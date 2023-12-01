@@ -1,14 +1,16 @@
-#[cfg(target_os = "nanox")]
-use nanos_sdk::ble;
 use ledger_sdk_sys::buttons::{get_button_event, ButtonEvent, ButtonsState};
 use ledger_sdk_sys::seph as sys_seph;
 use ledger_sdk_sys::*;
+#[cfg(target_os = "nanox")]
+use nanos_sdk::ble;
 
 use core::convert::TryFrom;
 #[cfg(feature = "ccid")]
 use nanos_sdk::ccid;
 use nanos_sdk::seph;
 
+use crate::app_error::AppError;
+use crate::command::Command;
 pub use ledger_sdk_sys::BOLOS_UX_CANCEL;
 pub use ledger_sdk_sys::BOLOS_UX_CONTINUE;
 pub use ledger_sdk_sys::BOLOS_UX_ERROR;
@@ -190,9 +192,7 @@ impl Comm {
         }
     }
 
-    pub fn read_event<T: TryFrom<ApduHeader>>(
-        &mut self,
-    ) -> Option<Event<T>> {
+    pub fn read_event<T: TryFrom<ApduHeader>>(&mut self) -> Option<Event<T>> {
         // Signal end of command stream from SE to MCU
         // And prepare reception
         if !sys_seph::is_status_sent() {
@@ -222,7 +222,9 @@ impl Comm {
                     seph::handle_usb_ep_xfer_event(&mut self.apdu_buffer, &self.work_buffer);
                 }
             }
-            seph::Events::CAPDUEvent => seph::handle_capdu_event(&mut self.apdu_buffer, &self.work_buffer),
+            seph::Events::CAPDUEvent => {
+                seph::handle_capdu_event(&mut self.apdu_buffer, &self.work_buffer)
+            }
 
             #[cfg(target_os = "nanox")]
             seph::Events::BleReceive => ble::receive(&mut self.apdu_buffer, &self.work_buffer),
@@ -387,9 +389,10 @@ impl UxEvent {
         ret
     }
 
-    pub fn block_and_get_event<T: TryFrom<ApduHeader>>(comm: &mut Comm) -> (u32, Option<Event<T>>) {
+    pub fn block_and_get_event(comm: &mut Comm) {
         let mut ret = unsafe { os_sched_last_status(TASK_BOLOS_UX as u32) } as u32;
-        let mut event = None;
+        let mut event: Option<Event<Command>> = None;
+
         while ret == BOLOS_UX_IGNORE || ret == BOLOS_UX_CONTINUE {
             if unsafe { os_sched_is_running(TASK_SUBTASKS_START as u32) as u8 } != BOLOS_TRUE as u8
             {
@@ -398,13 +401,12 @@ impl UxEvent {
                 UxEvent::Event.request();
 
                 if let Some(Event::Command(_)) = event {
-                    return (ret, event);
+                    comm.reply(AppError::NothingReceived);
                 }
             } else {
                 unsafe { os_sched_yield(BOLOS_UX_OK as u8) };
             }
             ret = unsafe { os_sched_last_status(TASK_BOLOS_UX as u32) } as u32;
         }
-        (ret, event)
     }
 }

@@ -204,21 +204,7 @@ extern "C" fn sample_main() {
                 }
 
                 if UxEvent::Event.request() != BOLOS_UX_OK {
-                    let inner_event = UxEvent::block_and_get_event(&mut comm).1;
-
-                    if let Some(Event::Command(ins)) = inner_event {
-                        if check_pin_validated() == BOLOS_UX_OK {
-                            UxEvent::WakeUp.request();
-                        } else {
-                            UxEvent::ValidatePIN.request();
-                        }
-                        main_menu.display();
-                        match dispatcher::dispatcher(&mut comm, ins, &mut state) {
-                            Ok(()) => comm.reply_ok(),
-                            Err(app_error) => comm.reply(app_error),
-                        };
-                        continue;
-                    }
+                    UxEvent::block_and_get_event(&mut comm);
                     main_menu.display();
                 }
             }
