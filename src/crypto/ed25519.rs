@@ -1,7 +1,7 @@
 use core::ptr::write_bytes;
 
-use ledger_sdk_sys::{cx_ecfp_private_key_t, cx_err_t, cx_md_t, CX_SHA512};
 use crate::io::Comm;
+use ledger_sdk_sys::{cx_ecfp_private_key_t, cx_err_t, cx_md_t, CX_SHA512};
 
 use crate::app_error::{to_result, AppError};
 use crate::crypto::bip32::Bip32Path;
@@ -56,7 +56,7 @@ impl KeyPair25519 {
                 message.as_ptr(),
                 message.len() as size_t,
                 comm.work_buffer.as_mut_ptr(),
-                ED25519_SIGNATURE_LEN as size_t
+                ED25519_SIGNATURE_LEN as size_t,
             )
         };
 
