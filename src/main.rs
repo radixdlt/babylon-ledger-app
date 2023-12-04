@@ -6,14 +6,13 @@
 #![feature(cfg_version)]
 #![feature(const_mut_refs)]
 
-use ledger_sdk_sys::{os_global_pin_is_validated, BOLOS_UX_OK};
-use crate::io::{Comm, Event, UxEvent};
 use nanos_ui::bagls::{CERTIFICATE_ICON, COGGLE_ICON, DASHBOARD_X_ICON, PROCESSING_ICON};
 use nanos_ui::ui::clear_screen;
 
 use handler::dispatcher;
 
 use crate::app_error::AppError;
+use crate::io::{Comm, Event, UxEvent};
 use crate::ledger_display_io::LedgerTTY;
 use crate::settings::Settings;
 use crate::sign::tx_state::TxState;
@@ -27,12 +26,12 @@ mod command;
 mod command_class;
 mod crypto;
 mod handler;
+mod io;
 mod ledger_display_io;
 mod settings;
 mod sign;
 mod ui;
 mod utilities;
-mod io;
 
 nanos_sdk::set_panic!(nanos_sdk::exiting_panic);
 
@@ -179,15 +178,11 @@ extern "C" fn sample_main() {
 
         match event {
             Event::Button(button_event) => {
-                if UxEvent::Event.request() == BOLOS_UX_OK {
-                    UxEvent::WakeUp.request();
-                }
+                UxEvent::wakeup();
                 _ = main_menu.handle(button_event);
             }
             Event::Command(ins) => {
-                if UxEvent::Event.request() == BOLOS_UX_OK {
-                    UxEvent::WakeUp.request();
-                }
+                UxEvent::wakeup();
                 match dispatcher::dispatcher(&mut comm, ins, &mut state) {
                     Ok(()) => comm.reply_ok(),
                     Err(app_error) => comm.reply(app_error),
@@ -203,15 +198,10 @@ extern "C" fn sample_main() {
                     }
                 }
 
-                if UxEvent::Event.request() != BOLOS_UX_OK {
-                    UxEvent::block_and_get_event(&mut comm);
+                if UxEvent::enter_screen_lock(&mut comm) {
                     main_menu.display();
                 }
             }
         }
     }
-}
-
-fn check_pin_validated() -> u32 {
-    unsafe { os_global_pin_is_validated() as u32 }
 }

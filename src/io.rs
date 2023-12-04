@@ -251,14 +251,6 @@ impl Comm {
         None
     }
 
-    pub fn next_command<T: TryFrom<ApduHeader>>(&mut self) -> T {
-        loop {
-            if let Event::Command(ins) = self.next_event() {
-                return ins;
-            }
-        }
-    }
-
     pub fn reply<T: Into<Reply>>(&mut self, reply: T) {
         let sw = reply.into().0;
         // Append status word
@@ -332,19 +324,20 @@ impl Comm {
 }
 
 //--------------------------------------------------------------
+// Screen Saver/PIN Lock functionality
 //--------------------------------------------------------------
 
 fn os_ux_rs(params: &bolos_ux_params_t) {
     unsafe { os_ux(params as *const bolos_ux_params_t as *mut bolos_ux_params_t) };
 }
+fn last_status() -> u32 {
+    unsafe { os_sched_last_status(TASK_BOLOS_UX as u32) as u32 }
+}
 
 #[repr(u8)]
 pub enum UxEvent {
     Event = BOLOS_UX_EVENT,
-    Keyboard = BOLOS_UX_KEYBOARD,
     WakeUp = BOLOS_UX_WAKE_UP,
-    ValidatePIN = BOLOS_UX_VALIDATE_PIN,
-    LastID = BOLOS_UX_LAST_ID,
 }
 
 impl UxEvent {
@@ -352,51 +345,36 @@ impl UxEvent {
         let mut params = bolos_ux_params_t::default();
         params.ux_id = match self {
             Self::Event => Self::Event as u8,
-            Self::Keyboard => Self::Keyboard as u8,
             Self::WakeUp => Self::WakeUp as u8,
-            Self::ValidatePIN => {
-                // Perform pre-wake up
-                params.ux_id = Self::WakeUp as u8;
-                os_ux_rs(&params);
-
-                Self::ValidatePIN as u8
-            }
-            Self::LastID => Self::LastID as u8,
         };
 
         os_ux_rs(&params);
 
-        match self {
-            Self::ValidatePIN => Self::block(),
-            _ => unsafe { os_sched_last_status(TASK_BOLOS_UX as u32) as u32 },
+        last_status()
+    }
+
+    pub fn wakeup() {
+        if UxEvent::Event.request() == BOLOS_UX_OK {
+            UxEvent::WakeUp.request();
         }
     }
 
-    pub fn block() -> u32 {
-        let mut ret = unsafe { os_sched_last_status(TASK_BOLOS_UX as u32) } as u32;
-        while ret == BOLOS_UX_IGNORE || ret == BOLOS_UX_CONTINUE {
-            if unsafe { os_sched_is_running(TASK_SUBTASKS_START as u32) as u8 } != BOLOS_TRUE as u8
-            {
-                let mut spi_buffer = [0u8; 128];
-                sys_seph::send_general_status();
-                sys_seph::seph_recv(&mut spi_buffer, 0);
-                UxEvent::Event.request();
-            } else {
-                unsafe { os_sched_yield(BOLOS_UX_OK as u8) };
-            }
-            ret = unsafe { os_sched_last_status(TASK_BOLOS_UX as u32) } as u32;
+    pub fn enter_screen_lock(comm: &mut Comm) -> bool {
+        if UxEvent::Event.request() != BOLOS_UX_OK {
+            UxEvent::block_and_get_event(comm);
+            true
+        } else {
+            false
         }
-        ret
     }
 
     pub fn block_and_get_event(comm: &mut Comm) {
-        let mut ret = unsafe { os_sched_last_status(TASK_BOLOS_UX as u32) } as u32;
-        let mut event: Option<Event<Command>> = None;
+        let mut ret = last_status();
 
         while ret == BOLOS_UX_IGNORE || ret == BOLOS_UX_CONTINUE {
             if unsafe { os_sched_is_running(TASK_SUBTASKS_START as u32) as u8 } != BOLOS_TRUE as u8
             {
-                event = comm.read_event();
+                let event: Option<Event<Command>> = comm.read_event();
 
                 UxEvent::Event.request();
 
@@ -406,7 +384,7 @@ impl UxEvent {
             } else {
                 unsafe { os_sched_yield(BOLOS_UX_OK as u8) };
             }
-            ret = unsafe { os_sched_last_status(TASK_BOLOS_UX as u32) } as u32;
+            ret = last_status();
         }
     }
 }
