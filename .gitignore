@@ -3,12 +3,12 @@
 .vscode/
 
 # Rust
+out/
 target/
 app_nanos.json
 app_nanosplus.json
 app_nanox.json
 app.json
-Cargo.lock
 
 # Python
 test/__pycache__

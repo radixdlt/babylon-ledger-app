@@ -6,15 +6,13 @@
 #![feature(cfg_version)]
 #![feature(const_mut_refs)]
 
-use nanos_sdk::bindings::BOLOS_UX_OK;
-use nanos_sdk::io::{Comm, Event};
-use nanos_sdk::uxapp::UxEvent;
 use nanos_ui::bagls::{CERTIFICATE_ICON, COGGLE_ICON, DASHBOARD_X_ICON, PROCESSING_ICON};
 use nanos_ui::ui::clear_screen;
 
 use handler::dispatcher;
 
 use crate::app_error::AppError;
+use crate::io::{Comm, Event, UxEvent};
 use crate::ledger_display_io::LedgerTTY;
 use crate::settings::Settings;
 use crate::sign::tx_state::TxState;
@@ -28,6 +26,7 @@ mod command;
 mod command_class;
 mod crypto;
 mod handler;
+mod io;
 mod ledger_display_io;
 mod settings;
 mod sign;
@@ -178,8 +177,12 @@ extern "C" fn sample_main() {
         let event = comm.next_event();
 
         match event {
-            Event::Button(button_event) => _ = main_menu.handle(button_event),
+            Event::Button(button_event) => {
+                UxEvent::wakeup();
+                _ = main_menu.handle(button_event);
+            }
             Event::Command(ins) => {
+                UxEvent::wakeup();
                 match dispatcher::dispatcher(&mut comm, ins, &mut state) {
                     Ok(()) => comm.reply_ok(),
                     Err(app_error) => comm.reply(app_error),
@@ -194,8 +197,8 @@ extern "C" fn sample_main() {
                         main_menu.display();
                     }
                 }
-                if UxEvent::Event.request() != BOLOS_UX_OK {
-                    UxEvent::block();
+
+                if UxEvent::enter_screen_lock(&mut comm) {
                     main_menu.display();
                 }
             }

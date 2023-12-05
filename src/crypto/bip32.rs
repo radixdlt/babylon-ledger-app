@@ -1,6 +1,6 @@
 use core::intrinsics::write_bytes;
 
-use nanos_sdk::io::Comm;
+use crate::io::Comm;
 use sbor::bech32::network::NetworkId;
 use sbor::utilities::conversion::read_u32_be;
 

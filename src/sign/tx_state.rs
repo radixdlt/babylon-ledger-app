@@ -1,4 +1,4 @@
-use nanos_sdk::io::Comm;
+use crate::io::Comm;
 use sbor::bech32::address::Address;
 use sbor::decoder_error::DecoderError;
 use sbor::digest::digest::Digest;

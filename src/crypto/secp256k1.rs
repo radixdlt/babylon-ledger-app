@@ -1,14 +1,16 @@
 use core::ptr::write_bytes;
 
-use nanos_sdk::bindings::{
-    cx_ecfp_private_key_t, cx_err_t, cx_md_t, CX_ECCINFO_PARITY_ODD, CX_LAST, CX_NONE, CX_RND_TRNG,
+use crate::io::Comm;
+use ledger_sdk_sys::{
+    cx_ecfp_private_key_t, cx_ecfp_public_key_t, cx_err_t, cx_md_t, CX_ECCINFO_PARITY_ODD, CX_LAST,
+    CX_NONE, CX_RND_TRNG,
 };
-use nanos_sdk::io::Comm;
 
 use crate::app_error::{to_result, AppError};
 use crate::crypto::bip32::Bip32Path;
-use crate::crypto::curves::{cx_ecfp_public_key_t, size_t, Curve};
+use crate::crypto::curves::Curve;
 use crate::crypto::key_pair::InternalKeyPair;
+use crate::crypto::types::size_t;
 use crate::sign::sign_outcome::SignOutcome;
 
 const PUB_KEY_TYPE_UNCOMPRESSED: u8 = 0x04;
@@ -42,7 +44,7 @@ impl From<InternalKeyPair> for KeyPairSecp256k1 {
 }
 
 fn validate_secp256k1_public_key(pub_key: &cx_ecfp_public_key_t) -> Result<(), AppError> {
-    if pub_key.W_len != PUB_KEY_UNCOMPRESSED_LEN as size_t {
+    if pub_key.W_len != PUB_KEY_UNCOMPRESSED_LEN {
         return Err(AppError::BadSecp256k1PublicKeyLen);
     }
 
@@ -76,9 +78,8 @@ impl KeyPairSecp256k1 {
 
     pub fn sign(&self, comm: &mut Comm, message: &[u8]) -> Result<SignOutcome, AppError> {
         unsafe {
-            let mut der = [0u8; DER_MAX_LEN];
             let mut info: u32 = 0;
-            let mut len: size_t = der.len() as size_t;
+            let mut len: size_t = DER_MAX_LEN as size_t;
 
             let rc = cx_ecdsa_sign_no_throw(
                 &self.origin.private,
@@ -86,7 +87,7 @@ impl KeyPairSecp256k1 {
                 CX_NONE,
                 message.as_ptr(),
                 message.len() as size_t,
-                der.as_mut_ptr(),
+                comm.work_buffer.as_mut_ptr(),
                 &mut len as *mut size_t,
                 &mut info as *mut size_t,
             );
@@ -96,10 +97,10 @@ impl KeyPairSecp256k1 {
             // DER has format: `30 || L || 02 || Lr || r || 02 || Ls || s`
 
             let index_r_len = 3usize;
-            let r_len = der[index_r_len] as usize;
+            let r_len = comm.work_buffer[index_r_len] as usize;
             let mut r_start = index_r_len + 1;
             let index_s_len = r_start + r_len + 1;
-            let s_len = der[index_s_len] as usize;
+            let s_len = comm.work_buffer[index_s_len] as usize;
             let s_start = index_s_len + 1;
             if r_len == 33 {
                 // we skip first byte of R.
@@ -109,7 +110,7 @@ impl KeyPairSecp256k1 {
             // +4 for `02`, `Lr`, `02` and `Ls`.
             assert_eq!(
                 r_len + s_len + 4,
-                (der[1] as usize),
+                (comm.work_buffer[1] as usize),
                 "Parsed S_len + R_len should equal 'L' + 4, but it did not"
             );
 
@@ -120,8 +121,8 @@ impl KeyPairSecp256k1 {
             };
 
             comm.append(&[parity]);
-            comm.append(&der[r_start..(r_start + 32)]);
-            comm.append(&der[s_start..(s_start + 32)]);
+            comm.append_work_buffer_from_to(r_start, r_start + 32);
+            comm.append_work_buffer_from_to(s_start, s_start + 32);
         }
 
         self.public(comm);

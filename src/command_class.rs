@@ -1,4 +1,4 @@
-use nanos_sdk::io::{Comm, StatusWords};
+use crate::io::{Comm, StatusWords};
 
 use crate::app_error::AppError;
 
