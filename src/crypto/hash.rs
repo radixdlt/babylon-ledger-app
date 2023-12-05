@@ -2,7 +2,7 @@ use core::ffi::c_uint;
 use core::intrinsics::write_bytes;
 use core::mem::size_of;
 
-use ledger_sdk_sys::{cx_blake2b_t, cx_md_t, CX_BLAKE2B};
+use ledger_secure_sdk_sys::{cx_blake2b_t, cx_md_t, CX_BLAKE2B};
 use sbor::digest::digest::{Digest, BLAKE2B_DIGEST_SIZE};
 use sbor::digest::digester::Digester;
 

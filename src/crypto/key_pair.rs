@@ -1,6 +1,6 @@
 use core::intrinsics::write_bytes;
 
-use ledger_sdk_sys::{cx_ecfp_private_key_t, cx_ecfp_public_key_t};
+use ledger_secure_sdk_sys::{cx_ecfp_private_key_t, cx_ecfp_public_key_t};
 
 #[derive(Clone)]
 pub struct InternalKeyPair {

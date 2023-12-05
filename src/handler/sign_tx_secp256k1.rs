@@ -13,5 +13,5 @@ pub fn handle<T: Copy>(
 ) -> Result<(), AppError> {
     state
         .sign_tx(comm, class, Curve::Secp256k1)
-        .and_then(|outcome| process_sign_outcome(outcome))
+        .and_then(process_sign_outcome)
 }

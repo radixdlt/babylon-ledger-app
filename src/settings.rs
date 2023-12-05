@@ -1,5 +1,5 @@
-use nanos_sdk::nvm::{AtomicStorage, SingleStorage};
-use nanos_sdk::NVMData;
+use ledger_device_sdk::nvm::{AtomicStorage, SingleStorage};
+use ledger_device_sdk::NVMData;
 
 const BIT_VERBOSE_MODE: u32 = 0x01;
 const BIT_HASH_SIGN: u32 = 0x02;
