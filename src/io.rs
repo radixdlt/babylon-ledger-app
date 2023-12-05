@@ -334,6 +334,12 @@ fn last_status() -> u32 {
     unsafe { os_sched_last_status(TASK_BOLOS_UX as u32) as u32 }
 }
 
+#[allow(clippy::unnecessary_cast)]
+fn scheduler_is_not_running() -> bool {
+    let rc = unsafe { os_sched_is_running(TASK_SUBTASKS_START as u32) as u8 };
+    rc != BOLOS_TRUE as u8
+}
+
 #[repr(u8)]
 pub enum UxEvent {
     Event = BOLOS_UX_EVENT,
@@ -374,8 +380,7 @@ impl UxEvent {
         let mut ret = last_status();
 
         while ret == BOLOS_UX_IGNORE || ret == BOLOS_UX_CONTINUE {
-            if unsafe { os_sched_is_running(TASK_SUBTASKS_START as u32) as u8 } != BOLOS_TRUE as u8
-            {
+            if scheduler_is_not_running() {
                 let event: Option<Event<Command>> = comm.read_event();
 
                 UxEvent::Event.request();
