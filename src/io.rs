@@ -13,6 +13,7 @@ pub use ledger_secure_sdk_sys::BOLOS_UX_OK;
 pub use ledger_secure_sdk_sys::BOLOS_UX_REDRAW;
 use ledger_secure_sdk_sys::buttons::{ButtonEvent, ButtonsState, get_button_event};
 use ledger_secure_sdk_sys::seph as sys_seph;
+use ledger_secure_sdk_sys::*;
 
 use crate::app_error::AppError;
 use crate::command::Command;
