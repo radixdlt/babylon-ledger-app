@@ -1,22 +1,22 @@
-use ledger_sdk_sys::buttons::{get_button_event, ButtonEvent, ButtonsState};
-use ledger_sdk_sys::seph as sys_seph;
-use ledger_sdk_sys::*;
+use ledger_secure_sdk_sys::buttons::{get_button_event, ButtonEvent, ButtonsState};
+use ledger_secure_sdk_sys::seph as sys_seph;
+use ledger_secure_sdk_sys::*;
 #[cfg(target_os = "nanox")]
 use nanos_sdk::ble;
 
 use core::convert::TryFrom;
 #[cfg(feature = "ccid")]
-use nanos_sdk::ccid;
-use nanos_sdk::seph;
+use ledger_device_sdk::ccid;
+use ledger_device_sdk::seph;
 
 use crate::app_error::AppError;
 use crate::command::Command;
-pub use ledger_sdk_sys::BOLOS_UX_CANCEL;
-pub use ledger_sdk_sys::BOLOS_UX_CONTINUE;
-pub use ledger_sdk_sys::BOLOS_UX_ERROR;
-pub use ledger_sdk_sys::BOLOS_UX_IGNORE;
-pub use ledger_sdk_sys::BOLOS_UX_OK;
-pub use ledger_sdk_sys::BOLOS_UX_REDRAW;
+pub use ledger_secure_sdk_sys::BOLOS_UX_CANCEL;
+pub use ledger_secure_sdk_sys::BOLOS_UX_CONTINUE;
+pub use ledger_secure_sdk_sys::BOLOS_UX_ERROR;
+pub use ledger_secure_sdk_sys::BOLOS_UX_IGNORE;
+pub use ledger_secure_sdk_sys::BOLOS_UX_OK;
+pub use ledger_secure_sdk_sys::BOLOS_UX_REDRAW;
 
 #[derive(Copy, Clone)]
 #[repr(u16)]
@@ -342,10 +342,12 @@ pub enum UxEvent {
 
 impl UxEvent {
     pub fn request(&self) -> u32 {
-        let mut params = bolos_ux_params_t::default();
-        params.ux_id = match self {
-            Self::Event => Self::Event as u8,
-            Self::WakeUp => Self::WakeUp as u8,
+        let params = bolos_ux_params_s {
+            ux_id: match self {
+                Self::Event => Self::Event as u8,
+                Self::WakeUp => Self::WakeUp as u8,
+            },
+            ..Default::default()
         };
 
         os_ux_rs(&params);

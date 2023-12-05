@@ -1,7 +1,7 @@
 use core::ptr::write_bytes;
 
 use crate::io::Comm;
-use ledger_sdk_sys::{
+use ledger_secure_sdk_sys::{
     cx_ecfp_private_key_t, cx_ecfp_public_key_t, cx_err_t, cx_md_t, CX_ECCINFO_PARITY_ODD, CX_LAST,
     CX_NONE, CX_RND_TRNG,
 };

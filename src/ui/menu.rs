@@ -1,8 +1,8 @@
-use nanos_sdk::buttons::{ButtonEvent, ButtonsState};
-use nanos_ui::bagls::{Icon, LEFT_ARROW, LEFT_S_ARROW, RIGHT_ARROW, RIGHT_S_ARROW};
-use nanos_ui::layout::Draw;
-use nanos_ui::screen_util::screen_update;
-use nanos_ui::ui::{clear_screen, get_event};
+use ledger_device_sdk::buttons::{ButtonEvent, ButtonsState};
+use ledger_device_sdk::ui::bagls::{Icon, LEFT_ARROW, LEFT_S_ARROW, RIGHT_ARROW, RIGHT_S_ARROW};
+use ledger_device_sdk::ui::gadgets::{clear_screen, get_event};
+use ledger_device_sdk::ui::layout::Draw;
+use ledger_device_sdk::ui::screen_util::screen_update;
 
 use crate::ui::utils::{CenteredText, LeftAlignedMiddle};
 
@@ -70,13 +70,10 @@ impl<'a> Menu<'a> {
         self.display();
 
         loop {
-            match get_event(&mut buttons) {
-                Some(event) => {
-                    if self.handle(event) {
-                        break;
-                    }
+            if let Some(event) = get_event(&mut buttons) {
+                if self.handle(event) {
+                    break;
                 }
-                _ => {}
             }
         }
     }

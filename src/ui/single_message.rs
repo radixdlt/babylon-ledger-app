@@ -1,8 +1,8 @@
-use nanos_sdk::buttons::{ButtonEvent, ButtonsState};
-use nanos_ui::bagls::{Icon, RIGHT_ARROW, RIGHT_S_ARROW};
-use nanos_ui::layout::Draw;
-use nanos_ui::ui::{clear_screen, get_event};
-use nanos_ui::SCREEN_WIDTH;
+use ledger_device_sdk::buttons::{ButtonEvent, ButtonsState};
+use ledger_device_sdk::ui::bagls::{Icon, RIGHT_ARROW, RIGHT_S_ARROW};
+use ledger_device_sdk::ui::gadgets::{clear_screen, get_event};
+use ledger_device_sdk::ui::layout::Draw;
+use ledger_device_sdk::ui::SCREEN_WIDTH;
 
 use crate::ui::utils::CenteredText;
 
