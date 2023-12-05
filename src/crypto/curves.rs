@@ -16,6 +16,7 @@ use crate::crypto::ed25519::KeyPair25519;
 use crate::crypto::hash::Blake2bHasher;
 use crate::crypto::key_pair::InternalKeyPair;
 use crate::crypto::secp256k1::KeyPairSecp256k1;
+use crate::crypto::types::size_t;
 
 pub const INTERNAL_SEED_SIZE: usize = 32;
 
