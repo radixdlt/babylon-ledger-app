@@ -1,8 +1,7 @@
 use ledger_secure_sdk_sys::buttons::{get_button_event, ButtonEvent, ButtonsState};
 use ledger_secure_sdk_sys::seph as sys_seph;
-use ledger_secure_sdk_sys::*;
 #[cfg(target_os = "nanox")]
-use nanos_sdk::ble;
+use ledger_secure_sdk_sys::ble;
 
 use core::convert::TryFrom;
 #[cfg(feature = "ccid")]
