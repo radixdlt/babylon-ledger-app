@@ -2,7 +2,7 @@ use core::ffi::{c_uchar, c_uint};
 use core::intrinsics::write_bytes;
 use core::ptr::null_mut;
 
-use ledger_sdk_sys::{
+use ledger_secure_sdk_sys::{
     cx_curve_t, cx_ecfp_private_key_t, cx_ecfp_public_key_t, cx_err_t, CX_CURVE_Ed25519,
     CX_CURVE_SECP256K1, HDW_ED25519_SLIP10, HDW_NORMAL,
 };
@@ -16,7 +16,6 @@ use crate::crypto::ed25519::KeyPair25519;
 use crate::crypto::hash::Blake2bHasher;
 use crate::crypto::key_pair::InternalKeyPair;
 use crate::crypto::secp256k1::KeyPairSecp256k1;
-use crate::crypto::types::size_t;
 
 pub const INTERNAL_SEED_SIZE: usize = 32;
 
@@ -90,7 +89,7 @@ impl Curve {
         to_result(rc).map(|_| key_pair)
     }
 
-    pub fn to_address(&self, path: &Bip32Path) -> Result<(Address, NetworkId), AppError> {
+    pub fn as_address(&self, path: &Bip32Path) -> Result<(Address, NetworkId), AppError> {
         let key_pair = self.key_pair(path)?;
 
         let digest = match self {

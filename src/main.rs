@@ -6,8 +6,10 @@
 #![feature(cfg_version)]
 #![feature(const_mut_refs)]
 
-use nanos_ui::bagls::{CERTIFICATE_ICON, COGGLE_ICON, DASHBOARD_X_ICON, PROCESSING_ICON};
-use nanos_ui::ui::clear_screen;
+use ledger_device_sdk::ui::bagls::{
+    CERTIFICATE_ICON, COGGLE_ICON, DASHBOARD_X_ICON, PROCESSING_ICON,
+};
+use ledger_device_sdk::ui::gadgets::clear_screen;
 
 use handler::dispatcher;
 
@@ -33,7 +35,7 @@ mod sign;
 mod ui;
 mod utilities;
 
-nanos_sdk::set_panic!(nanos_sdk::exiting_panic);
+ledger_device_sdk::set_panic!(ledger_device_sdk::exiting_panic);
 
 const APPLICATION: &str = env!("CARGO_PKG_DESCRIPTION");
 const APPLICATION_ABOUT: &str = concat!(
@@ -90,12 +92,8 @@ fn verbose_mode_setting_action() -> bool {
     clear_screen();
 
     Settings {
-        verbose_mode: MultipageValidator::new(
-            &[&"Set Verbose", &"Mode"],
-            &[&"Enable"],
-            &[&"Disable"],
-        )
-        .ask(),
+        verbose_mode: MultipageValidator::new(&["Set Verbose", "Mode"], &["Enable"], &["Disable"])
+            .ask(),
         blind_signing: get_blind_signing_state(),
     }
     .update();
@@ -109,9 +107,9 @@ fn blind_signing_setting_action() -> bool {
     Settings {
         verbose_mode: get_verbose_mode_state(),
         blind_signing: MultipageValidator::new(
-            &[&"Set Blind", &"Signing"],
-            &[&"Enable"],
-            &[&"Disable"],
+            &["Set Blind", "Signing"],
+            &["Enable"],
+            &["Disable"],
         )
         .ask(),
     }
@@ -132,7 +130,7 @@ fn about_menu_action() -> bool {
 
 fn quit_menu_action() -> bool {
     clear_screen();
-    nanos_sdk::exit_app(0);
+    ledger_device_sdk::exit_app(0);
 }
 
 #[no_mangle]
@@ -169,7 +167,7 @@ extern "C" fn sample_main() {
     let mut main_menu = Menu::new(&menu);
     let mut ticker = 0i8;
 
-    nanos_ui::ui::popup("Pending Review");
+    ledger_device_sdk::ui::gadgets::popup("Pending Review");
 
     main_menu.display();
 

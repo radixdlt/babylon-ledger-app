@@ -19,13 +19,12 @@ checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
 
 [[package]]
 name = "babylon-ledger-app"
-version = "0.7.20"
+version = "0.7.21"
 dependencies = [
  "blake2",
  "include_gif",
- "ledger-sdk-sys",
- "nanos_sdk",
- "nanos_ui",
+ "ledger_device_sdk",
+ "ledger_secure_sdk_sys",
  "sbor",
 ]
 
@@ -197,8 +196,9 @@ dependencies = [
 
 [[package]]
 name = "include_gif"
-version = "0.1.0"
-source = "git+https://github.com/LedgerHQ/sdk_include_gif#699d28c6157518c4493899e2eeaa8af08346e5e7"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "132290d08a42868f8f90e96a9206e955b0aae1e5a5df54c0029e8c2ab8652625"
 dependencies = [
  "gif",
  "syn 1.0.109",
@@ -217,9 +217,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
 
 [[package]]
-name = "ledger-sdk-sys"
-version = "0.2.0"
-source = "git+https://github.com/LedgerHQ/secure-sdk-rust#d9a9868320a0d27194d93c7b4c55f48f2300abdc"
+name = "ledger_device_sdk"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "78dff89d473dfe7f6b326a337ae1fe94d98e4531b3800b4e6e551e6caa4fc47a"
+dependencies = [
+ "include_gif",
+ "ledger_secure_sdk_sys",
+ "num-traits",
+ "numtoa",
+ "rand_core",
+ "zeroize",
+]
+
+[[package]]
+name = "ledger_secure_sdk_sys"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "22aaf25bc3282151f138f83186e0e2667e5918c2baa38e17c1366050990e5afa"
 dependencies = [
  "bindgen",
  "cc",
@@ -266,26 +281,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
 
 [[package]]
-name = "nanos_sdk"
-version = "0.3.0"
-source = "git+https://github.com/LedgerHQ/ledger-nanos-sdk.git#18951e8bbb39eb67d849740b46c346735762f3e7"
-dependencies = [
- "ledger-sdk-sys",
- "num-traits",
- "rand_core",
- "zeroize",
-]
-
-[[package]]
-name = "nanos_ui"
-version = "0.2.0"
-source = "git+https://github.com/LedgerHQ/ledger-nanos-ui.git#18dc6694bf63d8229ceb4494ccb239a380435ece"
-dependencies = [
- "include_gif",
- "ledger-sdk-sys",
-]
-
-[[package]]
 name = "nom"
 version = "7.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -303,6 +298,12 @@ checksum = "39e3200413f237f41ab11ad6d161bc7239c84dcb631773ccd7de3dfe4b5c267c"
 dependencies = [
  "autocfg",
 ]
+
+[[package]]
+name = "numtoa"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6aa2c4e539b869820a2b82e1aef6ff40aa85e65decdd5185e83fb4b1249cd00f"
 
 [[package]]
 name = "once_cell"

@@ -47,7 +47,9 @@ impl<T: Copy> TxState<T> {
     }
 
     pub fn send_settings(&self, comm: &mut Comm) -> Result<(), AppError> {
-        Ok(comm.append(&Settings::get().as_bytes()))
+        comm.append(&Settings::get().as_bytes());
+
+        Ok(())
     }
 
     pub fn sign_auth(
@@ -183,13 +185,13 @@ impl<T: Copy> TxState<T> {
         utils::info_message(b"dApp Address:", address);
         utils::info_message(b"Nonce:", &nonce_hex);
 
-        let rc = MultipageValidator::new(&[&"Sign Proof?"], &[&"Sign"], &[&"Reject"]).ask();
+        let rc = MultipageValidator::new(&["Sign Proof?"], &["Sign"], &["Reject"]).ask();
 
         if rc {
             let digest = self.processor.auth_digest(challenge, address, origin)?;
             self.processor.sign_tx(comm, sign_mode, &digest)
         } else {
-            return Ok(SignOutcome::SigningRejected);
+            Ok(SignOutcome::SigningRejected)
         }
     }
 
@@ -212,12 +214,12 @@ impl<T: Copy> TxState<T> {
         let digest = self.processor.finalize()?;
         self.display_tx_info(sign_mode, &digest)?;
 
-        let rc = MultipageValidator::new(&[&"Sign TX?"], &[&"Sign"], &[&"Reject"]).ask();
+        let rc = MultipageValidator::new(&["Sign TX?"], &["Sign"], &["Reject"]).ask();
 
         if rc {
             self.processor.sign_tx(comm, sign_mode, &digest)
         } else {
-            return Ok(SignOutcome::SigningRejected);
+            Ok(SignOutcome::SigningRejected)
         }
     }
 
@@ -265,12 +267,16 @@ impl<T: Copy> TxState<T> {
                         &res_address,
                         &amount,
                     );
-                    Ok(self.show_transaction_fee(&detected_type))
+                    self.show_transaction_fee(&detected_type);
+
+                    Ok(())
                 }
                 DetectedTxType::Other(_) | DetectedTxType::Error(_) => {
                     if Settings::get().blind_signing {
                         utils::info_message(b"TX Hash:", &digest.as_hex());
-                        Ok(self.show_transaction_fee(&detected_type))
+                        self.show_transaction_fee(&detected_type);
+
+                        Ok(())
                     } else {
                         utils::error_message("\nBlind signing must\nbe enabled in Settings");
                         Err(AppError::BadTxSignHashSignState)

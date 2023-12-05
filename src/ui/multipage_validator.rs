@@ -1,11 +1,11 @@
-use nanos_sdk::buttons::{ButtonEvent, ButtonsState};
-use nanos_ui::bagls::{
+use ledger_device_sdk::buttons::{ButtonEvent, ButtonsState};
+use ledger_device_sdk::ui::bagls::{
     Icon, CROSSMARK_ICON, LEFT_ARROW, LEFT_S_ARROW, RIGHT_ARROW, RIGHT_S_ARROW, VALIDATE_14_ICON,
     WARNING_ICON,
 };
-use nanos_ui::layout::{Draw, Layout, Location, StringPlace};
-use nanos_ui::screen_util;
-use nanos_ui::ui::{clear_screen, get_event};
+use ledger_device_sdk::ui::gadgets::{clear_screen, get_event};
+use ledger_device_sdk::ui::layout::{Draw, Layout, Location, StringPlace};
+use ledger_device_sdk::ui::screen_util;
 
 pub struct MultipageValidator<'a> {
     message: &'a [&'a str],
@@ -55,12 +55,12 @@ impl<'a> MultipageValidator<'a> {
         let draw = |page: usize| {
             clear_screen();
             if page == page_count - 2 {
-                draw_icon_and_text(VALIDATE_14_ICON, &self.confirm, true);
+                draw_icon_and_text(VALIDATE_14_ICON, self.confirm, true);
                 RIGHT_ARROW.display();
             } else if page == page_count - 1 {
-                draw_icon_and_text(CROSSMARK_ICON, &self.cancel, true);
+                draw_icon_and_text(CROSSMARK_ICON, self.cancel, true);
             } else {
-                draw_icon_and_text(WARNING_ICON, &self.message, false);
+                draw_icon_and_text(WARNING_ICON, self.message, false);
                 RIGHT_ARROW.display();
             }
             if page > 0 {

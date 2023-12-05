@@ -1,7 +1,7 @@
 use include_gif::include_gif;
-use nanos_ui::bagls::{Icon, CROSSMARK_ICON};
-use nanos_ui::bitmaps::{Glyph, BACK};
-use nanos_ui::layout::{Draw, Layout, Location, StringPlace};
+use ledger_device_sdk::ui::bagls::{Icon, CROSSMARK_ICON};
+use ledger_device_sdk::ui::bitmaps::{Glyph, BACK};
+use ledger_device_sdk::ui::layout::{Draw, Layout, Location, StringPlace};
 
 use crate::ui::multiline_scroller::{MultilineMessageScroller, LINE1_Y, LINE2_Y, LINE3_Y};
 use crate::ui::single_message::SingleMessage;
