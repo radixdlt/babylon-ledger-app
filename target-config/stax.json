@@ -24,6 +24,6 @@
   "relocation-model": "ropi-rwpi",
   "singlethread": true,
   "target-pointer-width": "32",
-  "os": "nanosplus",
+  "os": "stax",
   "target-family": [ "bolos" ]
 }

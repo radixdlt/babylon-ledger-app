@@ -33,7 +33,7 @@ SECTIONS
 
   ASSERT( (_edata - _data) <= 0, ".data section must be empty" )
 
-   .bss :
+  .bss :
   {
     _bss = .;
     *(.bss*)

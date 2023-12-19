@@ -6,9 +6,9 @@ edition = "2021"
 description = "Radix Babylon"
 
 [dependencies]
-ledger_device_sdk = "1.1.0"
-ledger_secure_sdk_sys = "1.0.2"
-include_gif = "1.0.1"
+ledger_device_sdk = { path = "../ledger-device-rust-sdk/ledger_device_sdk" }
+ledger_secure_sdk_sys = { path = "../ledger-device-rust-sdk/ledger_secure_sdk_sys" }
+include_gif = { path = "../ledger-device-rust-sdk/include_gif" }
 
 sbor = { path = "./sbor", default-features = false }
 
