@@ -4,6 +4,7 @@ use ledger_device_sdk::ui::gadgets::{clear_screen, get_event};
 use ledger_device_sdk::ui::layout::Draw;
 use ledger_device_sdk::ui::SCREEN_WIDTH;
 
+use crate::io::UxEvent;
 use crate::ui::utils::CenteredText;
 
 pub enum MessageFeature<'a> {
@@ -77,7 +78,13 @@ impl<'a> SingleMessage<'a> {
         self.show();
 
         loop {
-            match get_event(&mut buttons) {
+            let event = get_event(&mut buttons);
+
+            if let Some(_) = event {
+                UxEvent::wakeup();
+            }
+
+            match event {
                 Some(ButtonEvent::LeftButtonRelease)
                 | Some(ButtonEvent::RightButtonRelease)
                 | Some(ButtonEvent::BothButtonsRelease) => return,

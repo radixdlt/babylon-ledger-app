@@ -6,6 +6,8 @@ use ledger_device_sdk::ui::gadgets::{clear_screen, get_event};
 use ledger_device_sdk::ui::layout::{Draw, Location};
 use ledger_device_sdk::ui::SCREEN_HEIGHT;
 
+use crate::io::UxEvent;
+
 pub struct MultilineMessageScroller<'a> {
     message: &'a str,
     title: Option<&'a str>,
@@ -131,7 +133,13 @@ impl<'a> MultilineMessageScroller<'a> {
         draw(cur_page);
 
         loop {
-            match get_event(&mut buttons) {
+            let event = get_event(&mut buttons);
+
+            if let Some(_) = event {
+                UxEvent::wakeup();
+            }
+
+            match event {
                 Some(ButtonEvent::LeftButtonPress) => {
                     LEFT_S_ARROW.instant_display();
                 }

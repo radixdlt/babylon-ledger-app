@@ -4,6 +4,7 @@ use ledger_device_sdk::ui::gadgets::{clear_screen, get_event};
 use ledger_device_sdk::ui::layout::Draw;
 use ledger_device_sdk::ui::screen_util::screen_update;
 
+use crate::io::UxEvent;
 use crate::ui::utils::{CenteredText, LeftAlignedMiddle};
 
 pub enum MenuFeature<'a> {
@@ -70,7 +71,10 @@ impl<'a> Menu<'a> {
         self.display();
 
         loop {
-            if let Some(event) = get_event(&mut buttons) {
+            let event = get_event(&mut buttons);
+
+            if let Some(event) = event {
+                UxEvent::wakeup();
                 if self.handle(event) {
                     break;
                 }
