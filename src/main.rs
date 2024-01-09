@@ -29,10 +29,10 @@ mod sign;
 mod ui;
 mod utilities;
 
-#[cfg(target_os = "stax")]
-mod stax_main;
 #[cfg(not(target_os = "stax"))]
 mod other_main;
+#[cfg(target_os = "stax")]
+mod stax_main;
 
 ledger_device_sdk::set_panic!(ledger_device_sdk::exiting_panic);
 

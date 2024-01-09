@@ -1,5 +1,9 @@
-use crate::app_error::AppError;
+#[cfg(not(target_os = "stax"))]
 use crate::io::ApduHeader;
+#[cfg(target_os = "stax")]
+use ledger_device_sdk::io::ApduHeader;
+
+use crate::app_error::AppError;
 
 #[derive(Copy, Clone)]
 #[repr(u8)]

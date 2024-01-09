@@ -1,6 +1,10 @@
 use core::ptr::write_bytes;
 
+#[cfg(not(target_os = "stax"))]
 use crate::io::Comm;
+#[cfg(target_os = "stax")]
+use ledger_device_sdk::io::Comm;
+
 use ledger_secure_sdk_sys::{cx_ecfp_private_key_t, cx_err_t, cx_md_t, CX_SHA512};
 
 use crate::app_error::{to_result, AppError};
@@ -35,7 +39,7 @@ impl From<InternalKeyPair> for KeyPair25519 {
 extern "C" {
     pub fn cx_eddsa_sign_no_throw(
         pvkey: *const cx_ecfp_private_key_t,
-        hashID: cx_md_t,
+        hash_id: cx_md_t,
         hash: *const u8,
         hash_len: size_t,
         sig: *mut u8,

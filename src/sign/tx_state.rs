@@ -1,4 +1,8 @@
+#[cfg(not(target_os = "stax"))]
 use crate::io::Comm;
+#[cfg(target_os = "stax")]
+use ledger_device_sdk::io::Comm;
+
 use sbor::bech32::address::Address;
 use sbor::decoder_error::DecoderError;
 use sbor::digest::digest::Digest;
@@ -16,7 +20,6 @@ use crate::settings::Settings;
 use crate::sign::instruction_processor::InstructionProcessor;
 use crate::sign::sign_mode::SignMode;
 use crate::sign::sign_outcome::SignOutcome;
-
 
 use crate::ui::multiline_scroller::MultilineMessageScroller;
 use crate::ui::multipage_validator::MultipageValidator;

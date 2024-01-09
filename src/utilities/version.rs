@@ -10,6 +10,9 @@ pub const MODEL_DATA: [u8; 1] = [1];
 #[cfg(target_os = "nanox")]
 pub const MODEL_DATA: [u8; 1] = [2];
 
+#[cfg(target_os = "stax")]
+pub const MODEL_DATA: [u8; 1] = [3];
+
 const VERSION_MAJOR: &[u8] = env!("CARGO_PKG_VERSION_MAJOR").as_bytes();
 const VERSION_MINOR: &[u8] = env!("CARGO_PKG_VERSION_MINOR").as_bytes();
 const VERSION_PATCH: &[u8] = env!("CARGO_PKG_VERSION_PATCH").as_bytes();

@@ -1,4 +1,8 @@
+#[cfg(not(target_os = "stax"))]
 use crate::io::Comm;
+#[cfg(target_os = "stax")]
+use ledger_device_sdk::io::Comm;
+
 use sbor::bech32::address::Address;
 use sbor::bech32::network::NetworkId;
 use sbor::digest::digest::Digest;

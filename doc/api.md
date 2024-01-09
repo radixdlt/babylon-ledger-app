@@ -49,9 +49,9 @@ APDU:
 
 Response (1 byte):
 
-| Data   | Description                                                            |
-|--------|------------------------------------------------------------------------|
-| byte 0 | Device model code byte:<br>0 - Nano S<br>1 - Nano S Plus<br>2 - Nano X |
+| Data   | Description                                                                        |
+|--------|------------------------------------------------------------------------------------|
+| byte 0 | Device model code byte:<br>0 - Nano S<br>1 - Nano S Plus<br>2 - Nano X<br>3 - Stax |
 
 ## GetDeviceId
 
