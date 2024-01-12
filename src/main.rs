@@ -10,6 +10,7 @@ use ledger_device_sdk::ui::bagls::{
     CERTIFICATE_ICON, COGGLE_ICON, DASHBOARD_X_ICON, PROCESSING_ICON,
 };
 use ledger_device_sdk::ui::gadgets::clear_screen;
+use ledger_device_sdk::ui::gadgets::display_pending_review;
 
 use handler::dispatcher;
 
@@ -167,7 +168,7 @@ extern "C" fn sample_main() {
     let mut main_menu = Menu::new(&menu);
     let mut ticker = 0i8;
 
-    ledger_device_sdk::ui::gadgets::popup("Pending Review");
+    pending_preview();
 
     main_menu.display();
 
@@ -202,4 +203,12 @@ extern "C" fn sample_main() {
             }
         }
     }
+}
+
+fn pending_preview() {
+    let mut comm = ledger_device_sdk::io::Comm::new().set_expected_cla(0xe0);
+
+    // Developer mode / pending review popup
+    // must be cleared with user interaction
+    display_pending_review(&mut comm);
 }

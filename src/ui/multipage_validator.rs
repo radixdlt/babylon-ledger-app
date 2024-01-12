@@ -77,7 +77,7 @@ impl<'a> MultipageValidator<'a> {
         loop {
             let event = get_event(&mut buttons);
 
-            if let Some(_) = event {
+            if event.is_some() {
                 UxEvent::wakeup();
             }
 
