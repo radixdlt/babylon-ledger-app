@@ -21,10 +21,7 @@ use crate::sign::instruction_processor::InstructionProcessor;
 use crate::sign::sign_mode::SignMode;
 use crate::sign::sign_outcome::SignOutcome;
 
-use crate::ui::multiline_scroller::MultilineMessageScroller;
-use crate::ui::multipage_validator::MultipageValidator;
-use crate::ui::single_message::SingleMessage;
-use crate::ui::utils;
+use crate::ux::tx_state;
 
 const CHALLENGE_LENGTH: usize = 32;
 const DAPP_ADDRESS_LENGTH: usize = 70;
@@ -203,13 +200,9 @@ impl<T: Copy> TxState<T> {
     fn fee_info_message(&mut self, fee: &Decimal) {
         let text = self.processor.format_decimal(fee, b" XRD");
 
-        MultilineMessageScroller::with_title(
-            "Max TX Fee:",
-            core::str::from_utf8(text).unwrap(),
-            true,
-        )
-        .event_loop();
+        display_max_fee(text);
     }
+
 
     fn finalize_sign_tx(
         &mut self,

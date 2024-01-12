@@ -3,19 +3,17 @@ use crate::io::Comm;
 #[cfg(target_os = "stax")]
 use ledger_device_sdk::io::Comm;
 
-use crate::ui::single_message::SingleMessage;
 use sbor::bech32::address::Address;
 use sbor::bech32::encoder::Bech32;
 use sbor::bech32::network::NetworkId;
 use sbor::static_vec::StaticVec;
 
-use crate::ui::utils::info_message;
+use crate::ux::address_verifier;
 
 pub fn verify_address(address: Address, network_id: NetworkId, comm: &mut Comm) {
     let mut vec = StaticVec::<u8, { Bech32::MAX_LEN }>::new(0);
     address.format(&mut vec, network_id);
 
-    info_message(b"Address:", vec.as_slice());
-    SingleMessage::with_bold("\nDone\n").show_and_wait();
+    address_verifier::display_address(vec.as_slice());
     comm.append(vec.as_slice());
 }

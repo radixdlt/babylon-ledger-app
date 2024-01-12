@@ -27,6 +27,8 @@ mod settings;
 mod sign;
 #[cfg(not(target_os = "stax"))]
 mod ui;
+
+mod ux;
 mod utilities;
 
 #[cfg(not(target_os = "stax"))]

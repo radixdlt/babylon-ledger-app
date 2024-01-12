@@ -14,7 +14,7 @@ pub fn debug_print_hex_byte(_s: u8) {}
 /// Prints only strings with no formatting
 #[cfg(all(
     not(test),
-    any(target_os = "nanos", target_os = "nanox", target_os = "nanosplus")
+    any(target_os = "nanos", target_os = "nanox", target_os = "nanosplus", target_os = "stax")
 ))]
 pub fn debug_print(s: &str) {
     let p = s.as_bytes().as_ptr();
@@ -31,7 +31,7 @@ pub fn debug_print(s: &str) {
 }
 #[cfg(all(
     not(test),
-    not(any(target_os = "nanos", target_os = "nanox", target_os = "nanosplus"))
+    not(any(target_os = "nanos", target_os = "nanox", target_os = "nanosplus", target_os = "stax"))
 ))]
 pub fn debug_print(_s: &str) {}
 
@@ -52,13 +52,13 @@ pub fn debug_print_byte(byte: u8) {
 
 #[cfg(all(
     not(test),
-    any(target_os = "nanos", target_os = "nanox", target_os = "nanosplus")
+    any(target_os = "nanos", target_os = "nanox", target_os = "nanosplus", target_os = "stax")
 ))]
 const HEX_DIGITS: [u8; 16] = *b"0123456789abcdef";
 
 #[cfg(all(
     not(test),
-    any(target_os = "nanos", target_os = "nanox", target_os = "nanosplus")
+    any(target_os = "nanos", target_os = "nanox", target_os = "nanosplus", target_os = "stax")
 ))]
 pub fn debug_print_hex_byte(byte: u8) {
     let mut buffer = [0u8; 2];
@@ -68,6 +68,6 @@ pub fn debug_print_hex_byte(byte: u8) {
 }
 #[cfg(all(
     not(test),
-    not(any(target_os = "nanos", target_os = "nanox", target_os = "nanosplus"))
+    not(any(target_os = "nanos", target_os = "nanox", target_os = "nanosplus", target_os = "stax"))
 ))]
 pub fn debug_print_hex_byte(_s: &str) {}
