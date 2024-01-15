@@ -1,6 +1,6 @@
 use core::str::from_utf8;
 
-use nanos_sdk::testing::debug_print;
+use ledger_device_sdk::testing::debug_print;
 use sbor::utilities::conversion::{to_hex_str, to_str};
 
 pub mod version;

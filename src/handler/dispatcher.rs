@@ -1,9 +1,8 @@
-use nanos_sdk::io::Comm;
-
 use crate::app_error::AppError;
 use crate::command::Command;
 use crate::command_class::CommandClass;
 use crate::handler::*;
+use crate::io::Comm;
 use crate::sign::tx_state::TxState;
 
 pub fn dispatcher<T: Copy>(

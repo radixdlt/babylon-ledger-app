@@ -1,4 +1,4 @@
-use nanos_sdk::io::Comm;
+use crate::io::Comm;
 
 use crate::app_error::AppError;
 use crate::command_class::CommandClass;
@@ -13,5 +13,5 @@ pub fn handle<T: Copy>(
 ) -> Result<(), AppError> {
     state
         .sign_auth(comm, class, Curve::Ed25519)
-        .and_then(|outcome| process_sign_outcome(outcome))
+        .and_then(process_sign_outcome)
 }

@@ -1,10 +1,10 @@
-use nanos_sdk::bindings::{
+use crate::io::{Reply, StatusWords};
+use ledger_secure_sdk_sys::{
     CX_CARRY, CX_EC_INFINITE_POINT, CX_EC_INVALID_CURVE, CX_EC_INVALID_POINT, CX_INTERNAL_ERROR,
     CX_INVALID_PARAMETER, CX_INVALID_PARAMETER_SIZE, CX_INVALID_PARAMETER_VALUE, CX_LOCKED,
     CX_MEMORY_FULL, CX_NOT_INVERTIBLE, CX_NOT_LOCKED, CX_NOT_UNLOCKED, CX_NO_RESIDUE, CX_OK,
     CX_OVERFLOW, CX_UNLOCKED,
 };
-use nanos_sdk::io::{Reply, StatusWords};
 use sbor::decoder_error::DecoderError;
 
 #[derive(Copy, Clone, Debug)]

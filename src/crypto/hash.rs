@@ -2,11 +2,12 @@ use core::ffi::c_uint;
 use core::intrinsics::write_bytes;
 use core::mem::size_of;
 
-use nanos_sdk::bindings::{cx_blake2b_t, cx_md_t, size_t, CX_BLAKE2B};
+use ledger_secure_sdk_sys::{cx_blake2b_t, cx_md_t, CX_BLAKE2B};
 use sbor::digest::digest::{Digest, BLAKE2B_DIGEST_SIZE};
 use sbor::digest::digester::Digester;
 
 use crate::app_error::{to_result, AppError};
+use crate::crypto::types::size_t;
 
 #[repr(C, align(4))]
 pub struct Blake2bHasher([u8; Self::WORK_AREA_SIZE]);

@@ -1,10 +1,12 @@
 use core::cmp::min;
 
-use nanos_sdk::buttons::{ButtonEvent, ButtonsState};
-use nanos_ui::bagls::{Label, LEFT_ARROW, LEFT_S_ARROW, RIGHT_ARROW, RIGHT_S_ARROW};
-use nanos_ui::layout::{Draw, Location};
-use nanos_ui::ui::{clear_screen, get_event};
-use nanos_ui::SCREEN_HEIGHT;
+use ledger_device_sdk::buttons::{ButtonEvent, ButtonsState};
+use ledger_device_sdk::ui::bagls::{Label, LEFT_ARROW, LEFT_S_ARROW, RIGHT_ARROW, RIGHT_S_ARROW};
+use ledger_device_sdk::ui::gadgets::{clear_screen, get_event};
+use ledger_device_sdk::ui::layout::{Draw, Location};
+use ledger_device_sdk::ui::SCREEN_HEIGHT;
+
+use crate::io::UxEvent;
 
 pub struct MultilineMessageScroller<'a> {
     message: &'a str,
@@ -90,12 +92,12 @@ impl<'a> MultilineMessageScroller<'a> {
 
             let mut from = 0;
 
-            for i in start_line..LINES_N {
+            for label in labels.iter_mut().take(LINES_N).skip(start_line) {
                 if from >= chunk.len() {
-                    labels[i].text = "";
+                    label.text = "";
                 } else {
                     let to = from + min(CHARS_PER_LINE, chunk.len() - from);
-                    labels[i].text = &chunk[from..to];
+                    label.text = &chunk[from..to];
                 }
 
                 from += CHARS_PER_LINE;
@@ -131,7 +133,13 @@ impl<'a> MultilineMessageScroller<'a> {
         draw(cur_page);
 
         loop {
-            match get_event(&mut buttons) {
+            let event = get_event(&mut buttons);
+
+            if event.is_some() {
+                UxEvent::wakeup();
+            }
+
+            match event {
                 Some(ButtonEvent::LeftButtonPress) => {
                     LEFT_S_ARROW.instant_display();
                 }

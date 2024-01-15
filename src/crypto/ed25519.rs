@@ -1,11 +1,13 @@
 use core::ptr::write_bytes;
 
-use nanos_sdk::io::Comm;
+use crate::io::Comm;
+use ledger_secure_sdk_sys::{cx_ecfp_private_key_t, cx_err_t, cx_md_t, CX_SHA512};
 
 use crate::app_error::{to_result, AppError};
 use crate::crypto::bip32::Bip32Path;
-use crate::crypto::curves::{cx_ecfp_private_key_t, cx_err_t, cx_md_t, size_t, Curve, CX_SHA512};
+use crate::crypto::curves::Curve;
 use crate::crypto::key_pair::InternalKeyPair;
+use crate::crypto::types::size_t;
 use crate::sign::sign_outcome::SignOutcome;
 
 pub const ED25519_PUBLIC_KEY_LEN: usize = 32;
@@ -47,20 +49,18 @@ impl KeyPair25519 {
     }
 
     pub fn sign(&self, comm: &mut Comm, message: &[u8]) -> Result<SignOutcome, AppError> {
-        let mut signature: [u8; ED25519_SIGNATURE_LEN] = [0; ED25519_SIGNATURE_LEN];
-
         let rc = unsafe {
             cx_eddsa_sign_no_throw(
                 &self.origin.private,
                 CX_SHA512,
                 message.as_ptr(),
                 message.len() as size_t,
-                signature.as_mut_ptr(),
-                signature.len() as size_t,
+                comm.work_buffer.as_mut_ptr(),
+                ED25519_SIGNATURE_LEN as size_t,
             )
         };
 
-        comm.append(&signature);
+        comm.append_work_buffer(ED25519_SIGNATURE_LEN);
         self.public(comm);
         comm.append(message);
 
@@ -89,6 +89,7 @@ impl KeyPair25519 {
     // To build compressed version of the public key we need to do following:
     // 1. Reverse the order of the bytes (we need only Y coordinate and in opposite byte order)
     // 2. Flip bit in the last byte, depending on the flag which is attached to X coordinate.
+    #[allow(clippy::needless_range_loop)]
     pub fn public_bytes(&self) -> [u8; ED25519_PUBLIC_KEY_LEN] {
         let mut pk = [0u8; ED25519_PUBLIC_KEY_LEN];
 
