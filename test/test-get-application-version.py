@@ -23,5 +23,5 @@ dataLength = "00"
 print("Testing", "GetAppVersion", instructionCode, end=" ")
 response = dongle.exchange(bytes.fromhex(instructionClass + instructionCode + p1 + p2 + dataLength))
 
-assert response.hex() == '000715', "Invalid version\nReceived:" + response.hex()
+assert response.hex() == '000718', "Invalid version\nReceived:" + response.hex()
 print("Success")

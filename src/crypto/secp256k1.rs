@@ -1,9 +1,6 @@
 use core::ptr::write_bytes;
 
-#[cfg(not(target_os = "stax"))]
 use crate::io::Comm;
-#[cfg(target_os = "stax")]
-use ledger_device_sdk::io::Comm;
 
 use ledger_secure_sdk_sys::{
     cx_ecfp_private_key_t, cx_ecfp_public_key_t, cx_err_t, cx_md_t, CX_ECCINFO_PARITY_ODD, CX_LAST,

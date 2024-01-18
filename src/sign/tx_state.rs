@@ -1,7 +1,4 @@
-#[cfg(not(target_os = "stax"))]
 use crate::io::Comm;
-#[cfg(target_os = "stax")]
-use ledger_device_sdk::io::Comm;
 
 use sbor::bech32::address::Address;
 use sbor::decoder_error::DecoderError;
@@ -21,7 +18,7 @@ use crate::sign::instruction_processor::InstructionProcessor;
 use crate::sign::sign_mode::SignMode;
 use crate::sign::sign_outcome::SignOutcome;
 
-use crate::ux::tx_state;
+use crate::ux::tx_state::{display_introductory_screen, display_max_fee};
 
 const CHALLENGE_LENGTH: usize = 32;
 const DAPP_ADDRESS_LENGTH: usize = 70;
@@ -154,7 +151,7 @@ impl<T: Copy> TxState<T> {
             SignMode::AuthEd25519 | SignMode::AuthSecp256k1 => "Review\nOwnership\nProof",
         };
 
-        SingleMessage::with_right_arrow(text).show_and_wait();
+        display_introductory_screen(text);
 
         Ok(())
     }
@@ -183,11 +180,7 @@ impl<T: Copy> TxState<T> {
             nonce_hex[i * 2 + 1] = lower_as_hex(byte);
         }
 
-        utils::info_message(b"Origin:", origin);
-        utils::info_message(b"dApp Address:", address);
-        utils::info_message(b"Nonce:", &nonce_hex);
-
-        let rc = MultipageValidator::new(&["Sign Proof?"], &["Sign"], &["Reject"]).ask();
+        let rc = Self::display_sign_auth(address, origin, &mut nonce_hex);
 
         if rc {
             let digest = self.processor.auth_digest(challenge, address, origin)?;
@@ -202,7 +195,6 @@ impl<T: Copy> TxState<T> {
 
         display_max_fee(text);
     }
-
 
     fn finalize_sign_tx(
         &mut self,

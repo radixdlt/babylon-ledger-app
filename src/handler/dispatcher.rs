@@ -3,10 +3,7 @@ use crate::command::Command;
 use crate::command_class::CommandClass;
 use crate::handler::*;
 
-#[cfg(not(target_os = "stax"))]
 use crate::io::Comm;
-#[cfg(target_os = "stax")]
-use ledger_device_sdk::io::Comm;
 
 use crate::sign::tx_state::TxState;
 

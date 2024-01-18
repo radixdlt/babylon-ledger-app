@@ -33,7 +33,7 @@ jobs:
           toolchain: nightly-2023-05-28
           override: true
           components: rust-src, clippy
-      - uses: actions/checkout@v2
+      - uses: RDXWorks-actions/checkout@main
       - name: Cargo clippy
         uses: RDXWorks-actions/cargo@master
         with:
@@ -48,7 +48,7 @@ jobs:
           toolchain: nightly-2023-05-28
           override: true
           components: rust-src, rustfmt
-      - uses: actions/checkout@v2
+      - uses: RDXWorks-actions/checkout@main
       - name: Cargo fmt
         uses: RDXWorks-actions/cargo@master
         with:
@@ -74,7 +74,7 @@ jobs:
           toolchain: nightly-2023-05-28
           override: true
           components: rust-src
-      - uses: actions/checkout@v2
+      - uses: RDXWorks-actions/checkout@main
       - name: Cargo build
         uses: RDXWorks-actions/cargo@master
         with:
@@ -85,7 +85,7 @@ jobs:
           mkdir -p downloads
           cp target/${{ matrix.target }}/release/babylon-ledger-app downloads/babylon_ledger_app_${{ matrix.target }}.elf
       - name: Upload artifacts
-        uses: actions/upload-artifact@v2
+        uses: RDXWorks-actions/upload-artifact@main
         with:
           name: babylon_ledger_app_${{ matrix.target }}
           path: downloads
@@ -99,7 +99,7 @@ jobs:
           toolchain: nightly-2023-05-28
           override: true
           components: rust-src
-      - uses: actions/checkout@v2
+      - uses: RDXWorks-actions/checkout@main
       - name: Unit tests
         run: |
           rm -rf .cargo

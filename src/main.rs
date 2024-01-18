@@ -19,7 +19,6 @@ mod command;
 mod command_class;
 mod crypto;
 mod handler;
-#[cfg(not(target_os = "stax"))]
 mod io;
 #[cfg(not(target_os = "stax"))]
 mod ledger_display_io;

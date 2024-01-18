@@ -1,7 +1,4 @@
-#[cfg(not(target_os = "stax"))]
 use crate::io::{Reply, StatusWords};
-#[cfg(target_os = "stax")]
-use ledger_device_sdk::io::{Reply, StatusWords};
 
 use ledger_secure_sdk_sys::{
     CX_CARRY, CX_EC_INFINITE_POINT, CX_EC_INVALID_CURVE, CX_EC_INVALID_POINT, CX_INTERNAL_ERROR,
