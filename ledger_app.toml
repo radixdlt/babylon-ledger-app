@@ -4,4 +4,4 @@ sdk = "Rust"
 devices = ["nanos", "nanox", "nanos+"]
 
 [tests]
-pytest_direcrtory = "./ragger_tests"
+pytest_directory = "./ragger_tests"
