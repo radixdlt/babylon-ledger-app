@@ -3,6 +3,7 @@
 .vscode/
 
 # Rust
+build/
 out/
 target/
 app_nanos.json
