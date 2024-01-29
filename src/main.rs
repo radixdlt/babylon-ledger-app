@@ -209,8 +209,7 @@ extern "C" fn sample_main() {
 fn display_pending_review(comm: &mut Comm) {
     clear_screen();
 
-    ledger_device_sdk::ui::gadgets::SingleMessage::new("Pending Review")
-        .show();
+    ledger_device_sdk::ui::gadgets::SingleMessage::new("Pending Review").show();
 
     loop {
         if let Event::Button(ButtonEvent::BothButtonsRelease) = comm.next_event::<Command>() {
