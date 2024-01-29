@@ -7,7 +7,6 @@ use ledger_device_sdk::ccid;
 use ledger_device_sdk::seph;
 use ledger_secure_sdk_sys::buttons::{get_button_event, ButtonEvent, ButtonsState};
 use ledger_secure_sdk_sys::seph as sys_seph;
-pub use ledger_secure_sdk_sys::BOLOS_UX_CANCEL;
 pub use ledger_secure_sdk_sys::BOLOS_UX_CONTINUE;
 pub use ledger_secure_sdk_sys::BOLOS_UX_IGNORE;
 pub use ledger_secure_sdk_sys::BOLOS_UX_OK;
