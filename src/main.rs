@@ -10,10 +10,12 @@ use ledger_device_sdk::ui::bagls::{
     CERTIFICATE_ICON, COGGLE_ICON, DASHBOARD_X_ICON, PROCESSING_ICON,
 };
 use ledger_device_sdk::ui::gadgets::clear_screen;
+use ledger_secure_sdk_sys::buttons::ButtonEvent;
 
 use handler::dispatcher;
 
 use crate::app_error::AppError;
+use crate::command::Command;
 use crate::io::{Comm, Event, UxEvent};
 use crate::ledger_display_io::LedgerTTY;
 use crate::settings::Settings;
@@ -167,7 +169,7 @@ extern "C" fn sample_main() {
     let mut main_menu = Menu::new(&menu);
     let mut ticker = 0i8;
 
-    ledger_device_sdk::ui::gadgets::popup("Pending Review");
+    display_pending_review(&mut comm);
 
     main_menu.display();
 
@@ -200,6 +202,19 @@ extern "C" fn sample_main() {
                     main_menu.display();
                 }
             }
+        }
+    }
+}
+
+fn display_pending_review(comm: &mut Comm) {
+    clear_screen();
+
+    ledger_device_sdk::ui::gadgets::SingleMessage::new("Pending Review")
+        .show();
+
+    loop {
+        if let Event::Button(ButtonEvent::BothButtonsRelease) = comm.next_event::<Command>() {
+            break;
         }
     }
 }
