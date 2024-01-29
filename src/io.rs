@@ -9,10 +9,8 @@ use ledger_secure_sdk_sys::buttons::{get_button_event, ButtonEvent, ButtonsState
 use ledger_secure_sdk_sys::seph as sys_seph;
 pub use ledger_secure_sdk_sys::BOLOS_UX_CANCEL;
 pub use ledger_secure_sdk_sys::BOLOS_UX_CONTINUE;
-pub use ledger_secure_sdk_sys::BOLOS_UX_ERROR;
 pub use ledger_secure_sdk_sys::BOLOS_UX_IGNORE;
 pub use ledger_secure_sdk_sys::BOLOS_UX_OK;
-pub use ledger_secure_sdk_sys::BOLOS_UX_REDRAW;
 use ledger_secure_sdk_sys::*;
 
 use crate::app_error::AppError;
