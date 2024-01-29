@@ -12,7 +12,7 @@ app_nanox.json
 app.json
 
 # Python
-test/__pycache__
+__pycache__/
 
 # Binaries
 *.elf
