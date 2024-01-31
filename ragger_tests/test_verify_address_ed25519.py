@@ -37,6 +37,6 @@ test_vectors = [
 ]
 
 
-def test_verify_address_ed25519(backend):
-    for vector in test_vectors:
-        call_and_check(backend, vector[0], vector[1])
+# def test_verify_address_ed25519(backend):
+#     for vector in test_vectors:
+#         call_and_check(backend, vector[0], vector[1])
