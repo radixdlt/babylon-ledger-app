@@ -38,7 +38,9 @@ def sign_auth_ed25519(firmware, backend, navigator, test_name, vector):
                                                       [NavInsID.RIGHT_CLICK, NavInsID.BOTH_CLICK],
                                                       "Sign Proof?",
                                                       ROOT_SCREENSHOT_PATH,
-                                                      test_name)
+                                                      test_name,
+                                                      5,
+                                                      False)
 
     rc = backend.last_async_response.data
     pubkey = ed25519.Ed25519PublicKey.from_public_bytes(bytes(rc[64:96]))
