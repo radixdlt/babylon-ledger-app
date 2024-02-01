@@ -1,27 +1,51 @@
+from typing import Generator, List, Optional
+from pathlib import Path
 from ragger.bip import pack_derivation_path
+from ragger.navigator import NavInsID
 from contextlib import contextmanager
 from cryptography.hazmat.primitives.asymmetric import ed25519
 
+ROOT_SCREENSHOT_PATH = Path(__file__).parent.resolve()
 
-CLA = 0xAA
+CLA1 = 0xAA
+CLA2 = 0xAC
 INS = 0x61
-
-
-@contextmanager
-def send_auth_request(backend, daddr, origin, nonce):
-    addr_length = len(daddr).to_bytes(1, 'little').hex()
-    data = nonce + addr_length + daddr.encode('utf-8').hex() + origin.encode('utf-8').hex()
-
-    with backend.exchange_async(cla=CLA, ins=INS, data=bytes.fromhex(data)).data as result:
-        yield result
 
 
 def send_derivation_path(backend, path):
     try:
-        return backend.exchange(cla=CLA, ins=INS, data=pack_derivation_path(path)).data
+        return backend.exchange(cla=CLA1, ins=INS, data=pack_derivation_path(path)).data
     except Exception as e:
         print("Error sending derivation path: ", e)
         return None
+
+
+@contextmanager
+def send_auth_request(backend, daddr, origin, nonce) -> Generator[None, None, None]:
+    addr_length = len(daddr).to_bytes(1, 'little').hex()
+    data = nonce + addr_length + daddr.encode('utf-8').hex() + origin.encode('utf-8').hex()
+
+    with backend.exchange_async(cla=CLA2, ins=INS, data=bytes.fromhex(data)) as response:
+        yield response
+
+
+def sign_auth_ed25519(firmware, backend, navigator, test_name, vector):
+    send_derivation_path(backend, "m/44'/1022'/12'/525'/1460'/0'")
+
+    with send_auth_request(backend, vector[1], vector[2], vector[3]):
+        if firmware.device.startswith("nano"):
+            navigator.navigate_until_text_and_compare(NavInsID.RIGHT_CLICK,
+                                                      [NavInsID.RIGHT_CLICK, NavInsID.BOTH_CLICK],
+                                                      "Sign Proof?",
+                                                      ROOT_SCREENSHOT_PATH,
+                                                      test_name)
+
+    rc = backend.last_async_response.data
+    pubkey = ed25519.Ed25519PublicKey.from_public_bytes(bytes(rc[64:96]))
+    try:
+        pubkey.verify(bytes(rc[0:64]), bytes(rc[96:128]))
+    except Exception as e:
+        print("Invalid signature ", e)
 
 
 test_vectors = [
@@ -82,25 +106,37 @@ test_vectors = [
 ]
 
 
-def test_sign_auth_ed25519(firmware, backend, navigator, test_name):
-    for vector in test_vectors:
-        send_derivation_path(backend, "m/44'/1022'/12'/525'/1460'/0'")
+def test_sign_auth_ed25519_0(firmware, backend, navigator, test_name):
+    sign_auth_ed25519(firmware, backend, navigator, test_name, test_vectors[0])
 
-        with send_auth_request(backend, vector[1], vector[2], vector[3]):
-            if firmware.device.startsWith("nano"):
-                navigator.navigqte_until_text_and_compare()
 
-        rc = backend.last_async_response.data
-        pubkey = ed25519.Ed25519PublicKey.from_public_bytes(bytes(rc[64:96]))
-        try:
-            pubkey.verify(bytes(rc[0:64]), bytes(rc[96:128]))
-        except Exception as e:
-            print("Invalid signature ", e)
+def test_sign_auth_ed25519_1(firmware, backend, navigator, test_name):
+    sign_auth_ed25519(firmware, backend, navigator, test_name, test_vectors[1])
 
-        #     try:
 
-        #         print("Success")
-        #         assert rc[96:128].hex() == vector[0], "Invalid calculated hash\nExpected: " + vector[
-        #             0] + "\nReceived: " + rc[96:128].hex()
-        #     except Exception as e:
-        #         print("Invalid signature ", e)
+def test_sign_auth_ed25519_2(firmware, backend, navigator, test_name):
+    sign_auth_ed25519(firmware, backend, navigator, test_name, test_vectors[2])
+
+
+def test_sign_auth_ed25519_3(firmware, backend, navigator, test_name):
+    sign_auth_ed25519(firmware, backend, navigator, test_name, test_vectors[3])
+
+
+def test_sign_auth_ed25519_4(firmware, backend, navigator, test_name):
+    sign_auth_ed25519(firmware, backend, navigator, test_name, test_vectors[4])
+
+
+def test_sign_auth_ed25519_5(firmware, backend, navigator, test_name):
+    sign_auth_ed25519(firmware, backend, navigator, test_name, test_vectors[5])
+
+
+def test_sign_auth_ed25519_6(firmware, backend, navigator, test_name):
+    sign_auth_ed25519(firmware, backend, navigator, test_name, test_vectors[6])
+
+
+def test_sign_auth_ed25519_7(firmware, backend, navigator, test_name):
+    sign_auth_ed25519(firmware, backend, navigator, test_name, test_vectors[7])
+
+
+def test_sign_auth_ed25519_8(firmware, backend, navigator, test_name):
+    sign_auth_ed25519(firmware, backend, navigator, test_name, test_vectors[8])
