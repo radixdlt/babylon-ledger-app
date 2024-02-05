@@ -36,8 +36,8 @@ def sign_auth_ed25519(firmware, backend, navigator, test_name, vector):
                                                       "Sign Proof?",
                                                       ROOT_SCREENSHOT_PATH,
                                                       test_name,
-                                                      5,
-                                                      False,
+                                                      15,
+                                                      True,
                                                       True)
 
     rc = backend.last_async_response.data
