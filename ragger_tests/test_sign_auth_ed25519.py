@@ -1,4 +1,4 @@
-from typing import Generator, List, Optional
+from typing import Generator
 from pathlib import Path
 from ragger.bip import pack_derivation_path
 from ragger.navigator import NavInsID
@@ -14,7 +14,7 @@ INS = 0x61
 
 def send_derivation_path(backend, path, navigator):
     with backend.exchange_async(cla=CLA1, ins=INS, data=pack_derivation_path(path)) as response:
-        navigator.navigate(NavInsID.RIGHT_CLICK)
+        navigator.navigate([NavInsID.RIGHT_CLICK])
 
 
 @contextmanager
