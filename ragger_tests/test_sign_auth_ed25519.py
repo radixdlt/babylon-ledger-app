@@ -12,12 +12,9 @@ CLA2 = 0xAC
 INS = 0x61
 
 
-def send_derivation_path(backend, path):
-    try:
-        return backend.exchange(cla=CLA1, ins=INS, data=pack_derivation_path(path)).data
-    except Exception as e:
-        print("Error sending derivation path: ", e)
-        return None
+def send_derivation_path(backend, path, navigator):
+    with backend.exchange_async(cla=CLA1, ins=INS, data=pack_derivation_path(path)) as response:
+        navigator.navigate(NavInsID.RIGHT_CLICK)
 
 
 @contextmanager
@@ -30,7 +27,7 @@ def send_auth_request(backend, daddr, origin, nonce) -> Generator[None, None, No
 
 
 def sign_auth_ed25519(firmware, backend, navigator, test_name, vector):
-    send_derivation_path(backend, "m/44'/1022'/12'/525'/1460'/0'")
+    send_derivation_path(backend, "m/44'/1022'/12'/525'/1460'/0'", navigator)
 
     with send_auth_request(backend, vector[1], vector[2], vector[3]):
         if firmware.device.startswith("nano"):
@@ -40,7 +37,8 @@ def sign_auth_ed25519(firmware, backend, navigator, test_name, vector):
                                                       ROOT_SCREENSHOT_PATH,
                                                       test_name,
                                                       5,
-                                                      False)
+                                                      False,
+                                                      True)
 
     rc = backend.last_async_response.data
     pubkey = ed25519.Ed25519PublicKey.from_public_bytes(bytes(rc[64:96]))
