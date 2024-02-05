@@ -1,6 +1,11 @@
+from pathlib import Path
 from ragger.bip import pack_derivation_path
+from ragger.navigator import NavInsID
 
-CLA = 0xAA
+ROOT_SCREENSHOT_PATH = Path(__file__).parent.resolve()
+
+CLA1 = 0xAA
+CLA2 = 0xAC
 INS = 0x81
 
 
@@ -8,13 +13,16 @@ INS = 0x81
 # Check single test vector
 # --------------------------------------------------------------------------------------------
 
-def call_and_check(backend, path, expected_pub_key):
-    print("Checking ", path, " - ", expected_pub_key)
-    response = backend.exchange(cla=CLA, ins=INS, data=pack_derivation_path(path))
-    print("Response: ", response.data)
-    pk = response.decode('utf-8')
+def call_and_check(firmware, backend, navigator, vector):
+    path, expected_pub_key = vector
+    with backend.exchange_async(cla=CLA1, ins=INS, data=pack_derivation_path(path)) as response:
+        if firmware.device.startswith("nano"):
+            navigator.navigate([NavInsID.RIGHT_CLICK,
+                                NavInsID.RIGHT_CLICK,
+                                NavInsID.RIGHT_CLICK,
+                                NavInsID.RIGHT_CLICK, ])
+    pk = backend.last_async_response.data.decode('utf-8')
     assert pk == expected_pub_key, "Invalid address\nExpected: " + expected_pub_key + "\nReceived: " + pk
-    print(path, " - Success")
 
 
 test_vectors = [
@@ -37,6 +45,65 @@ test_vectors = [
 ]
 
 
-# def test_verify_address_ed25519(backend):
-#     for vector in test_vectors:
-#         call_and_check(backend, vector[0], vector[1])
+def test_verify_address_ed25519_0(firmware, backend, navigator):
+    call_and_check(firmware, backend, navigator, test_vectors[0])
+
+
+def test_verify_address_ed25519_1(firmware, backend, navigator):
+    call_and_check(firmware, backend, navigator, test_vectors[1])
+
+
+def test_verify_address_ed25519_2(firmware, backend, navigator):
+    call_and_check(firmware, backend, navigator, test_vectors[2])
+
+
+def test_verify_address_ed25519_3(firmware, backend, navigator):
+    call_and_check(firmware, backend, navigator, test_vectors[3])
+
+
+def test_verify_address_ed25519_4(firmware, backend, navigator):
+    call_and_check(firmware, backend, navigator, test_vectors[4])
+
+
+def test_verify_address_ed25519_5(firmware, backend, navigator):
+    call_and_check(firmware, backend, navigator, test_vectors[5])
+
+
+def test_verify_address_ed25519_6(firmware, backend, navigator):
+    call_and_check(firmware, backend, navigator, test_vectors[6])
+
+
+def test_verify_address_ed25519_7(firmware, backend, navigator):
+    call_and_check(firmware, backend, navigator, test_vectors[7])
+
+
+def test_verify_address_ed25519_8(firmware, backend, navigator):
+    call_and_check(firmware, backend, navigator, test_vectors[8])
+
+
+def test_verify_address_ed25519_9(firmware, backend, navigator):
+    call_and_check(firmware, backend, navigator, test_vectors[9])
+
+
+def test_verify_address_ed25519_10(firmware, backend, navigator):
+    call_and_check(firmware, backend, navigator, test_vectors[10])
+
+
+def test_verify_address_ed25519_11(firmware, backend, navigator):
+    call_and_check(firmware, backend, navigator, test_vectors[11])
+
+
+def test_verify_address_ed25519_12(firmware, backend, navigator):
+    call_and_check(firmware, backend, navigator, test_vectors[12])
+
+
+def test_verify_address_ed25519_13(firmware, backend, navigator):
+    call_and_check(firmware, backend, navigator, test_vectors[13])
+
+
+def test_verify_address_ed25519_14(firmware, backend, navigator):
+    call_and_check(firmware, backend, navigator, test_vectors[14])
+
+
+def test_verify_address_ed25519_15(firmware, backend, navigator):
+    call_and_check(firmware, backend, navigator, test_vectors[15])
