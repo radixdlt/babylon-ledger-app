@@ -28,12 +28,88 @@ test_vectors = [
 ]
 
 
-def call_and_check(backend, path, expected_pub_key):
+def call_and_check(backend, vector):
+    path, expected_pub_key = vector
     response = backend.exchange(cla=CLA, ins=INS, data=pack_derivation_path(path)).data
     pk = response.hex()
     assert pk == expected_pub_key, "Invalid public key\nExpected: " + expected_pub_key + "\nReceived: " + pk
 
 
-def test_get_public_key_secp256k1(backend):
-    for vector in test_vectors:
-        call_and_check(backend, vector[0], vector[1])
+def test_get_public_key_secp256k1_0(backend):
+    call_and_check(backend, test_vectors[0])
+
+
+def test_get_public_key_secp256k1_1(backend):
+    call_and_check(backend, test_vectors[1])
+
+
+def test_get_public_key_secp256k1_2(backend):
+    call_and_check(backend, test_vectors[2])
+
+
+def test_get_public_key_secp256k1_3(backend):
+    call_and_check(backend, test_vectors[3])
+
+
+def test_get_public_key_secp256k1_4(backend):
+    call_and_check(backend, test_vectors[4])
+
+
+def test_get_public_key_secp256k1_5(backend):
+    call_and_check(backend, test_vectors[5])
+
+
+def test_get_public_key_secp256k1_6(backend):
+    call_and_check(backend, test_vectors[6])
+
+
+def test_get_public_key_secp256k1_7(backend):
+    call_and_check(backend, test_vectors[7])
+
+
+def test_get_public_key_secp256k1_8(backend):
+    call_and_check(backend, test_vectors[8])
+
+
+def test_get_public_key_secp256k1_9(backend):
+    call_and_check(backend, test_vectors[9])
+
+
+def test_get_public_key_secp256k1_10(backend):
+    call_and_check(backend, test_vectors[10])
+
+
+def test_get_public_key_secp256k1_11(backend):
+    call_and_check(backend, test_vectors[11])
+
+
+def test_get_public_key_secp256k1_12(backend):
+    call_and_check(backend, test_vectors[12])
+
+
+def test_get_public_key_secp256k1_13(backend):
+    call_and_check(backend, test_vectors[13])
+
+
+def test_get_public_key_secp256k1_14(backend):
+    call_and_check(backend, test_vectors[14])
+
+
+def test_get_public_key_secp256k1_15(backend):
+    call_and_check(backend, test_vectors[15])
+
+
+def test_get_public_key_secp256k1_16(backend):
+    call_and_check(backend, test_vectors[16])
+
+
+def test_get_public_key_secp256k1_17(backend):
+    call_and_check(backend, test_vectors[17])
+
+
+def test_get_public_key_secp256k1_18(backend):
+    call_and_check(backend, test_vectors[18])
+
+
+def test_get_public_key_secp256k1_19(backend):
+    call_and_check(backend, test_vectors[19])

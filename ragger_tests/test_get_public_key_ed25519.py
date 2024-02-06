@@ -3,7 +3,6 @@ from ragger.bip import pack_derivation_path
 CLA = 0xAA
 INS = 0x21
 
-
 test_vectors = [
     ("m/44'/1022'/12'/525'/1460'/0'", "451152a1cef7be603205086d4ebac0a0b78fda2ff4684b9dea5ca9ef003d4e7d"),
     ("m/44'/1022'/12'/525'/1460'/1'", "0a4b894208a1f6b1bd7e823b59909f01aae0172b534baa2905b25f1bcbbb4f0a"),
@@ -32,12 +31,104 @@ test_vectors = [
 ]
 
 
-def call_and_check(backend, path, expected_pub_key):
+def call_and_check(backend, vector):
+    path, expected_pub_key = vector
     response = backend.exchange(cla=CLA, ins=INS, data=pack_derivation_path(path)).data
     pk = response.hex()
     assert pk == expected_pub_key, "Invalid public key\nExpected: " + expected_pub_key + "\nReceived: " + pk
 
 
-def test_get_public_key_ed25519(backend):
-    for vector in test_vectors:
-        call_and_check(backend, vector[0], vector[1])
+def test_get_public_key_ed25519_0(backend):
+    call_and_check(backend, test_vectors[0])
+
+
+def test_get_public_key_ed25519_1(backend):
+    call_and_check(backend, test_vectors[1])
+
+
+def test_get_public_key_ed25519_2(backend):
+    call_and_check(backend, test_vectors[2])
+
+
+def test_get_public_key_ed25519_3(backend):
+    call_and_check(backend, test_vectors[3])
+
+
+def test_get_public_key_ed25519_4(backend):
+    call_and_check(backend, test_vectors[4])
+
+
+def test_get_public_key_ed25519_5(backend):
+    call_and_check(backend, test_vectors[5])
+
+
+def test_get_public_key_ed25519_6(backend):
+    call_and_check(backend, test_vectors[6])
+
+
+def test_get_public_key_ed25519_7(backend):
+    call_and_check(backend, test_vectors[7])
+
+
+def test_get_public_key_ed25519_8(backend):
+    call_and_check(backend, test_vectors[8])
+
+
+def test_get_public_key_ed25519_9(backend):
+    call_and_check(backend, test_vectors[9])
+
+
+def test_get_public_key_ed25519_10(backend):
+    call_and_check(backend, test_vectors[10])
+
+
+def test_get_public_key_ed25519_11(backend):
+    call_and_check(backend, test_vectors[11])
+
+
+def test_get_public_key_ed25519_12(backend):
+    call_and_check(backend, test_vectors[12])
+
+
+def test_get_public_key_ed25519_13(backend):
+    call_and_check(backend, test_vectors[13])
+
+
+def test_get_public_key_ed25519_14(backend):
+    call_and_check(backend, test_vectors[14])
+
+
+def test_get_public_key_ed25519_15(backend):
+    call_and_check(backend, test_vectors[15])
+
+
+def test_get_public_key_ed25519_16(backend):
+    call_and_check(backend, test_vectors[16])
+
+
+def test_get_public_key_ed25519_17(backend):
+    call_and_check(backend, test_vectors[17])
+
+
+def test_get_public_key_ed25519_18(backend):
+    call_and_check(backend, test_vectors[18])
+
+
+def test_get_public_key_ed25519_19(backend):
+    call_and_check(backend, test_vectors[19])
+
+
+def test_get_public_key_ed25519_20(backend):
+    call_and_check(backend, test_vectors[20])
+
+
+def test_get_public_key_ed25519_21(backend):
+    call_and_check(backend, test_vectors[21])
+
+
+def test_get_public_key_ed25519_22(backend):
+    call_and_check(backend, test_vectors[22])
+
+
+def test_get_public_key_ed25519_23(backend):
+    call_and_check(backend, test_vectors[23])
