@@ -43,7 +43,7 @@ For development purposes it is convenient to use following command to build debu
 ```
 Similar command for Nano S Plus:
 ```shell
-./build-nanos-plus.sh
+./build-nanosp.sh
 ```
 
 ### Flashing Built Firmware
@@ -53,7 +53,7 @@ Following command can be used to flash firmware into Ledger Nano S:
 ```
 Similar command for Ledger Nano S Plus:
 ```shell
-./flash-nanos-plus.sh
+./flash-nanosp.sh
 ```
 __WARNING:__ Binaries for Nano S and Nano S Plus are incompatible, hence it is mandatory to use correct build and flash 
 commands which correspond actual device used for development.

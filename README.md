@@ -61,11 +61,11 @@ flash-nanos.sh
 ```
 For Ledger Nano S Plus corresponding commands are following:
 ```shell
-build-nanos-plus.sh
+build-nanosp.sh
 ```
 and
 ```shell
-flash-nanos-plus.sh
+flash-nanosp.sh
 ```
 __WARNING:__ Binaries for different devices are incompatible. So, build and flash scripts
 should be used in pairs and correspond to actual device.
@@ -76,14 +76,14 @@ Build commands for individual targets:
 
 ```shell
 ./build-nanos.sh
-./build-nanos-plus.sh
+./build-nanosp.sh
 ```
 
 Flash commands for individual targets:
 
 ```shell
 ./flash-nanos.sh
-./flash-nanos-plus.sh
+./flash-nanosp.sh
 ```
 
 Note that there are no individual scripts for Nano X since it does not support sideloading.
