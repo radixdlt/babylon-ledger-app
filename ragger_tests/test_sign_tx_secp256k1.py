@@ -5,15 +5,16 @@ from ragger.navigator import NavInsID
 from cryptography.hazmat.primitives.asymmetric import ec, utils
 from cryptography.hazmat.primitives import hashes
 
-ROOT_SCREENSHOT_PATH = Path(__file__).parent.resolve()
 
 CLA1 = 0xAA
 CLA2 = 0xAC
 INS = 0x51
 
+DATA_PATH = Path(__file__).resolve()
+
 
 def read_file(file):
-    with open(file, "rb") as f:
+    with open(DATA_PATH.with_name(file), "rb") as f:
         return f.read()
 
 

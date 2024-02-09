@@ -2,18 +2,18 @@ from typing import Generator
 from pathlib import Path
 from ragger.bip import pack_derivation_path
 from ragger.navigator import NavInsID
-from contextlib import contextmanager
 from cryptography.hazmat.primitives.asymmetric import ed25519
 
-ROOT_SCREENSHOT_PATH = Path(__file__).parent.resolve()
 
 CLA1 = 0xAA
 CLA2 = 0xAC
 INS = 0x41
 
+DATA_PATH = Path(__file__).resolve()
+
 
 def read_file(file):
-    with open(file, "rb") as f:
+    with open(DATA_PATH.with_name(file), "rb") as f:
         return f.read()
 
 
@@ -38,10 +38,6 @@ def send_tx_intent(txn, click_count, backend, navigator, firmware):
             with backend.exchange_async(cla=cls, ins=INS, p1=0, p2=0, data=chunk) as response:
                 if firmware.device.startswith("nano"):
                     navigator.navigate(clicks)
-                # pass
-        # except Exception as e:
-        #     print("Error sending txn chunk: ", e)
-        #     return None
     return backend.last_async_response.data
 
 
@@ -50,8 +46,6 @@ def sign_tx_ed25519(firmware, backend, navigator, click_count, file_name):
     txn = read_file(file_name)
 
     rc = send_tx_intent(txn, click_count, backend, navigator, firmware)
-    #
-    # rc = backend.last_async_response.data
     pubkey = ed25519.Ed25519PublicKey.from_public_bytes(bytes(rc[64:96]))
     try:
         pubkey.verify(bytes(rc[0:64]), bytes(rc[96:128]))
