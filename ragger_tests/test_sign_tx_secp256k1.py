@@ -14,7 +14,7 @@ DATA_PATH = Path(__file__).resolve()
 
 
 def read_file(file):
-    with open(DATA_PATH.with_name(file), "rb") as f:
+    with open(DATA_PATH.joinpath("data").with_name(file), "rb") as f:
         return f.read()
 
 
@@ -66,29 +66,29 @@ def sign_tx_secp256k1(firmware, backend, navigator, click_count, file_name):
 
 
 def test_sign_tx_secp256k1_simple_transfer(firmware, backend, navigator):
-    sign_tx_secp256k1(firmware, backend, navigator, 13, "data/simple_transfer.txn")
+    sign_tx_secp256k1(firmware, backend, navigator, 13, "simple_transfer.txn")
 
 
 def test_sign_tx_secp256k1_simple_transfer_new_format(firmware, backend, navigator):
-    sign_tx_secp256k1(firmware, backend, navigator, 10, "data/simple_transfer_new_format.txn")
+    sign_tx_secp256k1(firmware, backend, navigator, 10, "simple_transfer_new_format.txn")
 
 
 def test_sign_tx_secp256k1_simple_transfer_nft(firmware, backend, navigator):
-    sign_tx_secp256k1(firmware, backend, navigator, 13, "data/simple_transfer_nft.txn")
+    sign_tx_secp256k1(firmware, backend, navigator, 13, "simple_transfer_nft.txn")
 
 
 def test_sign_tx_secp256k1_simple_transfer_nft_by_id(firmware, backend, navigator):
-    sign_tx_secp256k1(firmware, backend, navigator, 13, "data/simple_transfer_nft_by_id.txn")
+    sign_tx_secp256k1(firmware, backend, navigator, 13, "simple_transfer_nft_by_id.txn")
 
 
 def test_sign_tx_secp256k1_simple_transfer_nft_new_format(firmware, backend, navigator):
-    sign_tx_secp256k1(firmware, backend, navigator, 13, "data/simple_transfer_nft_new_format.txn")
+    sign_tx_secp256k1(firmware, backend, navigator, 13, "simple_transfer_nft_new_format.txn")
 
 
 def test_sign_tx_secp256k1_simple_transfer_nft_by_id_new_format(firmware, backend, navigator):
-    sign_tx_secp256k1(firmware, backend, navigator, 13, "data/simple_transfer_nft_by_id_new_format.txn")
+    sign_tx_secp256k1(firmware, backend, navigator, 13, "simple_transfer_nft_by_id_new_format.txn")
 
 
 def test_sign_tx_secp256k1_simple_transfer_with_multiple_locked_fees(firmware, backend, navigator):
-    sign_tx_secp256k1(firmware, backend, navigator, 10, "data/simple_transfer_with_multiple_locked_fees.txn")
+    sign_tx_secp256k1(firmware, backend, navigator, 10, "simple_transfer_with_multiple_locked_fees.txn")
 
