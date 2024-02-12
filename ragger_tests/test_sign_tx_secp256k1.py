@@ -10,7 +10,7 @@ CLA1 = 0xAA
 CLA2 = 0xAC
 INS = 0x51
 
-DATA_PATH = Path(__file__).resolve()
+DATA_PATH = Path(__file__).parent.resolve()
 
 
 def read_file(file):
