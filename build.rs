@@ -23,16 +23,17 @@ fn main() -> Result<(), Box<dyn Error>> {
     // the application so that it can be used there for the layout.
     // Trick taken from https://docs.rust-embedded.org/embedonomicon/main.html
     let out_dir = PathBuf::from(env::var_os("OUT_DIR").unwrap());
+    let in_dir = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").unwrap())
+        .join("target-config");
 
     // extend the library search path
     println!("cargo:rustc-link-search={}", out_dir.display());
     // copy
     let linkerscript = match device {
-        NanoS => "target-config/nanos_layout.ld",
-        NanoX => "target-config/nanox_layout.ld",
-        NanoSPlus => "target-config/nanosplus_layout.ld",
+        NanoS => "nanos_layout.ld",
+        NanoX => "nanox_layout.ld",
+        NanoSPlus => "nanosplus_layout.ld",
     };
-    std::fs::copy(linkerscript, out_dir.join(linkerscript))?;
-    // std::fs::copy("link.ld", out_dir.join("link.ld"))?;
+    std::fs::copy(in_dir.join(linkerscript), out_dir.join(linkerscript))?;
     Ok(())
 }
