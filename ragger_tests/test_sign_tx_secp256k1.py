@@ -10,11 +10,11 @@ CLA1 = 0xAA
 CLA2 = 0xAC
 INS = 0x51
 
-DATA_PATH = Path(__file__).parent.resolve()
+DATA_PATH = str(Path(__file__).parent.joinpath("data").absolute()) + "/"
 
 
 def read_file(file):
-    with open(DATA_PATH.joinpath("data").with_name(file), "rb") as f:
+    with open(DATA_PATH + file, "rb") as f:
         return f.read()
 
 
