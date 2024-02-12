@@ -34,5 +34,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         NanoSPlus => "nanosplus_layout.ld",
     };
     std::fs::copy(in_dir.join(linkerscript), out_dir.join(linkerscript))?;
+    std::fs::copy(in_dir.join("link.ld"), out_dir.join("link.ld"))?;
+
     Ok(())
 }
