@@ -23,8 +23,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // the application so that it can be used there for the layout.
     // Trick taken from https://docs.rust-embedded.org/embedonomicon/main.html
     let out_dir = PathBuf::from(env::var_os("OUT_DIR").unwrap());
-    let in_dir = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").unwrap())
-        .join("target-config");
+    let in_dir = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").unwrap()).join("target-config");
 
     // extend the library search path
     println!("cargo:rustc-link-search={}", out_dir.display());
