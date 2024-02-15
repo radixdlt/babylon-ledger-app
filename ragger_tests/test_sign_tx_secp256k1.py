@@ -39,10 +39,6 @@ def send_tx_intent(txn, click_count, backend, navigator, firmware):
             with backend.exchange_async(cla=cls, ins=INS, p1=0, p2=0, data=chunk) as response:
                 if firmware.device.startswith("nano"):
                     navigator.navigate(clicks)
-                # pass
-        # except Exception as e:
-        #     print("Error sending txn chunk: ", e)
-        #     return None
     return backend.last_async_response.data
 
 

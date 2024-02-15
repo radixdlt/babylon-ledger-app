@@ -1,4 +1,3 @@
-from typing import Generator
 from pathlib import Path
 from ragger.bip import pack_derivation_path
 from ragger.navigator import NavInsID

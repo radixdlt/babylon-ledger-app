@@ -4,89 +4,52 @@ Ledger Nano S/S Plus/X app for Babylon
 
 ## Build
 
-Simplest way to build app is to use application builder container. To build container, use script provided
-in the `app-builder` directory. Once container is built, run it using `run-app-builder.sh`. Then build/load the
-application to your device as described [below](#compiling-and-loading-binaries-for-developmenttesting-purposes).
+Simplest way to build app is to use [application builder container](https://github.com/LedgerHQ/ledger-app-builder) provided by Ledger. 
+In particular, most convenient variant is the one which enables testing along with the building.
+For convenience, one can use script provided in the project root directory:
+
+```shell
+run-dev-tools.sh
+```
+Once container is running, use following commands to build and tests the application:
+
+Build for Nano S:
+```shell
+./build-nanos.sh
+```
+Build for Nano S Plus:
+```shell
+./build-nanosp.sh
+```
+Build for Nano X:
+```shell
+./build-nanox.sh
+``` 
+
+To test application, change directory inside container to the one where tests are residing:
+
+```shell
+cd ragger_tests
+```
+
+Then run tests for each target:
+
+For Nano S:
+```shell
+./test-nanos.sh
+```
+For Nano S Plus:
+```shell
+./test-nanosp.sh
+```
+For Nano X:
+```shell
+./test-nanox.sh
+```
 
 ## Local Build Environment Setup
 
-Instructions are provided for Ubuntu 22.04. For other operating systems it is suggested to use 
-Docker builder image. Refer to builder image [documentation](./app-builder/README.md) for details.
-
-### Prerequisites
-
-#### Install ARM GCC, Binutils, cross-compilation headers:
-
-```shell
-sudo apt-get install gcc-arm-none-eabi binutils-arm-none-eabi gcc-multilib
-```
-
-#### Install Python 3 and Pip3
-
-```shell
-sudo apt-get install python3 python3-pip
-```
-
-#### Install Clang
-
-```shell
-sudo apt-get install clang
-```
-
-#### Install Rust
-
-```shell
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-rustup default nightly
-rustup component add rust-src
-rustup target add thumbv6m-none-eabi
-```
-
-#### Install Cargo Ledger, LedgerBlue and ledgerctl tools 
-
-```shell
-cargo install --git https://github.com/LedgerHQ/cargo-ledger
-python3 -m pip install ledgerblue
-```
-
-## Compiling and loading binaries for development/testing purposes
-
-Following script builds debug binary for Ledger Nano S:
-```shell
-build-nanos.sh
-```
-Following script loads pre-built debug binary into Ledger Nano S:
-```shell
-flash-nanos.sh
-```
-For Ledger Nano S Plus corresponding commands are following:
-```shell
-build-nanosp.sh
-```
-and
-```shell
-flash-nanosp.sh
-```
-__WARNING:__ Binaries for different devices are incompatible. So, build and flash scripts
-should be used in pairs and correspond to actual device.
-
-### Individual Targets
-
-Build commands for individual targets:
-
-```shell
-./build-nanos.sh
-./build-nanosp.sh
-```
-
-Flash commands for individual targets:
-
-```shell
-./flash-nanos.sh
-./flash-nanosp.sh
-```
-
-Note that there are no individual scripts for Nano X since it does not support sideloading.
+This type of setup in details described [here](https://github.com/LedgerHQ/app-boilerplate-rust).
 
 ## Development Device Setup (Nano S)
 
@@ -124,27 +87,6 @@ python3 -m ledgerblue.hostOnboard --apdu --id 0 --prefix "" --passphrase "" --pi
 ```
 
 The process takes some time (few minutes) to finish. Once process finishes, device is ready to use for testing/development purposes.
-
-## Testing
-
-For testing there are a number of test scripts provided in `test` directory. 
-To run tests, use following command (inside test directory):
-
-```shell
-./test-all.sh
-```
-
-There are also a number of tests which require user interaction. They should be run separately,
-using following commands (inside test directory):
-
-```shell
-python3 -m test-sign-auth-ed25519
-python3 -m test-sign-auth-secp256k1
-python3 -m test-sign-tx-ed25519
-python3 -m test-sign-tx-secp256k1 
-python3 -m test-verify-address-ed25519.py
-python3 -m test-verify-address-secp256k1.py
-```
 
 ## License
 
