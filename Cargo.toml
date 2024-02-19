@@ -16,11 +16,11 @@ sbor = { path = "./sbor", default-features = false }
 blake2 = { version = "0.10.6", default-features = false }
 
 [profile.dev]
-opt-level = "s"
+opt-level = "z"
 lto = false
 
 [profile.release]
-opt-level = "s"
+opt-level = "z"
 lto = false
 
 [package.metadata.ledger]

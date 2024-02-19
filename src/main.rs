@@ -5,6 +5,7 @@
 #![feature(asm_const)]
 #![feature(cfg_version)]
 #![feature(const_mut_refs)]
+#![feature(core_intrinsics)]
 
 use ledger_device_sdk::ui::bagls::{
     CERTIFICATE_ICON, COGGLE_ICON, DASHBOARD_X_ICON, PROCESSING_ICON,
@@ -182,12 +183,18 @@ extern "C" fn sample_main() {
                 _ = main_menu.handle(button_event);
             }
             Event::Command(ins) => {
+                // Prevent excessive optimization
+                core::intrinsics::black_box(ins);
+                
                 UxEvent::wakeup();
                 match dispatcher::dispatcher(&mut comm, ins, &mut state) {
                     Ok(()) => comm.reply_ok(),
                     Err(app_error) => comm.reply(app_error),
                 };
                 ticker = 5;
+
+                // Prevent excessive optimization
+                core::intrinsics::black_box(ins);
             }
             Event::Ticker => {
                 if ticker >= 0 {

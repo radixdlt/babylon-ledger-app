@@ -124,10 +124,12 @@ impl<T: Copy> InstructionProcessor<T> {
         match class {
             CommandClass::Regular => {
                 self.state.init_sign(comm, sign_mode)?;
-                self.calculator.start()
+                let v = core::intrinsics::black_box(self.calculator.start());
+                v
             }
             CommandClass::Continuation | CommandClass::LastData => {
-                self.state.continue_sign(comm, class, sign_mode)
+                let v = core::intrinsics::black_box(self.state.continue_sign(comm, class, sign_mode));
+                v
             }
         }
     }

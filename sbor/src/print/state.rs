@@ -38,6 +38,9 @@ impl Default for ValueState {
     }
 }
 
+#[cfg(target_os = "nanos")]
+pub const PARAMETER_AREA_SIZE: usize = 96;
+#[cfg(any(target_os = "nanox", target_os = "nanosplus"))]
 pub const PARAMETER_AREA_SIZE: usize = 256;
 
 #[cfg(target_os = "nanos")]
