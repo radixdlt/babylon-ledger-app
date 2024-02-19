@@ -1,1 +1,0 @@
-speculos --model nanos target/nanos/release/babylon-ledger-app --display headless --seed "equip will roof matter pink blind book anxiety banner elbow sun young"

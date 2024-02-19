@@ -115,24 +115,22 @@ impl<T: Copy> InstructionProcessor<T> {
         self.calculator.finalize()
     }
 
+    #[allow(clippy::let_and_return)]
     pub fn process_sign(
         &mut self,
         comm: &mut Comm,
         class: CommandClass,
         sign_mode: SignMode,
     ) -> Result<(), AppError> {
-        match class {
+        core::intrinsics::black_box(match class {
             CommandClass::Regular => {
                 self.state.init_sign(comm, sign_mode)?;
-                let v = core::intrinsics::black_box(self.calculator.start());
-                v
+                self.calculator.start()
             }
             CommandClass::Continuation | CommandClass::LastData => {
-                let v =
-                    core::intrinsics::black_box(self.state.continue_sign(comm, class, sign_mode));
-                v
+                self.state.continue_sign(comm, class, sign_mode)
             }
-        }
+        })
     }
 
     pub fn get_detected_tx_type(&self) -> DetectedTxType {
