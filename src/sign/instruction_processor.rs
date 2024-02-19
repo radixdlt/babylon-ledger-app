@@ -128,7 +128,8 @@ impl<T: Copy> InstructionProcessor<T> {
                 v
             }
             CommandClass::Continuation | CommandClass::LastData => {
-                let v = core::intrinsics::black_box(self.state.continue_sign(comm, class, sign_mode));
+                let v =
+                    core::intrinsics::black_box(self.state.continue_sign(comm, class, sign_mode));
                 v
             }
         }

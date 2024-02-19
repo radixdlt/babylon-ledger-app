@@ -185,7 +185,7 @@ extern "C" fn sample_main() {
             Event::Command(ins) => {
                 // Prevent excessive optimization
                 core::intrinsics::black_box(ins);
-                
+
                 UxEvent::wakeup();
                 match dispatcher::dispatcher(&mut comm, ins, &mut state) {
                     Ok(()) => comm.reply_ok(),
