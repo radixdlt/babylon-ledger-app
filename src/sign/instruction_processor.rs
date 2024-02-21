@@ -121,7 +121,8 @@ impl<T: Copy> InstructionProcessor<T> {
         class: CommandClass,
         sign_mode: SignMode,
     ) -> Result<(), AppError> {
-        match class {
+        // Prevent excessive optimization which causes stack overflow on Nano S
+        core::intrinsics::black_box(match class {
             CommandClass::Regular => {
                 self.state.init_sign(comm, sign_mode)?;
                 self.calculator.start()
@@ -129,7 +130,7 @@ impl<T: Copy> InstructionProcessor<T> {
             CommandClass::Continuation | CommandClass::LastData => {
                 self.state.continue_sign(comm, class, sign_mode)
             }
-        }
+        })
     }
 
     pub fn get_detected_tx_type(&self) -> DetectedTxType {

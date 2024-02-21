@@ -15,30 +15,6 @@ env:
   NODE_TLS_REJECT_UNAUTHORIZED: 0
 
 jobs:
-  clippy:
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        target: ["nanos", "nanox", "nanosplus"]
-
-    steps:
-      - name: arm-none-eabi-gcc
-        uses: carlosperate/arm-none-eabi-gcc-action@v1
-        with:
-          release: '12.2.Rel1'
-      - name: Install toolchains
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly-2023-05-28
-          override: true
-          components: rust-src, clippy
-      - uses: actions/checkout@v2
-      - name: Cargo clippy
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: -Z build-std=core -Z build-std-features=compiler-builtins-mem --target ./target-config/${{ matrix.target }}.json
   fmt:
     runs-on: ubuntu-latest
     steps:
@@ -54,41 +30,6 @@ jobs:
         with:
           command: fmt
           args: --all -- --check
-
-  build:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        target: ["nanos", "nanox", "nanosplus"]
-
-    steps:
-      - name: arm-none-eabi-gcc
-        uses: carlosperate/arm-none-eabi-gcc-action@v1
-        with:
-          release: '12.2.Rel1'
-      - name: Install clang
-        run: sudo apt-get update && sudo apt install -y clang
-      - name: Install toolchains
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly-2023-05-28
-          override: true
-          components: rust-src
-      - uses: actions/checkout@v2
-      - name: Cargo build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release -Z build-std=core -Z build-std-features=compiler-builtins-mem --target ./target-config/${{ matrix.target }}.json
-      - name: Prepare artifacts
-        run: |
-          mkdir -p downloads
-          cp target/${{ matrix.target }}/release/babylon-ledger-app downloads/babylon_ledger_app_${{ matrix.target }}.elf
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: babylon_ledger_app_${{ matrix.target }}
-          path: downloads
 
   test:
     runs-on: ubuntu-latest

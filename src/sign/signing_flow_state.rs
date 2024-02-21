@@ -34,8 +34,11 @@ impl SigningFlowState {
         class: CommandClass,
         sign_mode: SignMode,
     ) -> Result<(), AppError> {
-        self.validate(class, sign_mode)?;
-        let data = comm.get_data()?;
+        // Prevent excessive optimization which causes stack overflow on Nano S
+        core::intrinsics::black_box(self.validate(class, sign_mode))?;
+
+        // Prevent excessive optimization which causes stack overflow on Nano S
+        let data = core::intrinsics::black_box(comm.get_data())?;
         self.update_counters(data.len());
 
         Ok(())

@@ -3,6 +3,7 @@
 .vscode/
 
 # Rust
+build/
 out/
 target/
 app_nanos.json
@@ -11,7 +12,7 @@ app_nanox.json
 app.json
 
 # Python
-test/__pycache__
+__pycache__/
 
 # Binaries
 *.elf

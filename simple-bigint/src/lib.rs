@@ -1,6 +1,5 @@
 #![feature(generic_const_exprs)]
 #![feature(bigint_helper_methods)]
-#![feature(core_intrinsics)]
 #![allow(incomplete_features)]
 #![cfg_attr(not(test), no_std)]
 

@@ -7,12 +7,9 @@ use ledger_device_sdk::ccid;
 use ledger_device_sdk::seph;
 use ledger_secure_sdk_sys::buttons::{get_button_event, ButtonEvent, ButtonsState};
 use ledger_secure_sdk_sys::seph as sys_seph;
-pub use ledger_secure_sdk_sys::BOLOS_UX_CANCEL;
 pub use ledger_secure_sdk_sys::BOLOS_UX_CONTINUE;
-pub use ledger_secure_sdk_sys::BOLOS_UX_ERROR;
 pub use ledger_secure_sdk_sys::BOLOS_UX_IGNORE;
 pub use ledger_secure_sdk_sys::BOLOS_UX_OK;
-pub use ledger_secure_sdk_sys::BOLOS_UX_REDRAW;
 use ledger_secure_sdk_sys::*;
 
 use crate::app_error::AppError;
@@ -140,10 +137,10 @@ impl Comm {
         if !sys_seph::is_status_sent() {
             sys_seph::send_general_status()
         }
-        let mut spi_buffer = [0u8; 128];
+
         while sys_seph::is_status_sent() {
-            sys_seph::seph_recv(&mut spi_buffer, 0);
-            seph::handle_event(&mut self.apdu_buffer, &spi_buffer);
+            sys_seph::seph_recv(&mut self.work_buffer, 0);
+            seph::handle_event(&mut self.apdu_buffer, &self.work_buffer);
         }
 
         match unsafe { G_io_app.apdu_state } {
@@ -267,7 +264,7 @@ impl Comm {
 
     pub fn get_apdu_metadata(&self) -> &ApduHeader {
         assert!(self.apdu_buffer.len() >= 4);
-        let ptr = &self.apdu_buffer[0] as &u8 as *const u8 as *const ApduHeader;
+        let ptr = &self.apdu_buffer as *const u8 as *const ApduHeader;
         unsafe { &*ptr }
     }
 
