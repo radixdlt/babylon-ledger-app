@@ -115,13 +115,13 @@ impl<T: Copy> InstructionProcessor<T> {
         self.calculator.finalize()
     }
 
-    #[allow(clippy::let_and_return)]
     pub fn process_sign(
         &mut self,
         comm: &mut Comm,
         class: CommandClass,
         sign_mode: SignMode,
     ) -> Result<(), AppError> {
+        // Prevent excessive optimization which causes stack overflow on Nano S
         core::intrinsics::black_box(match class {
             CommandClass::Regular => {
                 self.state.init_sign(comm, sign_mode)?;

@@ -183,7 +183,7 @@ extern "C" fn sample_main() {
                 _ = main_menu.handle(button_event);
             }
             Event::Command(ins) => {
-                // Prevent excessive optimization
+                // Prevent excessive optimization which causes stack overflow on Nano S
                 core::intrinsics::black_box(ins);
 
                 UxEvent::wakeup();
@@ -193,7 +193,7 @@ extern "C" fn sample_main() {
                 };
                 ticker = 5;
 
-                // Prevent excessive optimization
+                // Prevent excessive optimization which causes stack overflow on Nano S
                 core::intrinsics::black_box(ins);
             }
             Event::Ticker => {
