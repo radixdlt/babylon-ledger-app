@@ -19,7 +19,7 @@ Build for Nano S:
 ```
 Build for Nano S Plus:
 ```shell
-./build-nanosp.sh
+./build-nanosplus.sh
 ```
 Build for Nano X:
 ```shell
@@ -40,7 +40,7 @@ For Nano S:
 ```
 For Nano S Plus:
 ```shell
-./test-nanosp.sh
+./test-nanosplus.sh
 ```
 For Nano X:
 ```shell
