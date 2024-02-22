@@ -219,8 +219,14 @@ fn display_pending_review(comm: &mut Comm) {
     ledger_device_sdk::ui::gadgets::SingleMessage::new("Pending Review").show();
 
     loop {
-        if let Event::Button(ButtonEvent::BothButtonsRelease) = comm.next_event::<Command>() {
-            break;
+        match comm.next_event::<Command>() {
+            Event::Button(ButtonEvent::BothButtonsRelease) => {
+                break;
+            }
+            Event::Command(_) => {
+                comm.reply(AppError::CxErrorNotUnlocked);
+            }
+            _ => {}
         }
     }
 }
