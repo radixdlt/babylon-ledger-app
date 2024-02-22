@@ -10,8 +10,8 @@
 use ledger_device_sdk::ui::bagls::{
     CERTIFICATE_ICON, COGGLE_ICON, DASHBOARD_X_ICON, PROCESSING_ICON,
 };
-use ledger_device_sdk::ui::gadgets::{clear_screen, get_event};
-use ledger_secure_sdk_sys::buttons::{ButtonEvent, ButtonsState};
+use ledger_device_sdk::ui::gadgets::clear_screen;
+use ledger_secure_sdk_sys::buttons::ButtonEvent;
 
 use handler::dispatcher;
 
@@ -170,7 +170,7 @@ extern "C" fn sample_main() {
     let mut main_menu = Menu::new(&menu);
     let mut ticker = 0i8;
 
-    display_pending_review();
+    display_pending_review(&mut comm);
 
     main_menu.display();
 
@@ -213,16 +213,20 @@ extern "C" fn sample_main() {
     }
 }
 
-fn display_pending_review() {
+fn display_pending_review(comm: &mut Comm) {
     clear_screen();
 
     ledger_device_sdk::ui::gadgets::SingleMessage::new("Pending Review").show();
 
-    let mut buttons = ButtonsState::new();
-
     loop {
-        if let Event::Button(ButtonEvent::BothButtonsRelease) = get_event(&mut buttons) {
-            break;
+        match comm.next_event::<Command>() {
+            Event::Button(ButtonEvent::BothButtonsRelease) => {
+                break;
+            }
+            Event::Command(_) => {
+                comm.reply(AppError::CxErrorNotUnlocked);
+            }
+            _ => {}
         }
     }
 }
