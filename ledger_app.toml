@@ -1,7 +1,7 @@
 [app]
 build_directory = "./"
 sdk = "Rust"
-devices = ["nanos", "nanox", "nanosp"]
+devices = ["nanos", "nanox", "nanos+"]
 
 [tests]
 pytest_directory = "./ragger_tests"
