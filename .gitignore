@@ -13,6 +13,7 @@ app.json
 
 # Python
 __pycache__/
+snapshots-tmp/
 
 # Binaries
 *.elf
