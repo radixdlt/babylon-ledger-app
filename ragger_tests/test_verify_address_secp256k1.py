@@ -13,14 +13,13 @@ INS = 0x91
 # Check single test vector
 # --------------------------------------------------------------------------------------------
 
-def call_and_check(firmware, backend, navigator, vector):
+def call_and_check(firmware, backend, navigator, test_name, vector):
     path, expected_pub_key = vector
     with backend.exchange_async(cla=CLA1, ins=INS, data=pack_derivation_path(path)) as response:
         if firmware.device.startswith("nano"):
-            navigator.navigate([NavInsID.RIGHT_CLICK,
-                                NavInsID.RIGHT_CLICK,
-                                NavInsID.RIGHT_CLICK,
-                                NavInsID.RIGHT_CLICK, ])
+            navigator.navigate_and_compare(ROOT_SCREENSHOT_PATH, test_name,
+                                           [NavInsID.RIGHT_CLICK, NavInsID.RIGHT_CLICK,
+                                            NavInsID.RIGHT_CLICK, NavInsID.RIGHT_CLICK, ])
     pk = backend.last_async_response.data.decode('utf-8')
     assert pk == expected_pub_key, "Invalid address\nExpected: " + expected_pub_key + "\nReceived: " + pk
 
@@ -49,65 +48,65 @@ test_vectors = [
 ]
 
 
-def test_verify_address_secp256k1_0(firmware, backend, navigator):
-    call_and_check(firmware, backend, navigator, test_vectors[0])
+def test_verify_address_secp256k1_0(firmware, backend, navigator, test_name):
+    call_and_check(firmware, backend, navigator, test_name, test_vectors[0])
 
 
-def test_verify_address_secp256k1_1(firmware, backend, navigator):
-    call_and_check(firmware, backend, navigator, test_vectors[1])
+def test_verify_address_secp256k1_1(firmware, backend, navigator, test_name):
+    call_and_check(firmware, backend, navigator, test_name, test_vectors[1])
 
 
-def test_verify_address_secp256k1_2(firmware, backend, navigator):
-    call_and_check(firmware, backend, navigator, test_vectors[2])
+def test_verify_address_secp256k1_2(firmware, backend, navigator, test_name):
+    call_and_check(firmware, backend, navigator, test_name, test_vectors[2])
 
 
-def test_verify_address_secp256k1_3(firmware, backend, navigator):
-    call_and_check(firmware, backend, navigator, test_vectors[3])
+def test_verify_address_secp256k1_3(firmware, backend, navigator, test_name):
+    call_and_check(firmware, backend, navigator, test_name, test_vectors[3])
 
 
-def test_verify_address_secp256k1_4(firmware, backend, navigator):
-    call_and_check(firmware, backend, navigator, test_vectors[4])
+def test_verify_address_secp256k1_4(firmware, backend, navigator, test_name):
+    call_and_check(firmware, backend, navigator, test_name, test_vectors[4])
 
 
-def test_verify_address_secp256k1_5(firmware, backend, navigator):
-    call_and_check(firmware, backend, navigator, test_vectors[5])
+def test_verify_address_secp256k1_5(firmware, backend, navigator, test_name):
+    call_and_check(firmware, backend, navigator, test_name, test_vectors[5])
 
 
-def test_verify_address_secp256k1_6(firmware, backend, navigator):
-    call_and_check(firmware, backend, navigator, test_vectors[6])
+def test_verify_address_secp256k1_6(firmware, backend, navigator, test_name):
+    call_and_check(firmware, backend, navigator, test_name, test_vectors[6])
 
 
-def test_verify_address_secp256k1_7(firmware, backend, navigator):
-    call_and_check(firmware, backend, navigator, test_vectors[7])
+def test_verify_address_secp256k1_7(firmware, backend, navigator, test_name):
+    call_and_check(firmware, backend, navigator, test_name, test_vectors[7])
 
 
-def test_verify_address_secp256k1_8(firmware, backend, navigator):
-    call_and_check(firmware, backend, navigator, test_vectors[8])
+def test_verify_address_secp256k1_8(firmware, backend, navigator, test_name):
+    call_and_check(firmware, backend, navigator, test_name, test_vectors[8])
 
 
-def test_verify_address_secp256k1_9(firmware, backend, navigator):
-    call_and_check(firmware, backend, navigator, test_vectors[9])
+def test_verify_address_secp256k1_9(firmware, backend, navigator, test_name):
+    call_and_check(firmware, backend, navigator, test_name, test_vectors[9])
 
 
-def test_verify_address_secp256k1_10(firmware, backend, navigator):
-    call_and_check(firmware, backend, navigator, test_vectors[10])
+def test_verify_address_secp256k1_10(firmware, backend, navigator, test_name):
+    call_and_check(firmware, backend, navigator, test_name, test_vectors[10])
 
 
-def test_verify_address_secp256k1_11(firmware, backend, navigator):
-    call_and_check(firmware, backend, navigator, test_vectors[11])
+def test_verify_address_secp256k1_11(firmware, backend, navigator, test_name):
+    call_and_check(firmware, backend, navigator, test_name, test_vectors[11])
 
 
-def test_verify_address_secp256k1_12(firmware, backend, navigator):
-    call_and_check(firmware, backend, navigator, test_vectors[12])
+def test_verify_address_secp256k1_12(firmware, backend, navigator, test_name):
+    call_and_check(firmware, backend, navigator, test_name, test_vectors[12])
 
 
-def test_verify_address_secp256k1_13(firmware, backend, navigator):
-    call_and_check(firmware, backend, navigator, test_vectors[13])
+def test_verify_address_secp256k1_13(firmware, backend, navigator, test_name):
+    call_and_check(firmware, backend, navigator, test_name, test_vectors[13])
 
 
-def test_verify_address_secp256k1_14(firmware, backend, navigator):
-    call_and_check(firmware, backend, navigator, test_vectors[14])
+def test_verify_address_secp256k1_14(firmware, backend, navigator, test_name):
+    call_and_check(firmware, backend, navigator, test_name, test_vectors[14])
 
 
-def test_verify_address_secp256k1_15(firmware, backend, navigator):
-    call_and_check(firmware, backend, navigator, test_vectors[15])
+def test_verify_address_secp256k1_15(firmware, backend, navigator, test_name):
+    call_and_check(firmware, backend, navigator, test_name, test_vectors[15])

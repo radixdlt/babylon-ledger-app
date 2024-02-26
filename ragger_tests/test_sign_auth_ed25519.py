@@ -31,9 +31,11 @@ def sign_auth_ed25519(firmware, backend, navigator, test_name, vector):
 
     with send_auth_request(backend, vector[1], vector[2], vector[3]):
         if firmware.device.startswith("nano"):
-            navigator.navigate([NavInsID.RIGHT_CLICK, NavInsID.RIGHT_CLICK, NavInsID.RIGHT_CLICK, NavInsID.RIGHT_CLICK,
-                                NavInsID.RIGHT_CLICK, NavInsID.RIGHT_CLICK, NavInsID.RIGHT_CLICK,
-                                NavInsID.BOTH_CLICK])
+            navigator.navigate_and_compare(ROOT_SCREENSHOT_PATH, test_name,
+                                           [NavInsID.RIGHT_CLICK, NavInsID.RIGHT_CLICK,
+                                            NavInsID.RIGHT_CLICK, NavInsID.RIGHT_CLICK,
+                                            NavInsID.RIGHT_CLICK, NavInsID.RIGHT_CLICK,
+                                            NavInsID.RIGHT_CLICK, NavInsID.BOTH_CLICK])
 
     rc = backend.last_async_response.data
     pubkey = ed25519.Ed25519PublicKey.from_public_bytes(bytes(rc[64:96]))
