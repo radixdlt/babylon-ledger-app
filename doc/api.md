@@ -9,7 +9,7 @@ All communication is performed using APDU protocol ([see APDU description](apdu.
 | [GetAppVersion](#getappversion)                   | 0x10             | Get application version as 3 bytes, where each byte represents version component: __Major__, __Minor__ and __Patch Level__.                                                                                                                                           |
 | [GetDeviceModel](#getdevicemodel)                 | 0x11             | Get device model code byte. __0__ corresponds to Nano S, __1__ - Nano S Plus, __2__ - Nano X                                                                                                                                                                          |
 | [GetDeviceId](#getdeviceid)                       | 0x12             | Get device ID byte array (32 bytes)                                                                                                                                                                                                                                   |
-| [GetAppSettingsId](#getappsettings)               | 0x20             | Get application settings                                                                                                                                                                                                                                              |
+| [GetAppSettings](#getappsettings)                 | 0x20             | Get application settings                                                                                                                                                                                                                                              |
 | [GetPubKeyEd25519](#getpubkeyed25519)             | 0x21             | Get Ed25519 public key for provided derivation path. Derivation path must conform to CAP-26 SLIP 10 HD Derivation Path Scheme.                                                                                                                                        |
 | [GetPubKeySecp256k1](#getpubkeysecp256k1)         | 0x31             | Get Secp256k1 public key for provided derivation path.                                                                                                                                                                                                                |
 | [SignTxEd25519](#signtxed25519)                   | 0x41             | Sign transaction intent using Ed25519 curve and given derivation path. Derivation path must conform to CAP-26 SLIP 10 HD Derivation Path Scheme. Signing is done in "advanced mode", when every instruction from transaction intent is decoded and displayed to user. |
@@ -25,7 +25,7 @@ Get application version.
 
 APDU:
 
-| CLA  | INS  | P1   |   P2 | Data |
+| CLA  | INS  | P1   | P2   | Data |
 |------|------|------|------|------|
 | 0xAA | 0x10 | 0x00 | 0x00 | None |
 
@@ -55,7 +55,8 @@ Response (1 byte):
 
 ## GetDeviceId
 
-Get ID of the device. Note that this ID is derived from the device's private key. Two devices with same private key will have same device ID.
+Get ID of the device. Note that this ID is derived from the device's private key. Two devices with same private key will
+have same device ID.
 
 APDU:
 
@@ -87,7 +88,9 @@ Response (2 bytes):
 | byte 1 | "Blind signing" state<br>0 - "Blind signing" disabled<br>1 - "Blind signing" enabled |
 
 ## GetPubKeyEd25519
-Get Ed25519 public key for provided derivation path. Derivation path should follow the format described in CAP-26 SLIP 10 HD Derivation Path Scheme.
+
+Get Ed25519 public key for provided derivation path. Derivation path should follow the format described in CAP-26 SLIP
+10 HD Derivation Path Scheme.
 
 APDU:
 
@@ -117,18 +120,24 @@ Response (33 bytes):
 |-----------|----------------------|
 | byte 0-32 | Secp256k1 public key |
 
-Returned key is a compressed key. First byte is always 0x02 or 0x03, depending on the parity of the y-coordinate. 
+Returned key is a compressed key. First byte is always 0x02 or 0x03, depending on the parity of the y-coordinate.
 The remaining 32 bytes are the x-coordinate.
 
 ## SignTxEd25519
 
-Sign transaction intent using Ed25519 private key and derivation path. Derivation path should follow the format described in CAP-26 SLIP 10 HD Derivation Path Scheme.
+Sign transaction intent using Ed25519 private key and derivation path. Derivation path should follow the format
+described in CAP-26 SLIP 10 HD Derivation Path Scheme.
 
-This command decodes transaction intent, retrieves instructions with their parameters and shows them to the user. Since decoded instruction and parameters may exceed available device resources, the information shown to user might be incomplete. 
+This command decodes transaction intent, retrieves instructions with their parameters and shows them to the user. Since
+decoded instruction and parameters may exceed available device resources, the information shown to user might be
+incomplete.
 
-This command is invoked in two steps:  
+This command is invoked in two steps:
+
 - Send derivation path.
-- Send transaction intent data (see below). This command can be sent one or more times, depending on the size of the transaction intent. The last chunk is accompanied with class byte set to `0xAC`. Other (intermediate) chunks are accompanied with class byte set to `0xAD`.
+- Send transaction intent data (see below). This command can be sent one or more times, depending on the size of the
+  transaction intent. The last chunk is accompanied with class byte set to `0xAC`. Other (intermediate) chunks are
+  accompanied with class byte set to `0xAD`.
 
 APDU for derivation path:
 
@@ -142,7 +151,8 @@ APDU for transaction intent data:
 |---------------------------------------------------------|------|------|------|-------------------------------|
 | 0xAD - for intermediate chunks<br>0xAC - for last chunk | 0x41 | 0x00 | 0x00 | Transaction intent data chunk |
 
-Upon successful sign, the device returns the signature for the transaction intent. The signature is returned in the following format:
+Upon successful sign, the device returns the signature for the transaction intent. The signature is returned in the
+following format:
 
 | Data        | Description        |
 |-------------|--------------------|
@@ -153,13 +163,19 @@ Upon successful sign, the device returns the signature for the transaction inten
 If user rejects the sign request, then the device returns error code 0x6e50 (User rejected the sign request).
 
 ## SignTxSecp256k1
+
 Sign transaction intent using Secp256k1 private key and derivation path.
 
-This command decodes transaction intent, retrieves instructions with their parameters and shows them to the user. Since decoded instruction and parameters may exceed available device resources, the information shown to user might be incomplete.
+This command decodes transaction intent, retrieves instructions with their parameters and shows them to the user. Since
+decoded instruction and parameters may exceed available device resources, the information shown to user might be
+incomplete.
 
 This command is invoked in two steps:
+
 - Send derivation path.
-- Send transaction intent data (see below). This command can be sent one or more times, depending on the size of the transaction intent. The last chunk is accompanied with class byte set to `0xAC`. Other (intermediate) chunks are accompanied with class byte set to `0xAD`.
+- Send transaction intent data (see below). This command can be sent one or more times, depending on the size of the
+  transaction intent. The last chunk is accompanied with class byte set to `0xAC`. Other (intermediate) chunks are
+  accompanied with class byte set to `0xAD`.
 
 APDU for derivation path:
 
@@ -173,7 +189,8 @@ APDU for transaction intent data:
 |---------------------------------------------------------|------|------|------|-------------------------------|
 | 0xAD - for intermediate chunks<br>0xAC - for last chunk | 0x41 | 0x00 | 0x00 | Transaction intent data chunk |
 
-Upon successful sign, the device returns the signature for the transaction intent. The signature is returned in the following format:
+Upon successful sign, the device returns the signature for the transaction intent. The signature is returned in the
+following format:
 
 | Data        | Description          |
 |-------------|----------------------|
@@ -184,9 +201,12 @@ Upon successful sign, the device returns the signature for the transaction inten
 If user rejects the sign request, then the device returns error code 0x6e50 (User rejected the sign request).
 
 ## SignAuthEd25519
-Sign auth request data using Ed25519 private key and derivation path. Derivation path should follow the format described in CAP-26 SLIP 10 HD Derivation Path Scheme.
+
+Sign auth request data using Ed25519 private key and derivation path. Derivation path should follow the format described
+in CAP-26 SLIP 10 HD Derivation Path Scheme.
 
 This command is invoked in two steps:
+
 - Send derivation path.
 - Send auth request data (nonce, origin and dApp address). This packet uses class byte set to `0xAC`.
 
@@ -202,7 +222,8 @@ APDU for auth request data:
 |------|------|------|------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | 0xAC | 0x61 | 0x00 | 0x00 | Auth request data in the following format:<br>byte 0-31 - nonce<br>byte 32 - dApp address length<br>byte 33-... - dApp address<br>byte ... - bytes left after dApp address contains origin |
 
-Upon successful sign, the device returns the signature for the given auth request. The signature is returned in the following format:
+Upon successful sign, the device returns the signature for the given auth request. The signature is returned in the
+following format:
 
 | Data        | Description        |
 |-------------|--------------------|
@@ -213,10 +234,13 @@ Upon successful sign, the device returns the signature for the given auth reques
 If user rejects the sign request, then the device returns error code 0x6e50 (User rejected the sign request).
 
 ## SignAuthSecp256k1
+
 Sign auth request data using Secp256k1 private key and derivation path.
 
 This command is invoked in two steps:
-- Send derivation path. The request format is the same as for GetPubKeyEd25519 command except different instruction code (see below).
+
+- Send derivation path. The request format is the same as for GetPubKeyEd25519 command except different instruction
+  code (see below).
 - Send auth request data (nonce, origin and dApp address). This packet uses class byte set to `0xAC`.
 
 APDU for derivation path:
@@ -231,7 +255,8 @@ APDU for auth request data:
 |------|------|------|------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | 0xAC | 0x71 | 0x00 | 0x00 | Auth request data in the following format:<br>byte 0-31 - nonce<br>byte 32 - dApp address length<br>byte 33-... - dApp address<br>byte ... - bytes left after dApp address contains origin |
 
-Upon successful sign, the device returns the signature for the given auth request. The signature is returned in the following format:
+Upon successful sign, the device returns the signature for the given auth request. The signature is returned in the
+following format:
 
 | Data        | Description          |
 |-------------|----------------------|
@@ -242,6 +267,7 @@ Upon successful sign, the device returns the signature for the given auth reques
 If user rejects the sign request, then the device returns error code 0x6e50 (User rejected the sign request).
 
 ## VerifyAddressEd25519
+
 Verify bech32m address for a given derivation path using Ed25519 curve.
 
 APDU:
@@ -257,6 +283,7 @@ Response:
 | byte 0-... | bech32m address calculated by the device |    
 
 ## VerifyAddressSecp256k1
+
 Verify bech32m address for a given derivation path using Secp256k1 curve.
 
 APDU:
