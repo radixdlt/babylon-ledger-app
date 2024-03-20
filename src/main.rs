@@ -169,7 +169,7 @@ extern "C" fn sample_main() {
     let mut ticker = 0i8;
 
     core::intrinsics::black_box(&mut comm);
-    
+
     main_menu.display();
 
     loop {
