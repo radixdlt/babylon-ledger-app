@@ -11,12 +11,10 @@ use ledger_device_sdk::ui::bagls::{
     CERTIFICATE_ICON, COGGLE_ICON, DASHBOARD_X_ICON, PROCESSING_ICON,
 };
 use ledger_device_sdk::ui::gadgets::clear_screen;
-use ledger_secure_sdk_sys::buttons::ButtonEvent;
 
 use handler::dispatcher;
 
 use crate::app_error::AppError;
-use crate::command::Command;
 use crate::io::{Comm, Event, UxEvent};
 use crate::ledger_display_io::LedgerTTY;
 use crate::settings::Settings;
@@ -170,6 +168,8 @@ extern "C" fn sample_main() {
     let mut main_menu = Menu::new(&menu);
     let mut ticker = 0i8;
 
+    core::intrinsics::black_box(&mut comm);
+    
     main_menu.display();
 
     loop {
