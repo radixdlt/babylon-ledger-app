@@ -133,9 +133,13 @@ macro_rules! ixx {
             } else {
                 i -= 1;
             }
+
+            if i < 0 {
+                break;
+            }
         }
 
-        if negative {
+        if negative && i > 0 {
             i -= 1;
             unsafe { ptr.add(i).write(b'-') }
         }
@@ -158,6 +162,10 @@ macro_rules! uxx {
                 break;
             } else {
                 i -= 1;
+            }
+
+            if i == 0 {
+                break;
             }
         }
 
