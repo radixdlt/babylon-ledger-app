@@ -100,36 +100,23 @@ impl KeyPairSecp256k1 {
             let index_r_len = 3usize;
             let r_len = comm.work_buffer[index_r_len] as usize;
             let mut r_start = index_r_len + 1;
-
-            if r_start > MAX_DER_OFFSET {
-                return Err(AppError::BadSDKResponse);
-            }
-
             let index_s_len = r_start + r_len + 1;
-            let s_len = comm.work_buffer[index_s_len] as usize;
             let s_start = index_s_len + 1;
-
-            if s_start > MAX_DER_OFFSET {
-                return Err(AppError::BadSDKResponse);
-            }
 
             if r_len == 33 {
                 // we skip first byte of R.
                 r_start += 1;
             }
 
-            // +4 for `02`, `Lr`, `02` and `Ls`.
-            assert_eq!(
-                r_len + s_len + 4,
-                (comm.work_buffer[1] as usize),
-                "Parsed S_len + R_len should equal 'L' + 4, but it did not"
-            );
-
             let parity = if (info & CX_ECCINFO_PARITY_ODD) != 0 {
                 0x01u8
             } else {
                 0x00
             };
+
+            if r_start > MAX_DER_OFFSET || s_start > MAX_DER_OFFSET {
+                return Err(AppError::BadSDKResponse);
+            }
 
             comm.append(&[parity]);
             comm.append_work_buffer_from_to(r_start, r_start + 32);
