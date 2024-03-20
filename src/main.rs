@@ -170,8 +170,6 @@ extern "C" fn sample_main() {
     let mut main_menu = Menu::new(&menu);
     let mut ticker = 0i8;
 
-    display_pending_review(&mut comm);
-
     main_menu.display();
 
     loop {
@@ -209,24 +207,6 @@ extern "C" fn sample_main() {
                     main_menu.display();
                 }
             }
-        }
-    }
-}
-
-fn display_pending_review(comm: &mut Comm) {
-    clear_screen();
-
-    ledger_device_sdk::ui::gadgets::SingleMessage::new("Pending Review").show();
-
-    loop {
-        match comm.next_event::<Command>() {
-            Event::Button(ButtonEvent::BothButtonsRelease) => {
-                break;
-            }
-            Event::Command(_) => {
-                comm.reply(AppError::CxErrorNotUnlocked);
-            }
-            _ => {}
         }
     }
 }
