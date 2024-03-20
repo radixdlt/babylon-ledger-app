@@ -22,6 +22,7 @@ const PRIV_KEY_LEN: usize = 32;
 const PUB_KEY_X_COORDINATE_SIZE: usize = 32;
 const PUB_KEY_UNCOMPRESSED_LAST_BYTE: usize = 64;
 const DER_MAX_LEN: usize = 72;
+const MAX_DER_OFFSET: usize = DER_MAX_LEN - 32;
 pub const SECP256K1_SIGNATURE_LEN: usize = 65;
 pub const SECP256K1_PUBLIC_KEY_LEN: usize = PUB_KEY_COMPRESSED_LEN;
 
@@ -99,9 +100,19 @@ impl KeyPairSecp256k1 {
             let index_r_len = 3usize;
             let r_len = comm.work_buffer[index_r_len] as usize;
             let mut r_start = index_r_len + 1;
+            
+            if r_start > MAX_DER_OFFSET {
+                return Err(AppError::BadSDKResponse);
+            } 
+            
             let index_s_len = r_start + r_len + 1;
             let s_len = comm.work_buffer[index_s_len] as usize;
             let s_start = index_s_len + 1;
+            
+            if s_start > MAX_DER_OFFSET {
+                return Err(AppError::BadSDKResponse);
+            }
+            
             if r_len == 33 {
                 // we skip first byte of R.
                 r_start += 1;
