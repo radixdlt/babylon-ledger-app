@@ -17,6 +17,7 @@ pub enum AppError {
     BadP1P2 = 0x6e02,
     BadLen = 0x6e03,
     UserCancelled = 0x6e04,
+    BadSDKResponse = 0x6e05,
 
     BadBip32PathLen = 0x6e10,
     BadBip32PathDataLen = 0x6e11,
