@@ -131,11 +131,10 @@ macro_rules! ixx {
             if n == 0 {
                 break;
             } else {
+                if i == 0 {
+                    break;
+                }
                 i -= 1;
-            }
-
-            if i < 0 {
-                break;
             }
         }
 
@@ -161,11 +160,10 @@ macro_rules! uxx {
             if n == 0 {
                 break;
             } else {
+                if i == 0 {
+                    break;
+                }
                 i -= 1;
-            }
-
-            if i == 0 {
-                break;
             }
         }
 
