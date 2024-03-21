@@ -128,14 +128,10 @@ macro_rules! ixx {
             unsafe { ptr.add(i).write((n % 10) as u8 + b'0') }
             n /= 10;
 
-            if n == 0 {
+            if n == 0 || i == 0 {
                 break;
             } else {
                 i -= 1;
-            }
-
-            if i < 0 {
-                break;
             }
         }
 
@@ -161,11 +157,10 @@ macro_rules! uxx {
             if n == 0 {
                 break;
             } else {
+                if i == 0 {
+                    break;
+                }
                 i -= 1;
-            }
-
-            if i == 0 {
-                break;
             }
         }
 
