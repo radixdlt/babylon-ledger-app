@@ -19,7 +19,7 @@ checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
 
 [[package]]
 name = "babylon-ledger-app"
-version = "0.7.27"
+version = "0.7.28"
 dependencies = [
  "blake2",
  "include_gif",
@@ -218,9 +218,9 @@ checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
 
 [[package]]
 name = "ledger_device_sdk"
-version = "1.5.1"
+version = "1.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e5b4725e4e236f13bb5a55dadee88cff36faacea738707cc44aff4ff6f1ab96e"
+checksum = "8c119b704c1240c3e21fcaff94ea8cdc110ac949eb118c5e6e5dbc9c7a61ebe2"
 dependencies = [
  "include_gif",
  "ledger_secure_sdk_sys",

@@ -232,6 +232,19 @@ impl Comm {
 
         if unsafe { G_io_app.apdu_state } != APDU_IDLE && unsafe { G_io_app.apdu_length } > 0 {
             self.rx = unsafe { G_io_app.apdu_length as usize };
+
+            // Reject incomplete APDUs
+            if self.rx < 4 {
+                self.reply(StatusWords::BadLen);
+                return None;
+            }
+
+            // Check for data length by using `get_data`
+            if let Err(sw) = self.get_data() {
+                self.reply(sw);
+                return None;
+            }
+
             let res = T::try_from(*self.get_apdu_metadata());
             match res {
                 Ok(ins) => {

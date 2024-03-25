@@ -22,6 +22,7 @@ const PRIV_KEY_LEN: usize = 32;
 const PUB_KEY_X_COORDINATE_SIZE: usize = 32;
 const PUB_KEY_UNCOMPRESSED_LAST_BYTE: usize = 64;
 const DER_MAX_LEN: usize = 72;
+const MAX_DER_OFFSET: usize = DER_MAX_LEN - 32;
 pub const SECP256K1_SIGNATURE_LEN: usize = 65;
 pub const SECP256K1_PUBLIC_KEY_LEN: usize = PUB_KEY_COMPRESSED_LEN;
 
@@ -100,25 +101,22 @@ impl KeyPairSecp256k1 {
             let r_len = comm.work_buffer[index_r_len] as usize;
             let mut r_start = index_r_len + 1;
             let index_s_len = r_start + r_len + 1;
-            let s_len = comm.work_buffer[index_s_len] as usize;
             let s_start = index_s_len + 1;
+
             if r_len == 33 {
                 // we skip first byte of R.
                 r_start += 1;
             }
-
-            // +4 for `02`, `Lr`, `02` and `Ls`.
-            assert_eq!(
-                r_len + s_len + 4,
-                (comm.work_buffer[1] as usize),
-                "Parsed S_len + R_len should equal 'L' + 4, but it did not"
-            );
 
             let parity = if (info & CX_ECCINFO_PARITY_ODD) != 0 {
                 0x01u8
             } else {
                 0x00
             };
+
+            if r_start > MAX_DER_OFFSET || s_start > MAX_DER_OFFSET {
+                return Err(AppError::BadSDKResponse);
+            }
 
             comm.append(&[parity]);
             comm.append_work_buffer_from_to(r_start, r_start + 32);
