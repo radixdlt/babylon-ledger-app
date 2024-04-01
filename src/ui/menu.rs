@@ -20,7 +20,7 @@ pub struct MenuItem<'a> {
 }
 
 impl<'a> MenuItem<'a> {
-    pub fn new(feature: MenuFeature<'a>, text: &'a str, action: fn() -> bool) -> Self {
+    pub const fn new(feature: MenuFeature<'a>, text: &'a str, action: fn() -> bool) -> Self {
         MenuItem {
             text,
             action,
@@ -29,8 +29,8 @@ impl<'a> MenuItem<'a> {
     }
 }
 
-pub struct Menu<'a> {
-    items: &'a [MenuItem<'a>],
+pub struct Menu<'a, const N: usize> {
+    items: [MenuItem<'a>; N],
     current: usize,
 }
 
@@ -39,8 +39,8 @@ const HALF_ICON_WIDTH: usize = 7;
 const ON_TEXT: &str = "\n\nEnabled";
 const OFF_TEXT: &str = "\n\nDisabled";
 
-impl<'a> Menu<'a> {
-    pub const fn new(items: &'a [MenuItem<'a>]) -> Self {
+impl<'a, const N: usize> Menu<'a, N> {
+    pub const fn new(items: [MenuItem<'a>; N]) -> Self {
         Menu { items, current: 0 }
     }
 
