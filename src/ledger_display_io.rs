@@ -1,6 +1,5 @@
-use crate::ui::multiline_scroller::MultilineMessageScroller;
-use core::str::from_utf8;
 use sbor::print::tty::TTY;
+use crate::xui::instruction;
 
 #[derive(Copy, Clone, Debug)]
 pub struct LedgerTTY;
@@ -13,11 +12,6 @@ impl LedgerTTY {
         }
     }
     fn show_message(_: &mut (), title: &[u8], message: &[u8]) {
-        MultilineMessageScroller::with_title(
-            from_utf8(title).unwrap(),
-            from_utf8(message).unwrap(),
-            true,
-        )
-        .event_loop();
+        instruction::display_message_with_title(title, message);
     }
 }

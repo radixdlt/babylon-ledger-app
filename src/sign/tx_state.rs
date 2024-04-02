@@ -16,10 +16,8 @@ use crate::settings::Settings;
 use crate::sign::instruction_processor::InstructionProcessor;
 use crate::sign::sign_mode::SignMode;
 use crate::sign::sign_outcome::SignOutcome;
-use crate::ui::multiline_scroller::MultilineMessageScroller;
-use crate::ui::multipage_validator::MultipageValidator;
-use crate::ui::single_message::SingleMessage;
 use crate::ui::utils;
+use crate::xui::{auth_details, instruction, introductory_screen, signature};
 
 const CHALLENGE_LENGTH: usize = 32;
 const DAPP_ADDRESS_LENGTH: usize = 70;
@@ -120,7 +118,7 @@ impl<T: Copy> TxState<T> {
             self.processor.process_sign(comm, class, sign_mode)?;
             self.processor.set_network()?;
             self.processor.set_show_instructions();
-            self.show_introductory_screen(sign_mode)?;
+            introductory_screen::display(sign_mode)?;
         } else {
             self.processor.process_sign(comm, class, sign_mode)?;
 
@@ -141,20 +139,6 @@ impl<T: Copy> TxState<T> {
         } else {
             Ok(SignOutcome::SendNextPacket)
         }
-    }
-
-    fn show_introductory_screen(&mut self, sign_mode: SignMode) -> Result<(), AppError> {
-        let text = match sign_mode {
-            SignMode::Ed25519Verbose
-            | SignMode::Secp256k1Verbose
-            | SignMode::Ed25519Summary
-            | SignMode::Secp256k1Summary => "Review\n\nTransaction",
-            SignMode::AuthEd25519 | SignMode::AuthSecp256k1 => "Review\nOwnership\nProof",
-        };
-
-        SingleMessage::with_right_arrow(text).show_and_wait();
-
-        Ok(())
     }
 
     fn process_sign_auth(
@@ -181,11 +165,9 @@ impl<T: Copy> TxState<T> {
             nonce_hex[i * 2 + 1] = lower_as_hex(byte);
         }
 
-        utils::info_message(b"Origin:", origin);
-        utils::info_message(b"dApp Address:", address);
-        utils::info_message(b"Nonce:", &nonce_hex);
+        auth_details::display(address, origin, &nonce_hex);
 
-        let rc = MultipageValidator::new(&["Sign Proof?"], &["Sign"], &["Reject"]).ask();
+        let rc = signature::ask_user(signature::SignType::Proof);
 
         if rc {
             let digest = self.processor.auth_digest(challenge, address, origin)?;
@@ -198,12 +180,7 @@ impl<T: Copy> TxState<T> {
     fn fee_info_message(&mut self, fee: &Decimal) {
         let text = self.processor.format_decimal(fee, b" XRD");
 
-        MultilineMessageScroller::with_title(
-            "Max TX Fee:",
-            core::str::from_utf8(text).unwrap(),
-            true,
-        )
-        .event_loop();
+        instruction::display_message_with_title(b"Max TX Fee:", text);
     }
 
     fn finalize_sign_tx(
@@ -214,7 +191,7 @@ impl<T: Copy> TxState<T> {
         let digest = self.processor.finalize()?;
         self.display_tx_info(sign_mode, &digest)?;
 
-        let rc = MultipageValidator::new(&["Sign TX?"], &["Sign"], &["Reject"]).ask();
+        let rc = signature::ask_user(signature::SignType::TX);
 
         if rc {
             self.processor.sign_tx(comm, sign_mode, &digest)

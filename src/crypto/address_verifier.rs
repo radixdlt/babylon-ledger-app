@@ -10,6 +10,6 @@ pub fn verify_address(address: Address, network_id: NetworkId, comm: &mut Comm) 
     let mut vec = StaticVec::<u8, { Bech32::MAX_LEN }>::new(0);
     address.format(&mut vec, network_id);
 
-    address::display_address(vec.as_slice());
+    address::display(vec.as_slice());
     comm.append(vec.as_slice());
 }
