@@ -1,6 +1,9 @@
-pub mod menu;
 pub mod address;
-pub mod instruction;
-pub mod signature;
-pub mod introductory_screen;
 pub mod auth_details;
+pub mod fee;
+pub mod hash;
+pub mod introductory_screen;
+pub mod menu;
+pub mod signature;
+pub mod titled_message;
+pub mod transfer;

@@ -1,5 +1,5 @@
 use sbor::print::tty::TTY;
-use crate::xui::instruction;
+use crate::xui::titled_message;
 
 #[derive(Copy, Clone, Debug)]
 pub struct LedgerTTY;
@@ -12,6 +12,6 @@ impl LedgerTTY {
         }
     }
     fn show_message(_: &mut (), title: &[u8], message: &[u8]) {
-        instruction::display_message_with_title(title, message);
+        titled_message::display(title, message);
     }
 }

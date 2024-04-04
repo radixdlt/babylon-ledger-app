@@ -44,14 +44,17 @@ pub enum DecodingPhase {
 }
 
 #[derive(Copy, Clone, Debug)]
+pub struct TransferDetails {
+    pub fee: Option<Decimal>,
+    pub src_address: Address,
+    pub dst_address: Address,
+    pub res_address: Address,
+    pub amount: Decimal,
+}
+
+#[derive(Copy, Clone, Debug)]
 pub enum DetectedTxType {
-    Transfer {
-        fee: Option<Decimal>,
-        src_address: Address,
-        dst_address: Address,
-        res_address: Address,
-        amount: Decimal,
-    },
+    Transfer(TransferDetails),
     Other(Option<Decimal>),
     Error(Option<Decimal>),
 }
@@ -88,13 +91,15 @@ impl DetectedTxType {
                     res_address,
                     amount,
                 },
-                DetectedTxType::Transfer {
-                    fee: other_fee,
-                    src_address: other_src_address,
-                    dst_address: other_dst_address,
-                    res_address: other_res_address,
-                    amount: other_amount,
-                },
+                DetectedTxType::Transfer(
+                    TransferDetails {
+                        fee: other_fee,
+                        src_address: other_src_address,
+                        dst_address: other_dst_address,
+                        res_address: other_res_address,
+                        amount: other_amount,
+                    }
+                ),
             ) => {
                 let fee_match = match (fee, other_fee) {
                     (None, None) => true,
@@ -191,13 +196,15 @@ impl TxSummaryDetector {
         }
 
         match self.decoding_phase {
-            DecodingPhase::DoneTransfer => DetectedTxType::Transfer {
-                fee,
-                src_address: self.src_address,
-                dst_address: self.dst_address,
-                res_address: self.res_address,
-                amount: self.amount,
-            },
+            DecodingPhase::DoneTransfer => DetectedTxType::Transfer(
+                TransferDetails {
+                    fee: fee,
+                    src_address: self.src_address,
+                    dst_address: self.dst_address,
+                    res_address: self.res_address,
+                    amount: self.amount,
+                }
+            ),
             DecodingPhase::DecodingError => DetectedTxType::Error(fee),
             _ => DetectedTxType::Other(fee),
         }

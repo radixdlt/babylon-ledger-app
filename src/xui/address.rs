@@ -1,9 +1,9 @@
 use crate::ui::single_message::SingleMessage;
-use crate::ui::utils::info_message;
+use crate::xui::titled_message;
 
 #[cfg(not(target_os = "stax"))]
 pub fn display(message: &[u8]) {
-    info_message(b"Address:", message);
+    titled_message::display(b"Address:", message);
     SingleMessage::with_bold("\nDone\n").show_and_wait();
 }
 

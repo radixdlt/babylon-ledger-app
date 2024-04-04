@@ -1,11 +1,9 @@
 use crate::io::Comm;
-use sbor::bech32::address::Address;
 use sbor::decoder_error::DecoderError;
 use sbor::digest::digest::Digest;
-use sbor::math::Decimal;
 use sbor::print::tty::TTY;
 use sbor::print::tx_intent_type::TxIntentType;
-use sbor::print::tx_summary_detector::DetectedTxType;
+use sbor::print::tx_summary_detector::{DetectedTxType};
 use sbor::sbor_decoder::{DecodingOutcome, SborDecoder};
 use sbor::utilities::conversion::{lower_as_hex, upper_as_hex};
 
@@ -16,8 +14,7 @@ use crate::settings::Settings;
 use crate::sign::instruction_processor::InstructionProcessor;
 use crate::sign::sign_mode::SignMode;
 use crate::sign::sign_outcome::SignOutcome;
-use crate::ui::utils;
-use crate::xui::{auth_details, instruction, introductory_screen, signature};
+use crate::xui::{auth_details, fee, hash, introductory_screen, signature, transfer};
 
 const CHALLENGE_LENGTH: usize = 32;
 const DAPP_ADDRESS_LENGTH: usize = 70;
@@ -177,12 +174,6 @@ impl<T: Copy> TxState<T> {
         }
     }
 
-    fn fee_info_message(&mut self, fee: &Decimal) {
-        let text = self.processor.format_decimal(fee, b" XRD");
-
-        instruction::display_message_with_title(b"Max TX Fee:", text);
-    }
-
     fn finalize_sign_tx(
         &mut self,
         comm: &mut Comm,
@@ -200,24 +191,18 @@ impl<T: Copy> TxState<T> {
         }
     }
 
-    fn show_transaction_fee(&mut self, detected_type: &DetectedTxType) {
+    fn display_transaction_fee(&mut self, detected_type: &DetectedTxType) {
         match detected_type {
-            DetectedTxType::Other(fee)
-            | DetectedTxType::Transfer { fee, .. }
-            | DetectedTxType::Error(fee) => match fee {
-                Some(fee) => self.fee_info_message(fee),
+            DetectedTxType::Transfer(details) => {
+                if let Some(fee) = details.fee {
+                    fee::display(&fee, &mut self.processor);
+                }
+            }
+            DetectedTxType::Other(fee) | DetectedTxType::Error(fee) => match fee {
+                Some(fee) => fee::display(fee, &mut self.processor),
                 None => {}
             },
         }
-    }
-
-    fn show_detected_tx_type(&mut self, detected_type: &DetectedTxType) {
-        let text: &[u8] = match detected_type {
-            DetectedTxType::Other(..) => b"Other",
-            DetectedTxType::Transfer { .. } => b"Transfer",
-            DetectedTxType::Error(..) => b"Summary Failed",
-        };
-        utils::info_message(b"TX Type:", text);
     }
 
     fn display_tx_info(&mut self, sign_mode: SignMode, digest: &Digest) -> Result<(), AppError> {
@@ -225,60 +210,29 @@ impl<T: Copy> TxState<T> {
 
         match sign_mode {
             SignMode::Ed25519Verbose | SignMode::Secp256k1Verbose => {
-                self.show_transaction_fee(&detected_type);
+                self.display_transaction_fee(&detected_type);
+                
                 Ok(())
             }
             SignMode::Ed25519Summary | SignMode::Secp256k1Summary => match detected_type {
-                DetectedTxType::Transfer {
-                    fee: _,
-                    src_address,
-                    dst_address,
-                    res_address,
-                    amount,
-                } => {
-                    utils::info_message(b"TX Type:", b"Transfer");
-
-                    self.display_transfer_details(
-                        &src_address,
-                        &dst_address,
-                        &res_address,
-                        &amount,
-                    );
-                    self.show_transaction_fee(&detected_type);
+                DetectedTxType::Transfer(details) => {
+                    transfer::display(&details, &mut self.processor);
 
                     Ok(())
                 }
-                DetectedTxType::Other(_) | DetectedTxType::Error(_) => {
+                DetectedTxType::Other(fee) | DetectedTxType::Error(fee) => {
                     if Settings::get().blind_signing {
-                        utils::info_message(b"TX Hash:", &digest.as_hex());
-                        self.show_transaction_fee(&detected_type);
+                        hash::display(digest, &fee, &mut self.processor);
 
                         Ok(())
                     } else {
-                        utils::error_message("\nBlind signing must\nbe enabled in Settings");
+                        hash::error();
+                        
                         Err(AppError::BadTxSignHashSignState)
                     }
                 }
             },
             SignMode::AuthEd25519 | SignMode::AuthSecp256k1 => Ok(()),
-        }
-    }
-
-    fn display_transfer_details(
-        &mut self,
-        src_address: &Address,
-        dst_address: &Address,
-        res_address: &Address,
-        amount: &Decimal,
-    ) {
-        utils::info_message(b"From:", self.processor.format_address(src_address));
-        utils::info_message(b"To:", self.processor.format_address(dst_address));
-
-        if res_address.is_xrd() {
-            utils::info_message(b"Amount:", self.processor.format_decimal(amount, b" XRD"));
-        } else {
-            utils::info_message(b"Resource:", self.processor.format_address(res_address));
-            utils::info_message(b"Amount:", self.processor.format_decimal(amount, b""));
         }
     }
 
