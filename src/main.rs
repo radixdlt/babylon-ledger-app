@@ -51,7 +51,8 @@ extern "C" fn sample_main() {
                 core::intrinsics::black_box(ins);
 
                 UxEvent::wakeup();
-                match dispatcher::dispatcher(&mut comm, ins, &mut state) {
+                // Prevent excessive optimization which causes stack overflow on Nano S
+                match core::intrinsics::black_box(dispatcher::dispatcher(&mut comm, ins, &mut state)) {
                     Ok(()) => comm.reply_ok(),
                     Err(app_error) => comm.reply(app_error),
                 };
