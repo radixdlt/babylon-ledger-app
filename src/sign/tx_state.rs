@@ -168,7 +168,7 @@ impl<T: Copy> TxState<T> {
 
         if rc {
             let digest = self.processor.auth_digest(challenge, address, origin)?;
-            self.processor.sign_tx(comm, sign_mode, &digest)
+            self.processor.sign_digest(comm, sign_mode, &digest)
         } else {
             Ok(SignOutcome::SigningRejected)
         }
@@ -185,7 +185,7 @@ impl<T: Copy> TxState<T> {
         let rc = signature::ask_user(signature::SignType::TX);
 
         if rc {
-            self.processor.sign_tx(comm, sign_mode, &digest)
+            self.processor.sign_digest(comm, sign_mode, &digest)
         } else {
             Ok(SignOutcome::SigningRejected)
         }

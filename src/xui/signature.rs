@@ -8,8 +8,8 @@ pub enum SignType {
 #[cfg(not(target_os = "stax"))]
 pub fn ask_user(sign_type: SignType) -> bool {
     let message = match sign_type {
-        SignType::TX => &["Sign Proof?"],
-        SignType::Proof => &["Sign TX?"],
+        SignType::TX => &["Sign TX?"],
+        SignType::Proof => &["Sign Proof?"],
     };
     MultipageValidator::new(message, &["Sign"], &["Reject"]).ask()
 }

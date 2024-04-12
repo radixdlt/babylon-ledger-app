@@ -122,7 +122,7 @@ impl SigningFlowState {
         Ok(())
     }
 
-    pub fn sign_tx(
+    pub fn sign_digest(
         &self,
         comm: &mut Comm,
         sign_mode: SignMode,

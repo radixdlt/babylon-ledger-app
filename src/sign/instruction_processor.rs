@@ -50,13 +50,13 @@ impl<T: Copy> InstructionProcessor<T> {
         self.detector.set_intent_type(intent_type);
     }
 
-    pub fn sign_tx(
+    pub fn sign_digest(
         &self,
         comm: &mut Comm,
         sign_mode: SignMode,
         digest: &Digest,
     ) -> Result<SignOutcome, AppError> {
-        self.state.sign_tx(comm, sign_mode, digest)
+        self.state.sign_digest(comm, sign_mode, digest)
     }
 
     pub fn auth_digest(
