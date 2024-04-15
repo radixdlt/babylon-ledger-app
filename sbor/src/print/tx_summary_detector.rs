@@ -91,15 +91,13 @@ impl DetectedTxType {
                     res_address,
                     amount,
                 },
-                DetectedTxType::Transfer(
-                    TransferDetails {
-                        fee: other_fee,
-                        src_address: other_src_address,
-                        dst_address: other_dst_address,
-                        res_address: other_res_address,
-                        amount: other_amount,
-                    }
-                ),
+                DetectedTxType::Transfer(TransferDetails {
+                    fee: other_fee,
+                    src_address: other_src_address,
+                    dst_address: other_dst_address,
+                    res_address: other_res_address,
+                    amount: other_amount,
+                }),
             ) => {
                 let fee_match = match (fee, other_fee) {
                     (None, None) => true,
@@ -196,15 +194,13 @@ impl TxSummaryDetector {
         }
 
         match self.decoding_phase {
-            DecodingPhase::DoneTransfer => DetectedTxType::Transfer(
-                TransferDetails {
-                    fee: fee,
-                    src_address: self.src_address,
-                    dst_address: self.dst_address,
-                    res_address: self.res_address,
-                    amount: self.amount,
-                }
-            ),
+            DecodingPhase::DoneTransfer => DetectedTxType::Transfer(TransferDetails {
+                fee: fee,
+                src_address: self.src_address,
+                dst_address: self.dst_address,
+                res_address: self.res_address,
+                amount: self.amount,
+            }),
             DecodingPhase::DecodingError => DetectedTxType::Error(fee),
             _ => DetectedTxType::Other(fee),
         }

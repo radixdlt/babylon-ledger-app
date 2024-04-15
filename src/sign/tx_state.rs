@@ -3,7 +3,7 @@ use sbor::decoder_error::DecoderError;
 use sbor::digest::digest::Digest;
 use sbor::print::tty::TTY;
 use sbor::print::tx_intent_type::TxIntentType;
-use sbor::print::tx_summary_detector::{DetectedTxType};
+use sbor::print::tx_summary_detector::DetectedTxType;
 use sbor::sbor_decoder::{DecodingOutcome, SborDecoder};
 use sbor::utilities::conversion::{lower_as_hex, upper_as_hex};
 
@@ -211,7 +211,7 @@ impl<T: Copy> TxState<T> {
         match sign_mode {
             SignMode::Ed25519Verbose | SignMode::Secp256k1Verbose => {
                 self.display_transaction_fee(&detected_type);
-                
+
                 Ok(())
             }
             SignMode::Ed25519Summary | SignMode::Secp256k1Summary => match detected_type {
@@ -227,7 +227,7 @@ impl<T: Copy> TxState<T> {
                         Ok(())
                     } else {
                         hash::error();
-                        
+
                         Err(AppError::BadTxSignHashSignState)
                     }
                 }

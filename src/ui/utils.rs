@@ -1,8 +1,8 @@
+use crate::ui::multiline_scroller::{LINE1_Y, LINE2_Y, LINE3_Y};
 use include_gif::include_gif;
 use ledger_device_sdk::ui::bagls::Icon;
-use ledger_device_sdk::ui::bitmaps::{BACK, Glyph};
+use ledger_device_sdk::ui::bitmaps::{Glyph, BACK};
 use ledger_device_sdk::ui::layout::{Draw, Layout, Location, StringPlace};
-use crate::ui::multiline_scroller::{LINE1_Y, LINE2_Y, LINE3_Y};
 
 pub trait CenteredText {
     fn draw_centered(&self, bold: bool);

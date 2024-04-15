@@ -1,6 +1,6 @@
-use sbor::math::Decimal;
 use crate::sign::instruction_processor::InstructionProcessor;
 use crate::xui::titled_message;
+use sbor::math::Decimal;
 
 #[cfg(not(target_os = "stax"))]
 pub fn display<T: Copy>(fee: &Decimal, processor: &mut InstructionProcessor<T>) {

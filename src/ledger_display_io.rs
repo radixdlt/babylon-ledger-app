@@ -1,5 +1,5 @@
-use sbor::print::tty::TTY;
 use crate::xui::titled_message;
+use sbor::print::tty::TTY;
 
 #[derive(Copy, Clone, Debug)]
 pub struct LedgerTTY;

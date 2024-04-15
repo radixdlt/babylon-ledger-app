@@ -1,6 +1,6 @@
-use sbor::print::tx_summary_detector::TransferDetails;
 use crate::sign::instruction_processor::InstructionProcessor;
 use crate::xui::{fee, titled_message};
+use sbor::print::tx_summary_detector::TransferDetails;
 
 #[cfg(not(target_os = "stax"))]
 pub fn display<T: Copy>(details: &TransferDetails, processor: &mut InstructionProcessor<T>) {
@@ -9,7 +9,10 @@ pub fn display<T: Copy>(details: &TransferDetails, processor: &mut InstructionPr
     titled_message::display(b"To:", processor.format_address(&details.dst_address));
 
     if details.res_address.is_xrd() {
-        titled_message::display(b"Amount:", processor.format_decimal(&details.amount, b" XRD"));
+        titled_message::display(
+            b"Amount:",
+            processor.format_decimal(&details.amount, b" XRD"),
+        );
     } else {
         titled_message::display(b"Resource:", processor.format_address(&details.res_address));
         titled_message::display(b"Amount:", processor.format_decimal(&details.amount, b""));
@@ -21,6 +24,4 @@ pub fn display<T: Copy>(details: &TransferDetails, processor: &mut InstructionPr
 }
 
 #[cfg(target_os = "stax")]
-pub fn display<T: Copy>(details: &TransferDetails, processor: &mut InstructionProcessor<T>) {
-}
-
+pub fn display<T: Copy>(details: &TransferDetails, processor: &mut InstructionProcessor<T>) {}

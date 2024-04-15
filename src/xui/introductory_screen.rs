@@ -17,7 +17,6 @@ pub fn display(sign_mode: SignMode) -> Result<(), AppError> {
     Ok(())
 }
 
-
 #[cfg(target_os = "stax")]
 pub fn display(sign_mode: SignMode) -> Result<(), AppError> {
     Ok(())

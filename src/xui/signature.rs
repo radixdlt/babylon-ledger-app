@@ -17,4 +17,3 @@ pub fn ask_user(sign_type: SignType) -> bool {
 pub fn ask_user(sign_type: SignType) -> bool {
     false
 }
-
