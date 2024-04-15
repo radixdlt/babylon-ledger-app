@@ -2,6 +2,14 @@
 
 Ledger Nano S/S Plus/X app for Babylon
 
+## Branching Policy
+This repository follows quite traditional branching policy:
+- `main` contains the current released version
+- `develop` collects all changes planned for inclusion into the next release
+
+## Future Version Changes Summary
+This section contains a list of changes merged into branch and planned for merging into `main`. For `main` this section is just a placeholder.
+
 ## Build
 
 Simplest way to build app is to use [application builder container](https://github.com/LedgerHQ/ledger-app-builder) provided by Ledger. 
