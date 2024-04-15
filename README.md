@@ -8,7 +8,9 @@ This repository follows quite traditional branching policy:
 - `develop` collects all changes planned for inclusion into the next release
 
 ## Future Version Changes Summary
-This section contains a list of changes merged into branch and planned for merging into `main`. For `main` this section is just a placeholder.
+The code in this branch contains following changes:
+- Separation of the UI components. This is necessary for the future implementation of the Stax device support.
+- (WIP) Fixes for UI according to the comments from Ledger team:
 
 ## Build
 
