@@ -84,13 +84,13 @@ impl DetectedTxType {
     pub fn is_same(&self, other: &DetectedTxType) -> bool {
         match (self, other) {
             (
-                DetectedTxType::Transfer {
+                DetectedTxType::Transfer(TransferDetails {
                     fee,
                     src_address,
                     dst_address,
                     res_address,
                     amount,
-                },
+                }),
                 DetectedTxType::Transfer(TransferDetails {
                     fee: other_fee,
                     src_address: other_src_address,
