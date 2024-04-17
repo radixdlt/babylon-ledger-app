@@ -14,7 +14,7 @@ The code in this branch contains following changes:
   - Dashboard icon position (should be at the right)
   - Double press on "Done" for verify address action
   - No right arrow on the Nano S+/X on the "Review Transaction" screen
-  - Missing icon on Nano S+/X on the "Blond signing.." screen
+  - Missing icon on Nano S+/X on the "Blind signing.." screen
 
 ## Build
 
