@@ -41,7 +41,10 @@ impl TopCenter for Icon<'_> {
     fn draw_top_center(&self) {
         Icon {
             icon: self.icon,
-            pos: (SCREEN_WIDTH as i16 / 2 - self.icon.width as i16 / 2, SCREEN_HEIGHT as i16 / 2 - self.icon.height as i16),
+            pos: (
+                SCREEN_WIDTH as i16 / 2 - self.icon.width as i16 / 2,
+                SCREEN_HEIGHT as i16 / 2 - self.icon.height as i16,
+            ),
         }
         .display();
     }

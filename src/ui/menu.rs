@@ -55,7 +55,11 @@ impl<'a, const N: usize> Menu<'a, N> {
                 item.text.draw_centered(true);
             }
             MenuFeature::Icon(icon) => {
-                item.text.place(Location::Custom(LINE2_Y + icon.icon.height as usize / 2), Layout::Centered, true);
+                item.text.place(
+                    Location::Custom(LINE2_Y + icon.icon.height as usize / 2),
+                    Layout::Centered,
+                    true,
+                );
                 icon.draw_top_center();
             }
             MenuFeature::OnOffState(getter) => {
