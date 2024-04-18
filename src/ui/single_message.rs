@@ -92,4 +92,23 @@ impl<'a> SingleMessage<'a> {
             }
         }
     }
+
+    pub fn show_and_wait_both_click(&self) {
+        let mut buttons = ButtonsState::new();
+
+        self.show();
+
+        loop {
+            let event = get_event(&mut buttons);
+
+            if event.is_some() {
+                UxEvent::wakeup();
+            }
+
+            match event {
+                Some(ButtonEvent::BothButtonsRelease) => return,
+                _ => (),
+            }
+        }
+    }
 }
