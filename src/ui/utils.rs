@@ -3,6 +3,7 @@ use include_gif::include_gif;
 use ledger_device_sdk::ui::bagls::Icon;
 use ledger_device_sdk::ui::bitmaps::{Glyph, BACK};
 use ledger_device_sdk::ui::layout::{Draw, Layout, Location, StringPlace};
+use ledger_device_sdk::ui::{SCREEN_HEIGHT, SCREEN_WIDTH};
 
 pub trait CenteredText {
     fn draw_centered(&self, bold: bool);
@@ -29,21 +30,18 @@ impl CenteredText for &str {
     }
 }
 
-pub trait LeftAlignedMiddle {
-    fn draw_left_aligned_middle(&self);
+pub trait TopCenter {
+    fn draw_top_center(&self);
 }
 
 pub const DEFAULT_PADDING: usize = 11;
 pub const DEFAULT_ICON_HEIGHT: usize = 14;
 
-impl LeftAlignedMiddle for Icon<'_> {
-    fn draw_left_aligned_middle(&self) {
+impl TopCenter for Icon<'_> {
+    fn draw_top_center(&self) {
         Icon {
             icon: self.icon,
-            pos: (
-                DEFAULT_PADDING as i16,
-                Location::Middle.get_y(DEFAULT_ICON_HEIGHT) as i16,
-            ),
+            pos: (SCREEN_WIDTH as i16 / 2 - self.icon.width as i16 / 2, SCREEN_HEIGHT as i16 / 2 - self.icon.height as i16),
         }
         .display();
     }

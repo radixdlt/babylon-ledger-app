@@ -113,27 +113,27 @@ pub mod main_menu {
         let menu = [
             MenuItem::new(
                 MenuFeature::Icon(&RADIX_LOGO_ICON),
-                "\nRadix Babylon",
+                "Radix Babylon",
                 app_menu_action,
             ),
             MenuItem::new(
                 MenuFeature::Icon(&PROCESSING_ICON),
-                "\nVersion",
+                "Version",
                 version_menu_action,
             ),
             MenuItem::new(
                 MenuFeature::Icon(&COGGLE_ICON),
-                "\nSettings",
+                "Settings",
                 settings_menu_action,
             ),
             MenuItem::new(
                 MenuFeature::Icon(&CERTIFICATE_ICON),
-                "\nAbout",
+                "About",
                 about_menu_action,
             ),
             MenuItem::new(
                 MenuFeature::Icon(&DASHBOARD_X_ICON),
-                "\nQuit",
+                "Quit",
                 quit_menu_action,
             ),
         ];
