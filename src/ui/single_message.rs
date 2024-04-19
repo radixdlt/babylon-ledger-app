@@ -105,7 +105,7 @@ impl<'a> SingleMessage<'a> {
                 UxEvent::wakeup();
             }
 
-            if let Some(ButtonEvent::BothButtonsRelease) = event { 
+            if let Some(ButtonEvent::BothButtonsRelease) = event {
                 return;
             }
         }
