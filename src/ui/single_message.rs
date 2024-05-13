@@ -2,6 +2,7 @@ use ledger_device_sdk::buttons::{ButtonEvent, ButtonsState};
 use ledger_device_sdk::ui::bagls::{Icon, RIGHT_ARROW, RIGHT_S_ARROW};
 use ledger_device_sdk::ui::gadgets::{clear_screen, get_event};
 use ledger_device_sdk::ui::layout::Draw;
+use ledger_device_sdk::ui::screen_util::screen_update;
 use ledger_device_sdk::ui::SCREEN_WIDTH;
 
 use crate::io::UxEvent;
@@ -70,6 +71,7 @@ impl<'a> SingleMessage<'a> {
                 .display();
             }
         }
+        screen_update();
     }
 
     pub fn show_and_wait(&self) {
