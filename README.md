@@ -10,7 +10,7 @@ This repository follows quite traditional branching policy:
 ## Future Version Changes Summary
 The code in this branch contains following changes:
 - Separation of the UI components. This is necessary for the future implementation of the Stax device support.
-- (WIP) Fixes for UI according to the comments from Ledger team:
+- Fixes for UI according to the comments from Ledger team:
   - Dashboard icon position (should be at the right)
   - Double press on "Done" for verify address action
   - No right arrow on the Nano S+/X on the "Review Transaction" screen
