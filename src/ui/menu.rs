@@ -1,11 +1,12 @@
 use ledger_device_sdk::buttons::{ButtonEvent, ButtonsState};
 use ledger_device_sdk::ui::bagls::{Icon, LEFT_ARROW, LEFT_S_ARROW, RIGHT_ARROW, RIGHT_S_ARROW};
 use ledger_device_sdk::ui::gadgets::{clear_screen, get_event};
-use ledger_device_sdk::ui::layout::Draw;
+use ledger_device_sdk::ui::layout::{Draw, Layout, Location, StringPlace};
 use ledger_device_sdk::ui::screen_util::screen_update;
 
 use crate::io::UxEvent;
-use crate::ui::utils::{CenteredText, LeftAlignedMiddle};
+use crate::ui::multiline_scroller::LINE2_Y;
+use crate::ui::utils::{CenteredText, TopCenter};
 
 pub enum MenuFeature<'a> {
     Plain,
@@ -49,13 +50,21 @@ impl<'a, const N: usize> Menu<'a, N> {
 
         let item = &self.items[self.current];
 
-        item.text.draw_centered(true);
-
         match item.feature {
-            MenuFeature::Plain => {}
-            MenuFeature::Icon(icon) => icon.draw_left_aligned_middle(),
+            MenuFeature::Plain => {
+                item.text.draw_centered(true);
+            }
+            MenuFeature::Icon(icon) => {
+                item.text.place(
+                    Location::Custom(LINE2_Y + icon.icon.height as usize / 2),
+                    Layout::Centered,
+                    true,
+                );
+                icon.draw_top_center();
+            }
             MenuFeature::OnOffState(getter) => {
-                if (getter)() { ON_TEXT } else { OFF_TEXT }.draw_centered(false)
+                item.text.draw_centered(true);
+                if (getter)() { ON_TEXT } else { OFF_TEXT }.draw_centered(false);
             }
         }
 
