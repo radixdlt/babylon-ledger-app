@@ -13,3 +13,4 @@ mod sign_tx_ed25519;
 mod sign_tx_secp256k1;
 mod verify_address_ed25519;
 mod verify_address_secp256k1;
+mod sign_preauth_hash_ed25519;

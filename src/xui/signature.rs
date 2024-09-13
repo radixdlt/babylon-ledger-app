@@ -4,12 +4,14 @@ use crate::ui::multipage_validator::MultipageValidator;
 pub enum SignType {
     TX,
     Proof,
+    PreAuthHash,
 }
 #[cfg(not(target_os = "stax"))]
 pub fn ask_user(sign_type: SignType) -> bool {
     let message = match sign_type {
         SignType::TX => &["Sign TX?"],
         SignType::Proof => &["Sign Proof?"],
+        SignType::PreAuthHash => &["Sign Pre-auth?"],
     };
     MultipageValidator::new(message, &["Sign"], &["Reject"]).ask()
 }

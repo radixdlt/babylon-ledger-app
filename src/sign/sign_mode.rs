@@ -7,4 +7,5 @@ pub enum SignMode {
     Secp256k1Summary,
     AuthEd25519,
     AuthSecp256k1,
+    Ed25519PreAuthHash,
 }

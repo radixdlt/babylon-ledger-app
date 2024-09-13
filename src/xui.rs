@@ -7,3 +7,4 @@ pub mod menu;
 pub mod signature;
 pub mod titled_message;
 pub mod transfer;
+pub mod pre_auth_hash_details;

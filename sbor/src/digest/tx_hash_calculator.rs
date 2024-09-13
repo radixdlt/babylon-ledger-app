@@ -4,6 +4,12 @@ use crate::digest::digest::Digest;
 use crate::digest::digester::Digester;
 use crate::sbor_decoder::SborEvent;
 
+#[repr(u8)]
+pub enum HashCalculatorMode {
+    Transaction,
+    Subintent,
+}
+
 #[derive(Copy, Clone, PartialEq)]
 #[repr(u8)]
 enum TxHashPhase {
@@ -19,6 +25,22 @@ enum TxHashPhase {
     HashingError,
 }
 
+#[derive(Copy, Clone, PartialEq)]
+#[repr(u8)]
+enum SiHashPhase {
+    Start,
+    Header,
+    Blobs,
+    Message,
+    Constraints,
+    Instructions,
+    SingleBlob,
+    SingleBlobLen,
+    SingleBlobData,
+    DecodingError,
+    HashingError,
+}
+
 #[derive(Copy, Clone)]
 #[repr(u8)]
 enum HashCommitPhase {
@@ -27,29 +49,209 @@ enum HashCommitPhase {
     CommitBlob,
 }
 
-pub struct TxHashCalculator<T: Digester> {
-    work_digester: T,
-    blob_digester: T,
-    output_digester: T,
+pub struct TransactionStateMachine {
     phase: TxHashPhase,
     commit_phase: HashCommitPhase,
 }
 
+pub struct SubintentStateMachine {
+    phase: SiHashPhase,
+    commit_phase: HashCommitPhase,
+}
+
+impl TransactionStateMachine {
+    pub fn reset(&mut self) {
+        self.phase = TxHashPhase::Start;
+        self.commit_phase = HashCommitPhase::None;
+    }
+}
+
+impl SubintentStateMachine {
+    pub fn reset(&mut self) {
+        self.phase = SiHashPhase::Start;
+        self.commit_phase = HashCommitPhase::None;
+    }
+}
+
+pub struct TxHashCalculator<T: Digester> {
+    work_digester: T,
+    blob_digester: T,
+    output_digester: T,
+    tx_state_machine: TransactionStateMachine,
+    si_state_machine: SubintentStateMachine,
+    mode: HashCalculatorMode,
+}
+
+// Transaction intent hash calculator
+impl<T: Digester> TxHashCalculator<T> {
+    fn handle_tx(&mut self, event: SborEvent) {
+        match event {
+            SborEvent::InputByte(byte) => self.put_byte(byte),
+            SborEvent::Start {
+                type_id: _,
+                nesting_level,
+                ..
+            } => self.process_start(nesting_level),
+            SborEvent::End {
+                type_id: _,
+                nesting_level,
+                ..
+            } => self.process_end(nesting_level),
+            SborEvent::Len(_) if self.tx_state_machine.phase == TxHashPhase::SingleBlob => {
+                self.tx_state_machine.phase = TxHashPhase::SingleBlobLen
+            }
+            _ => {}
+        }
+    }
+
+    fn put_byte(&mut self, byte: u8) {
+        match self.tx_state_machine.phase {
+            TxHashPhase::Start
+            | TxHashPhase::DecodingError
+            | TxHashPhase::HashingError
+            | TxHashPhase::Blobs
+            | TxHashPhase::SingleBlob => return,
+            TxHashPhase::SingleBlobLen => {
+                self.tx_state_machine.phase = TxHashPhase::SingleBlobData;
+                return;
+            }
+            _ => {}
+        };
+
+        let digester = if self.tx_state_machine.phase == TxHashPhase::SingleBlobData {
+            &mut self.blob_digester
+        } else {
+            &mut self.work_digester
+        };
+
+        match digester.update(&[byte]) {
+            Err(..) => self.tx_state_machine.phase = TxHashPhase::HashingError,
+            _ => {}
+        }
+
+        match self.tx_state_machine.commit_phase {
+            HashCommitPhase::None => {}
+            HashCommitPhase::CommitRegular => self.finalize_and_push(),
+            HashCommitPhase::CommitBlob => {
+                self.finalize_and_push_blob();
+                self.tx_state_machine.phase = TxHashPhase::Blobs;
+            }
+        }
+        self.tx_state_machine.commit_phase = HashCommitPhase::None;
+    }
+
+    fn process_start(&mut self, nesting_level: u8) {
+        match (self.tx_state_machine.phase, nesting_level) {
+            (TxHashPhase::Start, 1) => self.tx_state_machine.phase = TxHashPhase::Header,
+            (TxHashPhase::Header, 1) => self.tx_state_machine.phase = TxHashPhase::Instructions,
+            (TxHashPhase::Instructions, 1) => self.tx_state_machine.phase = TxHashPhase::Blobs,
+            (TxHashPhase::Blobs, 2) => self.tx_state_machine.phase = TxHashPhase::SingleBlob,
+            (TxHashPhase::Blobs, 1) => {
+                self.finalize_and_push();
+                self.tx_state_machine.commit_phase = HashCommitPhase::None;
+                self.tx_state_machine.phase = TxHashPhase::Attachments;
+            }
+            (TxHashPhase::Attachments, 1) => {
+                self.tx_state_machine.phase = TxHashPhase::DecodingError
+            }
+            (_, _) => {}
+        }
+    }
+
+    fn process_end(&mut self, nesting_level: u8) {
+        match (self.tx_state_machine.phase, nesting_level) {
+            (TxHashPhase::Header, 1) => {
+                self.tx_state_machine.commit_phase = HashCommitPhase::CommitRegular
+            }
+            (TxHashPhase::Instructions, 1) => {
+                self.tx_state_machine.commit_phase = HashCommitPhase::CommitRegular
+            }
+            (TxHashPhase::Blobs, 1) => {
+                self.tx_state_machine.commit_phase = HashCommitPhase::CommitRegular
+            }
+            (TxHashPhase::SingleBlobData, 2) => {
+                self.tx_state_machine.commit_phase = HashCommitPhase::CommitBlob
+            }
+            (TxHashPhase::Attachments, 1) => {
+                self.tx_state_machine.commit_phase = HashCommitPhase::CommitRegular
+            }
+            (_, _) => {}
+        }
+    }
+
+    fn finalize_and_push(&mut self) {
+        match self.work_digester.finalize() {
+            Ok(digest) => match self.output_digester.update(digest.as_bytes()) {
+                Ok(_) => {}
+                Err(_) => {
+                    self.tx_state_machine.phase = TxHashPhase::HashingError;
+                }
+            },
+            Err(_) => {
+                self.tx_state_machine.phase = TxHashPhase::HashingError;
+            }
+        }
+
+        match self.work_digester.init() {
+            Ok(_) => {}
+            Err(_) => {
+                self.tx_state_machine.phase = TxHashPhase::HashingError;
+            }
+        }
+    }
+
+    fn finalize_and_push_blob(&mut self) {
+        match self.blob_digester.finalize() {
+            Ok(digest) => match self.work_digester.update(digest.as_bytes()) {
+                Ok(_) => {}
+                Err(_) => {
+                    self.tx_state_machine.phase = TxHashPhase::HashingError;
+                }
+            },
+            Err(_) => {
+                self.tx_state_machine.phase = TxHashPhase::HashingError;
+            }
+        };
+
+        match self.blob_digester.init() {
+            Ok(_) => {}
+            Err(_) => {
+                self.tx_state_machine.phase = TxHashPhase::HashingError;
+            }
+        }
+    }
+}
+
+impl<T: Digester> TxHashCalculator<T> {
+    fn handle_si(&mut self, event: SborEvent) {}
+}
+
+// Common part + externally visible API for both transaction and subintent hash calculators
 impl<T: Digester> TxHashCalculator<T> {
     const PAYLOAD_PREFIX: u8 = 0x54;
-    const VERSION_DISCRIMINATOR: u8 = 0x01;
-    const INITIAL_VECTOR: [u8; 2] = [Self::PAYLOAD_PREFIX, Self::VERSION_DISCRIMINATOR];
+    const V1_INTENT: u8 = 1;
+    const V2_SUBINTENT: u8 = 11;
+    const TX_INITIAL_VECTOR: [u8; 2] = [Self::PAYLOAD_PREFIX, Self::V1_INTENT];
+    const SI_INITIAL_VECTOR: [u8; 2] = [Self::PAYLOAD_PREFIX, Self::V2_SUBINTENT];
 
     pub fn new() -> Self {
         Self {
             work_digester: T::new(),
             blob_digester: T::new(),
             output_digester: T::new(),
-            phase: TxHashPhase::Start,
-            commit_phase: HashCommitPhase::None,
+            tx_state_machine: TransactionStateMachine {
+                phase: TxHashPhase::Start,
+                commit_phase: HashCommitPhase::None,
+            },
+            si_state_machine: SubintentStateMachine {
+                phase: SiHashPhase::Start,
+                commit_phase: HashCommitPhase::None,
+            },
+            mode: HashCalculatorMode::Transaction,
         }
     }
 
+    // Reuse digester for auth digest calculation
     #[inline(always)]
     pub fn auth_digest(
         &mut self,
@@ -76,139 +278,30 @@ impl<T: Digester> TxHashCalculator<T> {
         self.work_digester.reset();
         self.blob_digester.reset();
         self.output_digester.reset();
-        self.phase = TxHashPhase::Start;
-        self.commit_phase = HashCommitPhase::None;
+        self.tx_state_machine.reset();
+        self.si_state_machine.reset();
+        self.mode = HashCalculatorMode::Transaction;
     }
 
-    pub fn start(&mut self) -> Result<(), T::Error> {
+    pub fn start(&mut self, mode: HashCalculatorMode) -> Result<(), T::Error> {
+        self.mode = mode;
+
         self.work_digester.init()?;
         self.blob_digester.init()?;
         self.output_digester.init()?;
-        self.output_digester.update(&Self::INITIAL_VECTOR)
+
+        let init_vector = match self.mode {
+            HashCalculatorMode::Transaction => &Self::TX_INITIAL_VECTOR,
+            HashCalculatorMode::Subintent => &Self::SI_INITIAL_VECTOR,
+        };
+
+        self.output_digester.update(init_vector)
     }
 
     pub fn handle(&mut self, event: SborEvent) {
-        match event {
-            SborEvent::InputByte(byte) => self.put_byte(byte),
-            SborEvent::Start {
-                type_id: _,
-                nesting_level,
-                ..
-            } => self.process_start(nesting_level),
-            SborEvent::End {
-                type_id: _,
-                nesting_level,
-                ..
-            } => self.process_end(nesting_level),
-            SborEvent::Len(_) if self.phase == TxHashPhase::SingleBlob => {
-                self.phase = TxHashPhase::SingleBlobLen
-            }
-            _ => {}
-        }
-    }
-
-    fn put_byte(&mut self, byte: u8) {
-        match self.phase {
-            TxHashPhase::Start
-            | TxHashPhase::DecodingError
-            | TxHashPhase::HashingError
-            | TxHashPhase::Blobs
-            | TxHashPhase::SingleBlob => return,
-            TxHashPhase::SingleBlobLen => {
-                self.phase = TxHashPhase::SingleBlobData;
-                return;
-            }
-            _ => {}
-        };
-
-        let digester = if self.phase == TxHashPhase::SingleBlobData {
-            &mut self.blob_digester
-        } else {
-            &mut self.work_digester
-        };
-
-        match digester.update(&[byte]) {
-            Err(..) => self.phase = TxHashPhase::HashingError,
-            _ => {}
-        }
-
-        match self.commit_phase {
-            HashCommitPhase::None => {}
-            HashCommitPhase::CommitRegular => self.finalize_and_push(),
-            HashCommitPhase::CommitBlob => {
-                self.finalize_and_push_blob();
-                self.phase = TxHashPhase::Blobs;
-            }
-        }
-        self.commit_phase = HashCommitPhase::None;
-    }
-
-    fn process_start(&mut self, nesting_level: u8) {
-        match (self.phase, nesting_level) {
-            (TxHashPhase::Start, 1) => self.phase = TxHashPhase::Header,
-            (TxHashPhase::Header, 1) => self.phase = TxHashPhase::Instructions,
-            (TxHashPhase::Instructions, 1) => self.phase = TxHashPhase::Blobs,
-            (TxHashPhase::Blobs, 2) => self.phase = TxHashPhase::SingleBlob,
-            (TxHashPhase::Blobs, 1) => {
-                self.finalize_and_push();
-                self.commit_phase = HashCommitPhase::None;
-                self.phase = TxHashPhase::Attachments;
-            }
-            (TxHashPhase::Attachments, 1) => self.phase = TxHashPhase::DecodingError,
-            (_, _) => {}
-        }
-    }
-
-    fn process_end(&mut self, nesting_level: u8) {
-        match (self.phase, nesting_level) {
-            (TxHashPhase::Header, 1) => self.commit_phase = HashCommitPhase::CommitRegular,
-            (TxHashPhase::Instructions, 1) => self.commit_phase = HashCommitPhase::CommitRegular,
-            (TxHashPhase::Blobs, 1) => self.commit_phase = HashCommitPhase::CommitRegular,
-            (TxHashPhase::SingleBlobData, 2) => self.commit_phase = HashCommitPhase::CommitBlob,
-            (TxHashPhase::Attachments, 1) => self.commit_phase = HashCommitPhase::CommitRegular,
-            (_, _) => {}
-        }
-    }
-
-    fn finalize_and_push(&mut self) {
-        match self.work_digester.finalize() {
-            Ok(digest) => match self.output_digester.update(digest.as_bytes()) {
-                Ok(_) => {}
-                Err(_) => {
-                    self.phase = TxHashPhase::HashingError;
-                }
-            },
-            Err(_) => {
-                self.phase = TxHashPhase::HashingError;
-            }
-        }
-
-        match self.work_digester.init() {
-            Ok(_) => {}
-            Err(_) => {
-                self.phase = TxHashPhase::HashingError;
-            }
-        }
-    }
-
-    fn finalize_and_push_blob(&mut self) {
-        match self.blob_digester.finalize() {
-            Ok(digest) => match self.work_digester.update(digest.as_bytes()) {
-                Ok(_) => {}
-                Err(_) => {
-                    self.phase = TxHashPhase::HashingError;
-                }
-            },
-            Err(_) => {
-                self.phase = TxHashPhase::HashingError;
-            }
-        };
-
-        match self.blob_digester.init() {
-            Ok(_) => {}
-            Err(_) => {
-                self.phase = TxHashPhase::HashingError;
-            }
+        match self.mode {
+            HashCalculatorMode::Transaction => self.handle_tx(event),
+            HashCalculatorMode::Subintent => self.handle_si(event),
         }
     }
 }
@@ -566,4 +659,9 @@ mod tests {
             calculate_auth_and_compare(input);
         }
     }
+
+    //-----------------------------------------------------------------------------------
+    // Subintent
+    //-----------------------------------------------------------------------------------
+
 }

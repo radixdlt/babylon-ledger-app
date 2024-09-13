@@ -2,7 +2,7 @@ use crate::io::Comm;
 use sbor::bech32::address::Address;
 use sbor::bech32::network::NetworkId;
 use sbor::digest::digest::Digest;
-use sbor::digest::tx_hash_calculator::TxHashCalculator;
+use sbor::digest::tx_hash_calculator::{HashCalculatorMode, TxHashCalculator};
 use sbor::instruction_extractor::InstructionExtractor;
 use sbor::math::Decimal;
 use sbor::print::fanout::Fanout;
@@ -50,13 +50,13 @@ impl<T: Copy> InstructionProcessor<T> {
         self.detector.set_intent_type(intent_type);
     }
 
-    pub fn sign_digest(
+    pub fn sign_message(
         &self,
         comm: &mut Comm,
         sign_mode: SignMode,
-        digest: &Digest,
+        message: &[u8],
     ) -> Result<SignOutcome, AppError> {
-        self.state.sign_digest(comm, sign_mode, digest)
+        self.state.sign_message(comm, sign_mode, message)
     }
 
     pub fn auth_digest(
@@ -74,7 +74,10 @@ impl<T: Copy> InstructionProcessor<T> {
 
     pub fn set_network(&mut self) -> Result<(), AppError> {
         match self.state.sign_mode() {
-            SignMode::Ed25519Verbose | SignMode::Ed25519Summary | SignMode::AuthEd25519 => {
+            SignMode::Ed25519Verbose
+            | SignMode::Ed25519Summary
+            | SignMode::AuthEd25519
+            | SignMode::Ed25519PreAuthHash => {
                 let network_id = self.state.network_id()?;
                 self.printer.set_network(network_id);
             }
@@ -90,7 +93,8 @@ impl<T: Copy> InstructionProcessor<T> {
             SignMode::Secp256k1Summary
             | SignMode::Ed25519Summary
             | SignMode::AuthEd25519
-            | SignMode::AuthSecp256k1 => {
+            | SignMode::AuthSecp256k1
+            | SignMode::Ed25519PreAuthHash => {
                 self.printer.set_show_instructions(false);
             }
             SignMode::Secp256k1Verbose | SignMode::Ed25519Verbose => {
@@ -125,7 +129,14 @@ impl<T: Copy> InstructionProcessor<T> {
         core::intrinsics::black_box(match class {
             CommandClass::Regular => {
                 self.state.init_sign(comm, sign_mode)?;
-                self.calculator.start()
+                
+                let hash_mode = if sign_mode == SignMode::Ed25519PreAuthHash {
+                    HashCalculatorMode::Subintent
+                } else {
+                    HashCalculatorMode::Transaction
+                };
+                
+                self.calculator.start(hash_mode)
             }
             CommandClass::Continuation | CommandClass::LastData => {
                 self.state.continue_sign(comm, class, sign_mode)
