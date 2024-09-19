@@ -314,7 +314,7 @@ mod tests {
 
     use crate::digest::digest::Digest;
     use crate::digest::digester::Digester;
-    use crate::digest::tx_hash_calculator::TxHashCalculator;
+    use crate::digest::tx_hash_calculator::{HashCalculatorMode, TxHashCalculator};
     use crate::sbor_decoder::{SborDecoder, SborEvent, SborEventHandler};
     use crate::tx_intent_test_data::tests::*;
 
@@ -362,7 +362,7 @@ mod tests {
         let mut calculator = TxHashCalculator::<TestDigester>::new();
         let mut decoder = SborDecoder::new(true);
 
-        let _ = calculator.start();
+        let _ = calculator.start(HashCalculatorMode::Transaction);
         match decoder.decode(&mut calculator, input) {
             Ok(_) => {}
             Err(_) => {
