@@ -147,13 +147,11 @@ impl<T: Copy> TxState<T> {
                 SignMode::Ed25519PreAuthHash => {
                     return if class != CommandClass::LastData {
                         Err(AppError::BadSubintentSignSequence)
-                    } else {
-                        if Settings::get().blind_signing {
+                    } else if Settings::get().blind_signing {
                             self.process_sign_pre_auth_hash(comm, sign_mode)
-                        } else {
-                            hash::error();
-                            Err(AppError::BadSubintentSignState)
-                        }
+                    } else {
+                        hash::error();
+                        Err(AppError::BadSubintentSignState)
                     }
                 }
                 SignMode::Ed25519Verbose
