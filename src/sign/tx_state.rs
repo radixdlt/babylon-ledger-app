@@ -148,7 +148,7 @@ impl<T: Copy> TxState<T> {
                     return if class != CommandClass::LastData {
                         Err(AppError::BadSubintentSignSequence)
                     } else if Settings::get().blind_signing {
-                            self.process_sign_pre_auth_hash(comm, sign_mode)
+                        self.process_sign_pre_auth_hash(comm, sign_mode)
                     } else {
                         hash::error();
                         Err(AppError::BadSubintentSignState)
