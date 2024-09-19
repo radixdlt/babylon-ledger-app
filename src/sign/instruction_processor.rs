@@ -129,13 +129,13 @@ impl<T: Copy> InstructionProcessor<T> {
         core::intrinsics::black_box(match class {
             CommandClass::Regular => {
                 self.state.init_sign(comm, sign_mode)?;
-                
+
                 let hash_mode = if sign_mode == SignMode::Ed25519PreAuthHash {
                     HashCalculatorMode::Subintent
                 } else {
                     HashCalculatorMode::Transaction
                 };
-                
+
                 self.calculator.start(hash_mode)
             }
             CommandClass::Continuation | CommandClass::LastData => {
