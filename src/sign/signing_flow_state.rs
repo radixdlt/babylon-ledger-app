@@ -1,6 +1,5 @@
 use crate::io::Comm;
 use sbor::bech32::network::NetworkId;
-use sbor::digest::digest::Digest;
 
 use crate::app_error::AppError;
 use crate::command_class::CommandClass;
@@ -46,9 +45,10 @@ impl SigningFlowState {
 
     pub fn init_sign(&mut self, comm: &mut Comm, sign_mode: SignMode) -> Result<(), AppError> {
         let path = match sign_mode {
-            SignMode::Ed25519Verbose | SignMode::Ed25519Summary | SignMode::AuthEd25519 => {
-                Bip32Path::read_cap26(comm)
-            }
+            SignMode::Ed25519Verbose
+            | SignMode::Ed25519Summary
+            | SignMode::AuthEd25519
+            | SignMode::Ed25519PreAuthHash => Bip32Path::read_cap26(comm),
             SignMode::Secp256k1Verbose | SignMode::Secp256k1Summary | SignMode::AuthSecp256k1 => {
                 Bip32Path::read_olympia(comm)
             }
@@ -122,21 +122,22 @@ impl SigningFlowState {
         Ok(())
     }
 
-    pub fn sign_digest(
+    pub fn sign_message(
         &self,
         comm: &mut Comm,
         sign_mode: SignMode,
-        digest: &Digest,
+        message: &[u8],
     ) -> Result<SignOutcome, AppError> {
         match sign_mode {
-            SignMode::Ed25519Verbose | SignMode::Ed25519Summary | SignMode::AuthEd25519 => {
-                KeyPair25519::derive(&self.path)
-                    .and_then(|keypair| keypair.sign(comm, digest.as_bytes()))
+            SignMode::Ed25519Verbose
+            | SignMode::Ed25519Summary
+            | SignMode::AuthEd25519
+            | SignMode::Ed25519PreAuthHash => {
+                KeyPair25519::derive(&self.path).and_then(|keypair| keypair.sign(comm, message))
             }
 
             SignMode::Secp256k1Verbose | SignMode::Secp256k1Summary | SignMode::AuthSecp256k1 => {
-                KeyPairSecp256k1::derive(&self.path)
-                    .and_then(|keypair| keypair.sign(comm, digest.as_bytes()))
+                KeyPairSecp256k1::derive(&self.path).and_then(|keypair| keypair.sign(comm, message))
             }
         }
     }

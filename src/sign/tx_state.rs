@@ -14,14 +14,18 @@ use crate::settings::Settings;
 use crate::sign::instruction_processor::InstructionProcessor;
 use crate::sign::sign_mode::SignMode;
 use crate::sign::sign_outcome::SignOutcome;
-use crate::xui::{auth_details, fee, hash, introductory_screen, signature, transfer};
+use crate::xui::{
+    auth_details, fee, hash, introductory_screen, pre_auth_hash_details, signature, transfer,
+};
 
-const CHALLENGE_LENGTH: usize = 32;
-const DAPP_ADDRESS_LENGTH: usize = 70;
-const ORIGIN_LENGTH: usize = 150;
-const MIN_DAPP_ADDRESS_LENGTH: usize = 2; // 1 byte length + 1 byte address
-const MIN_ORIGIN_LENGTH: usize = 10; // 1 byte length + "https://a"
-const MIN_VALID_LENGTH: usize = CHALLENGE_LENGTH + MIN_DAPP_ADDRESS_LENGTH + MIN_ORIGIN_LENGTH;
+const AUTH_CHALLENGE_LENGTH: usize = 32;
+const AUTH_DAPP_ADDRESS_LENGTH: usize = 70;
+const AUTH_ORIGIN_LENGTH: usize = 150;
+const AUTH_MIN_DAPP_ADDRESS_LENGTH: usize = 2; // 1 byte length + 1 byte address
+const AUTH_MIN_ORIGIN_LENGTH: usize = 10; // 1 byte length + "https://a"
+const AUTH_MIN_VALID_LENGTH: usize =
+    AUTH_CHALLENGE_LENGTH + AUTH_MIN_DAPP_ADDRESS_LENGTH + AUTH_MIN_ORIGIN_LENGTH;
+const SUBINTENT_MESSAGE_LENGTH: usize = Digest::DIGEST_LENGTH;
 
 pub struct TxState<T: Copy> {
     decoder: SborDecoder,
@@ -45,6 +49,19 @@ impl<T: Copy> TxState<T> {
         comm.append(&Settings::get().as_bytes());
 
         Ok(())
+    }
+
+    pub fn sign_subintent(
+        &mut self,
+        comm: &mut Comm,
+        class: CommandClass,
+    ) -> Result<SignOutcome, AppError> {
+        self.process_sign_with_mode(
+            comm,
+            class,
+            SignMode::Ed25519PreAuthHash,
+            TxIntentType::General,
+        )
     }
 
     pub fn sign_auth(
@@ -127,7 +144,20 @@ impl<T: Copy> TxState<T> {
                         self.process_sign_auth(comm, sign_mode)
                     }
                 }
-                _ => self.decode_tx_intent(comm.get_data()?, class)?,
+                SignMode::Ed25519PreAuthHash => {
+                    return if class != CommandClass::LastData {
+                        Err(AppError::BadSubintentSignSequence)
+                    } else if Settings::get().blind_signing {
+                        self.process_sign_pre_auth_hash(comm, sign_mode)
+                    } else {
+                        hash::error();
+                        Err(AppError::BadSubintentSignState)
+                    }
+                }
+                SignMode::Ed25519Verbose
+                | SignMode::Secp256k1Verbose
+                | SignMode::Ed25519Summary
+                | SignMode::Secp256k1Summary => self.decode_tx_intent(comm.get_data()?, class)?,
             }
         }
 
@@ -145,22 +175,19 @@ impl<T: Copy> TxState<T> {
     ) -> Result<SignOutcome, AppError> {
         let value = comm.get_data()?;
 
-        if value.len() < MIN_VALID_LENGTH {
+        if value.len() < AUTH_MIN_VALID_LENGTH {
             return Err(AppError::BadAuthSignRequest);
         }
 
-        let challenge = &value[..CHALLENGE_LENGTH];
-        let addr_start = CHALLENGE_LENGTH + 1;
-        let addr_end = addr_start + value[CHALLENGE_LENGTH] as usize;
+        let challenge = &value[..AUTH_CHALLENGE_LENGTH];
+        let addr_start = AUTH_CHALLENGE_LENGTH + 1;
+        let addr_end = addr_start + value[AUTH_CHALLENGE_LENGTH] as usize;
         let address = &value[addr_start..addr_end];
         let origin = &value[addr_end..];
 
-        let mut nonce_hex = [0u8; CHALLENGE_LENGTH * 2];
+        let mut nonce_hex = [0u8; AUTH_CHALLENGE_LENGTH * 2];
 
-        for (i, &byte) in challenge.iter().enumerate() {
-            nonce_hex[i * 2] = upper_as_hex(byte);
-            nonce_hex[i * 2 + 1] = lower_as_hex(byte);
-        }
+        Self::to_hex(challenge, &mut nonce_hex);
 
         auth_details::display(address, origin, &nonce_hex);
 
@@ -168,9 +195,46 @@ impl<T: Copy> TxState<T> {
 
         if rc {
             let digest = self.processor.auth_digest(challenge, address, origin)?;
-            self.processor.sign_digest(comm, sign_mode, &digest)
+            self.processor
+                .sign_message(comm, sign_mode, digest.as_bytes())
         } else {
             Ok(SignOutcome::SigningRejected)
+        }
+    }
+
+    fn process_sign_pre_auth_hash(
+        &mut self,
+        comm: &mut Comm,
+        sign_mode: SignMode,
+    ) -> Result<SignOutcome, AppError> {
+        let message = comm.get_data()?;
+
+        if message.len() != SUBINTENT_MESSAGE_LENGTH {
+            return Err(AppError::BadSubintentSignRequest);
+        }
+
+        // The length is already checked above
+        let digest = Digest(message.try_into().unwrap());
+        let mut message_hex = [0u8; SUBINTENT_MESSAGE_LENGTH * 2];
+
+        Self::to_hex(message, &mut message_hex);
+
+        pre_auth_hash_details::display(&message_hex);
+
+        let rc = signature::ask_user(signature::SignType::PreAuthHash);
+
+        if rc {
+            self.processor
+                .sign_message(comm, sign_mode, digest.as_bytes())
+        } else {
+            Ok(SignOutcome::SigningRejected)
+        }
+    }
+
+    fn to_hex(message: &[u8], message_hex: &mut [u8; 64]) {
+        for (i, &byte) in message.iter().enumerate() {
+            message_hex[i * 2] = upper_as_hex(byte);
+            message_hex[i * 2 + 1] = lower_as_hex(byte);
         }
     }
 
@@ -185,7 +249,8 @@ impl<T: Copy> TxState<T> {
         let rc = signature::ask_user(signature::SignType::TX);
 
         if rc {
-            self.processor.sign_digest(comm, sign_mode, &digest)
+            self.processor
+                .sign_message(comm, sign_mode, digest.as_bytes())
         } else {
             Ok(SignOutcome::SigningRejected)
         }
@@ -232,7 +297,9 @@ impl<T: Copy> TxState<T> {
                     }
                 }
             },
-            SignMode::AuthEd25519 | SignMode::AuthSecp256k1 => Ok(()),
+            SignMode::AuthEd25519 | SignMode::AuthSecp256k1 | SignMode::Ed25519PreAuthHash => {
+                Ok(())
+            }
         }
     }
 

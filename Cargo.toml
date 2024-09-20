@@ -6,9 +6,9 @@ edition = "2021"
 description = "Radix Babylon"
 
 [dependencies]
-ledger_device_sdk = "1.7.1"
-ledger_secure_sdk_sys = "1.2.0"
-include_gif = "1.0.1"
+ledger_device_sdk = "1.15.5"
+ledger_secure_sdk_sys = "1.4.6"
+include_gif = "1.2.0"
 
 sbor = { path = "./sbor", default-features = false }
 

@@ -54,6 +54,10 @@ pub enum AppError {
     BadAuthSignSequence = 0x6e60,
     BadAuthSignRequest = 0x6e61,
 
+    BadSubintentSignSequence = 0x6e70,
+    BadSubintentSignRequest = 0x6e71,
+    BadSubintentSignState = 0x6e72,
+
     NotImplemented = 0x6eff,
     Unknown = 0x6d00,
     CxErrorCarry = 0x6f01,

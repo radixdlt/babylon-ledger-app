@@ -15,6 +15,7 @@ The code in this branch contains following changes:
   - Double press on "Done" for verify address action
   - No right arrow on the Nano S+/X on the "Review Transaction" screen
   - Missing icon on Nano S+/X on the "Blind signing.." screen
+- Support for pre-auth subintent hash signing
 
 ## Build
 

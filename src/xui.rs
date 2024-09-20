@@ -4,6 +4,7 @@ pub mod fee;
 pub mod hash;
 pub mod introductory_screen;
 pub mod menu;
+pub mod pre_auth_hash_details;
 pub mod signature;
 pub mod titled_message;
 pub mod transfer;
