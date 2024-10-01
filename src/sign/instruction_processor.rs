@@ -2,7 +2,7 @@ use crate::io::Comm;
 use sbor::bech32::address::Address;
 use sbor::bech32::network::NetworkId;
 use sbor::digest::digest::Digest;
-use sbor::digest::tx_hash_calculator::{HashCalculatorMode, TxHashCalculator};
+use sbor::digest::hash_calculator::{HashCalculatorMode, HashCalculator};
 use sbor::instruction_extractor::InstructionExtractor;
 use sbor::math::Decimal;
 use sbor::print::fanout::Fanout;
@@ -24,7 +24,7 @@ pub struct InstructionProcessor<T: Copy> {
     extractor: InstructionExtractor,
     printer: InstructionPrinter<T>,
     detector: TxSummaryDetector,
-    calculator: TxHashCalculator<Blake2bHasher>,
+    calculator: HashCalculator<Blake2bHasher>,
 }
 
 impl<T: Copy> SborEventHandler for InstructionProcessor<T> {
@@ -42,7 +42,7 @@ impl<T: Copy> InstructionProcessor<T> {
             extractor: InstructionExtractor::new(),
             printer: InstructionPrinter::new(NetworkId::LocalNet, tty),
             detector: TxSummaryDetector::new(),
-            calculator: TxHashCalculator::<Blake2bHasher>::new(),
+            calculator: HashCalculator::<Blake2bHasher>::new(),
         }
     }
 
@@ -77,7 +77,8 @@ impl<T: Copy> InstructionProcessor<T> {
             SignMode::Ed25519Verbose
             | SignMode::Ed25519Summary
             | SignMode::AuthEd25519
-            | SignMode::Ed25519PreAuthHash => {
+            | SignMode::Ed25519PreAuthHash
+            | SignMode::Ed25519Subintent => {
                 let network_id = self.state.network_id()?;
                 self.printer.set_network(network_id);
             }
@@ -94,7 +95,8 @@ impl<T: Copy> InstructionProcessor<T> {
             | SignMode::Ed25519Summary
             | SignMode::AuthEd25519
             | SignMode::AuthSecp256k1
-            | SignMode::Ed25519PreAuthHash => {
+            | SignMode::Ed25519PreAuthHash
+            | SignMode::Ed25519Subintent => {
                 self.printer.set_show_instructions(false);
             }
             SignMode::Secp256k1Verbose | SignMode::Ed25519Verbose => {
@@ -130,10 +132,11 @@ impl<T: Copy> InstructionProcessor<T> {
             CommandClass::Regular => {
                 self.state.init_sign(comm, sign_mode)?;
 
-                let hash_mode = if sign_mode == SignMode::Ed25519PreAuthHash {
-                    HashCalculatorMode::Subintent
-                } else {
-                    HashCalculatorMode::Transaction
+                let hash_mode = match sign_mode {
+                    SignMode::Ed25519PreAuthHash | SignMode::Ed25519Subintent => {
+                        HashCalculatorMode::Subintent
+                    }
+                    _ => HashCalculatorMode::Transaction,
                 };
 
                 self.calculator.start(hash_mode)

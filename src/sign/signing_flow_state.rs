@@ -48,7 +48,8 @@ impl SigningFlowState {
             SignMode::Ed25519Verbose
             | SignMode::Ed25519Summary
             | SignMode::AuthEd25519
-            | SignMode::Ed25519PreAuthHash => Bip32Path::read_cap26(comm),
+            | SignMode::Ed25519PreAuthHash
+            | SignMode::Ed25519Subintent => Bip32Path::read_cap26(comm),
             SignMode::Secp256k1Verbose | SignMode::Secp256k1Summary | SignMode::AuthSecp256k1 => {
                 Bip32Path::read_olympia(comm)
             }
@@ -132,7 +133,8 @@ impl SigningFlowState {
             SignMode::Ed25519Verbose
             | SignMode::Ed25519Summary
             | SignMode::AuthEd25519
-            | SignMode::Ed25519PreAuthHash => {
+            | SignMode::Ed25519PreAuthHash
+            | SignMode::Ed25519Subintent => {
                 KeyPair25519::derive(&self.path).and_then(|keypair| keypair.sign(comm, message))
             }
 

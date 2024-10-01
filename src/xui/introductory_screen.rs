@@ -10,7 +10,8 @@ pub fn display(sign_mode: SignMode) -> Result<(), AppError> {
         | SignMode::Ed25519Summary
         | SignMode::Secp256k1Summary => "Review\n\nTransaction",
         SignMode::AuthEd25519 | SignMode::AuthSecp256k1 => "Review\nOwnership\nProof",
-        SignMode::Ed25519PreAuthHash => "Review\nPre-authorization",
+        SignMode::Ed25519PreAuthHash => "Review\nPre-authorization\nHash",
+        SignMode::Ed25519Subintent => "Review\nPre-authorization",
     };
 
     SingleMessage::with_right_arrow(text).show_and_wait();

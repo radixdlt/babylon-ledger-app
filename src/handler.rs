@@ -10,6 +10,7 @@ mod process_sign_outcome;
 mod sign_auth_ed25519;
 mod sign_auth_secp256k1;
 mod sign_preauth_hash_ed25519;
+mod sign_subintent_ed25519;
 mod sign_tx_ed25519;
 mod sign_tx_secp256k1;
 mod verify_address_ed25519;

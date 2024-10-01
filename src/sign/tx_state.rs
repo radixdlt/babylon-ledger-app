@@ -51,7 +51,7 @@ impl<T: Copy> TxState<T> {
         Ok(())
     }
 
-    pub fn sign_subintent(
+    pub fn sign_preauth_hash(
         &mut self,
         comm: &mut Comm,
         class: CommandClass,
@@ -60,6 +60,19 @@ impl<T: Copy> TxState<T> {
             comm,
             class,
             SignMode::Ed25519PreAuthHash,
+            TxIntentType::General,
+        )
+    }
+
+    pub fn sign_subintent(
+        &mut self,
+        comm: &mut Comm,
+        class: CommandClass,
+    ) -> Result<SignOutcome, AppError> {
+        self.process_sign_with_mode(
+            comm,
+            class,
+            SignMode::Ed25519Subintent,
             TxIntentType::General,
         )
     }
@@ -127,6 +140,7 @@ impl<T: Copy> TxState<T> {
         intent_type: TxIntentType,
     ) -> Result<SignOutcome, AppError> {
         if class == CommandClass::Regular {
+            // Start of the processing
             self.reset();
             self.processor.set_intent_type(intent_type);
             self.processor.process_sign(comm, class, sign_mode)?;
@@ -153,6 +167,9 @@ impl<T: Copy> TxState<T> {
                         hash::error();
                         Err(AppError::BadSubintentSignState)
                     }
+                }
+                SignMode::Ed25519Subintent => {
+                    self.decode_subintent(comm.get_data()?, class)?;
                 }
                 SignMode::Ed25519Verbose
                 | SignMode::Secp256k1Verbose
@@ -297,13 +314,23 @@ impl<T: Copy> TxState<T> {
                     }
                 }
             },
-            SignMode::AuthEd25519 | SignMode::AuthSecp256k1 | SignMode::Ed25519PreAuthHash => {
-                Ok(())
-            }
+            SignMode::AuthEd25519
+            | SignMode::AuthSecp256k1
+            | SignMode::Ed25519PreAuthHash
+            | SignMode::Ed25519Subintent => Ok(()),
         }
     }
 
     fn decode_tx_intent(&mut self, data: &[u8], class: CommandClass) -> Result<(), AppError> {
+        let result = self.call_decoder(data);
+
+        match result {
+            Ok(outcome) => self.validate_outcome(class, outcome),
+            Err(err) => Err(err.into()),
+        }
+    }
+
+    fn decode_subintent(&mut self, data: &[u8], class: CommandClass) -> Result<(), AppError> {
         let result = self.call_decoder(data);
 
         match result {

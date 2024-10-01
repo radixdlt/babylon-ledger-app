@@ -8,4 +8,5 @@ pub enum SignMode {
     AuthEd25519,
     AuthSecp256k1,
     Ed25519PreAuthHash,
+    Ed25519Subintent,
 }

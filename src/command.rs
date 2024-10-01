@@ -17,6 +17,7 @@ pub enum Command {
     VerifyAddressEd25519,
     VerifyAddressSecp256k1,
     SignPreAuthHashEd25519,
+    SignSubintentEd25519,
     Unknown,
 }
 
@@ -38,6 +39,7 @@ impl TryFrom<ApduHeader> for Command {
             0x81 => Ok(Command::VerifyAddressEd25519),
             0x91 => Ok(Command::VerifyAddressSecp256k1),
             0xA1 => Ok(Command::SignPreAuthHashEd25519),
+            0xA2 => Ok(Command::SignSubintentEd25519),
             _ => Err(AppError::NotImplemented),
         }
     }
