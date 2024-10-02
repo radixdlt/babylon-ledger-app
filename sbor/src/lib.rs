@@ -75,8 +75,8 @@ pub mod utilities;
 pub mod debug;
 
 #[cfg(test)]
+pub mod si_test_data;
+#[cfg(test)]
 pub mod tx_intent_test_data;
 #[cfg(test)]
 pub mod tx_intent_test_data_gen;
-#[cfg(test)]
-pub mod si_test_data;

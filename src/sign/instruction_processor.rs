@@ -2,7 +2,7 @@ use crate::io::Comm;
 use sbor::bech32::address::Address;
 use sbor::bech32::network::NetworkId;
 use sbor::digest::digest::Digest;
-use sbor::digest::hash_calculator::{HashCalculatorMode, HashCalculator};
+use sbor::digest::hash_calculator::{HashCalculator, HashCalculatorMode};
 use sbor::instruction_extractor::InstructionExtractor;
 use sbor::math::Decimal;
 use sbor::print::fanout::Fanout;

@@ -223,13 +223,14 @@ impl<T: Digester> HashCalculator<T> {
             }
         }
     }
+
+    fn tx_finalize(&mut self) -> Result<Digest, T::Error> {
+        self.output_digester.finalize()
+    }
 }
 
 impl<T: Digester> HashCalculator<T> {
     fn si_handle(&mut self, event: SborEvent) {
-        #[cfg(test)]
-        println!("handle_si: {:?}", event);
-
         match event {
             SborEvent::InputByte(byte) => self.si_put_byte(byte),
             SborEvent::Start {
@@ -256,12 +257,6 @@ impl<T: Digester> HashCalculator<T> {
     }
 
     fn si_process_start(&mut self, nesting_level: u8) {
-        #[cfg(test)]
-        println!(
-            "si_process_start 1: {:?}, {:?}",
-            self.si_state_machine.phase, self.si_state_machine.commit_phase
-        );
-
         let initial_phase = self.si_state_machine.phase;
 
         match (self.si_state_machine.phase, nesting_level) {
@@ -275,7 +270,9 @@ impl<T: Digester> HashCalculator<T> {
                 self.si_state_machine.phase = SiHashPhase::Message
             }
             (SiHashPhase::Message, 2) => self.si_state_machine.phase = SiHashPhase::Children,
-            (SiHashPhase::ChildrenContent, 2) => self.si_state_machine.phase = SiHashPhase::Instructions,
+            (SiHashPhase::ChildrenContent, 2) => {
+                self.si_state_machine.phase = SiHashPhase::Instructions
+            }
             (SiHashPhase::Instructions, 2) => {
                 self.si_state_machine.phase = SiHashPhase::DecodingError
             }
@@ -285,20 +282,9 @@ impl<T: Digester> HashCalculator<T> {
         if initial_phase != self.si_state_machine.phase {
             self.si_state_machine.input_count = 0;
         }
-
-        #[cfg(test)]
-        println!(
-            "si_process_start 2: {:?}, {:?}",
-            self.si_state_machine.phase, self.si_state_machine.commit_phase
-        );
     }
 
     fn si_process_end(&mut self, nesting_level: u8) {
-        #[cfg(test)]
-        println!(
-            "si_process_end 1: {:?}, {:?}",
-            self.si_state_machine.phase, self.si_state_machine.commit_phase
-        );
         match (self.si_state_machine.phase, nesting_level) {
             (SiHashPhase::Header, 2) => {
                 self.si_state_machine.commit_phase = HashCommitPhase::CommitRegular
@@ -320,23 +306,9 @@ impl<T: Digester> HashCalculator<T> {
             }
             (_, _) => {}
         }
-        #[cfg(test)]
-        println!(
-            "si_process_end 2: {:?}, {:?}",
-            self.si_state_machine.phase, self.si_state_machine.commit_phase
-        );
     }
 
     fn si_put_byte(&mut self, byte: u8) {
-        #[cfg(test)]
-        println!(
-            "si_put_byte 1: phase {:?}, commit phase {:?}, count {:?}, byte {:?}",
-            self.si_state_machine.phase,
-            self.si_state_machine.commit_phase,
-            self.si_state_machine.input_count,
-            byte
-        );
-
         match self.si_state_machine.phase {
             SiHashPhase::Start
             | SiHashPhase::Core
@@ -436,6 +408,14 @@ impl<T: Digester> HashCalculator<T> {
             }
         }
     }
+
+    fn si_finalize(&mut self) -> Result<Digest, T::Error> {
+        let digest = self.output_digester.finalize()?;
+        self.work_digester.reset();
+        self.work_digester.update(&Self::SI_INITIAL_VECTOR)?;
+        self.work_digester.update(digest.as_bytes())?;
+        self.work_digester.finalize()
+    }
 }
 
 // Common part + externally visible API for both transaction and subintent hash calculators
@@ -484,7 +464,10 @@ impl<T: Digester> HashCalculator<T> {
 
     #[inline(always)]
     pub fn finalize(&mut self) -> Result<Digest, T::Error> {
-        self.output_digester.finalize()
+        match self.mode {
+            HashCalculatorMode::Transaction => self.tx_finalize(),
+            HashCalculatorMode::Subintent => self.si_finalize(),
+        }
     }
 
     pub fn reset(&mut self) {
@@ -503,12 +486,12 @@ impl<T: Digester> HashCalculator<T> {
         self.blob_digester.init()?;
         self.output_digester.init()?;
 
-        let init_vector = match self.mode {
-            HashCalculatorMode::Transaction => &Self::TX_INITIAL_VECTOR,
-            HashCalculatorMode::Subintent => &Self::SI_INITIAL_VECTOR,
-        };
-
-        self.output_digester.update(init_vector)
+        match self.mode {
+            HashCalculatorMode::Transaction => {
+                self.output_digester.update(&Self::TX_INITIAL_VECTOR)
+            }
+            HashCalculatorMode::Subintent => Ok(()),
+        }
     }
 
     pub fn handle(&mut self, event: SborEvent) {
@@ -892,6 +875,17 @@ mod tests {
         }
 
         let digest = calculator.finalize().unwrap();
+        {
+            let blob = digest.as_bytes();
+            print!("Final hash = ");
+
+            for &byte in blob.iter() {
+                print!("{:#04x}, ", byte);
+            }
+
+            println!();
+        }
+
         assert_eq!(digest.0, expected_hash);
     }
 
