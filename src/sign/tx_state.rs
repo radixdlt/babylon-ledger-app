@@ -168,18 +168,20 @@ impl<T: Copy> TxState<T> {
                         Err(AppError::BadSubintentSignState)
                     }
                 }
-                SignMode::Ed25519Subintent => {
-                    self.decode_subintent(comm.get_data()?, class)?;
-                }
-                SignMode::Ed25519Verbose
+                SignMode::Ed25519Subintent
+                | SignMode::Ed25519Verbose
                 | SignMode::Secp256k1Verbose
                 | SignMode::Ed25519Summary
-                | SignMode::Secp256k1Summary => self.decode_tx_intent(comm.get_data()?, class)?,
+                | SignMode::Secp256k1Summary => self.decode_intent(comm.get_data()?, class)?,
             }
         }
 
         if class == CommandClass::LastData {
-            self.finalize_sign_tx(comm, sign_mode)
+            if sign_mode == SignMode::Ed25519Subintent {
+                self.finalize_sign_si(comm, sign_mode)
+            } else {
+                self.finalize_sign_tx(comm, sign_mode)
+            }
         } else {
             Ok(SignOutcome::SendNextPacket)
         }
@@ -204,7 +206,7 @@ impl<T: Copy> TxState<T> {
 
         let mut nonce_hex = [0u8; AUTH_CHALLENGE_LENGTH * 2];
 
-        Self::to_hex(challenge, &mut nonce_hex);
+        Self::as_hex(challenge, &mut nonce_hex);
 
         auth_details::display(address, origin, &nonce_hex);
 
@@ -234,7 +236,7 @@ impl<T: Copy> TxState<T> {
         let digest = Digest(message.try_into().unwrap());
         let mut message_hex = [0u8; SUBINTENT_MESSAGE_LENGTH * 2];
 
-        Self::to_hex(message, &mut message_hex);
+        Self::as_hex(message, &mut message_hex);
 
         pre_auth_hash_details::display(&message_hex);
 
@@ -248,7 +250,7 @@ impl<T: Copy> TxState<T> {
         }
     }
 
-    fn to_hex(message: &[u8], message_hex: &mut [u8; 64]) {
+    fn as_hex(message: &[u8], message_hex: &mut [u8; 64]) {
         for (i, &byte) in message.iter().enumerate() {
             message_hex[i * 2] = upper_as_hex(byte);
             message_hex[i * 2 + 1] = lower_as_hex(byte);
@@ -264,6 +266,33 @@ impl<T: Copy> TxState<T> {
         self.display_tx_info(sign_mode, &digest)?;
 
         let rc = signature::ask_user(signature::SignType::TX);
+
+        if rc {
+            self.processor
+                .sign_message(comm, sign_mode, digest.as_bytes())
+        } else {
+            Ok(SignOutcome::SigningRejected)
+        }
+    }
+
+    fn finalize_sign_si(
+        &mut self,
+        comm: &mut Comm,
+        sign_mode: SignMode,
+    ) -> Result<SignOutcome, AppError> {
+        let digest = self.processor.finalize()?;
+
+        if !(Settings::get().blind_signing) {
+            return Err(AppError::BadSubintentSignState);
+        }
+
+        let mut message_hex = [0u8; SUBINTENT_MESSAGE_LENGTH * 2];
+
+        Self::as_hex(digest.as_bytes(), &mut message_hex);
+
+        pre_auth_hash_details::display(&message_hex);
+
+        let rc = signature::ask_user(signature::SignType::PreAuthHash);
 
         if rc {
             self.processor
@@ -321,16 +350,7 @@ impl<T: Copy> TxState<T> {
         }
     }
 
-    fn decode_tx_intent(&mut self, data: &[u8], class: CommandClass) -> Result<(), AppError> {
-        let result = self.call_decoder(data);
-
-        match result {
-            Ok(outcome) => self.validate_outcome(class, outcome),
-            Err(err) => Err(err.into()),
-        }
-    }
-
-    fn decode_subintent(&mut self, data: &[u8], class: CommandClass) -> Result<(), AppError> {
+    fn decode_intent(&mut self, data: &[u8], class: CommandClass) -> Result<(), AppError> {
         let result = self.call_decoder(data);
 
         match result {
