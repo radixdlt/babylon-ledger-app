@@ -20,7 +20,7 @@ pub struct SigningFlowState {
 impl SigningFlowState {
     pub fn new() -> Self {
         Self {
-            sign_mode: SignMode::Ed25519Verbose,
+            sign_mode: SignMode::TxEd25519Verbose,
             tx_packet_count: 0,
             tx_size: 0,
             path: Bip32Path::new(0),
@@ -45,13 +45,14 @@ impl SigningFlowState {
 
     pub fn init_sign(&mut self, comm: &mut Comm, sign_mode: SignMode) -> Result<(), AppError> {
         let path = match sign_mode {
-            SignMode::Ed25519Verbose
-            | SignMode::Ed25519Summary
+            SignMode::TxEd25519Verbose
+            | SignMode::TxEd25519Summary
             | SignMode::AuthEd25519
-            | SignMode::Ed25519PreAuthHash => Bip32Path::read_cap26(comm),
-            SignMode::Secp256k1Verbose | SignMode::Secp256k1Summary | SignMode::AuthSecp256k1 => {
-                Bip32Path::read_olympia(comm)
-            }
+            | SignMode::PreAuthHashEd25519 => Bip32Path::read_cap26(comm),
+            SignMode::TxSecp256k1Verbose
+            | SignMode::TxSecp256k1Summary
+            | SignMode::AuthSecp256k1
+            | SignMode::PreAuthHashSecp256k1 => Bip32Path::read_olympia(comm),
         }?;
 
         self.start(sign_mode, path);
@@ -77,7 +78,7 @@ impl SigningFlowState {
     pub fn reset(&mut self) {
         self.tx_packet_count = 0;
         self.tx_size = 0;
-        self.sign_mode = SignMode::Ed25519Summary;
+        self.sign_mode = SignMode::TxEd25519Summary;
         self.path = Bip32Path::new(0);
     }
 
@@ -129,14 +130,17 @@ impl SigningFlowState {
         message: &[u8],
     ) -> Result<SignOutcome, AppError> {
         match sign_mode {
-            SignMode::Ed25519Verbose
-            | SignMode::Ed25519Summary
+            SignMode::TxEd25519Verbose
+            | SignMode::TxEd25519Summary
             | SignMode::AuthEd25519
-            | SignMode::Ed25519PreAuthHash => {
+            | SignMode::PreAuthHashEd25519 => {
                 KeyPair25519::derive(&self.path).and_then(|keypair| keypair.sign(comm, message))
             }
 
-            SignMode::Secp256k1Verbose | SignMode::Secp256k1Summary | SignMode::AuthSecp256k1 => {
+            SignMode::TxSecp256k1Verbose
+            | SignMode::TxSecp256k1Summary
+            | SignMode::AuthSecp256k1
+            | SignMode::PreAuthHashSecp256k1 => {
                 KeyPairSecp256k1::derive(&self.path).and_then(|keypair| keypair.sign(comm, message))
             }
         }

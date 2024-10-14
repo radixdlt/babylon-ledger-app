@@ -51,7 +51,7 @@ impl<T: Copy> TxState<T> {
         Ok(())
     }
 
-    pub fn sign_subintent(
+    pub fn sign_preauth_hash_ed25519(
         &mut self,
         comm: &mut Comm,
         class: CommandClass,
@@ -59,7 +59,20 @@ impl<T: Copy> TxState<T> {
         self.process_sign_with_mode(
             comm,
             class,
-            SignMode::Ed25519PreAuthHash,
+            SignMode::PreAuthHashEd25519,
+            TxIntentType::General,
+        )
+    }
+
+    pub fn sign_preauth_hash_secp256k1(
+        &mut self,
+        comm: &mut Comm,
+        class: CommandClass,
+    ) -> Result<SignOutcome, AppError> {
+        self.process_sign_with_mode(
+            comm,
+            class,
+            SignMode::PreAuthHashSecp256k1,
             TxIntentType::General,
         )
     }
@@ -86,10 +99,10 @@ impl<T: Copy> TxState<T> {
         let settings = Settings::get();
 
         let sign_mode = match (curve, settings.verbose_mode) {
-            (Curve::Ed25519, true) => SignMode::Ed25519Verbose,
-            (Curve::Secp256k1, true) => SignMode::Secp256k1Verbose,
-            (Curve::Ed25519, false) => SignMode::Ed25519Summary,
-            (Curve::Secp256k1, false) => SignMode::Secp256k1Summary,
+            (Curve::Ed25519, true) => SignMode::TxEd25519Verbose,
+            (Curve::Secp256k1, true) => SignMode::TxSecp256k1Verbose,
+            (Curve::Ed25519, false) => SignMode::TxEd25519Summary,
+            (Curve::Secp256k1, false) => SignMode::TxSecp256k1Summary,
         };
 
         self.process_sign_with_mode(comm, class, sign_mode, TxIntentType::Transfer)
@@ -144,7 +157,7 @@ impl<T: Copy> TxState<T> {
                         self.process_sign_auth(comm, sign_mode)
                     }
                 }
-                SignMode::Ed25519PreAuthHash => {
+                SignMode::PreAuthHashEd25519 | SignMode::PreAuthHashSecp256k1 => {
                     return if class != CommandClass::LastData {
                         Err(AppError::BadSubintentSignSequence)
                     } else if Settings::get().blind_signing {
@@ -154,10 +167,10 @@ impl<T: Copy> TxState<T> {
                         Err(AppError::BadSubintentSignState)
                     }
                 }
-                SignMode::Ed25519Verbose
-                | SignMode::Secp256k1Verbose
-                | SignMode::Ed25519Summary
-                | SignMode::Secp256k1Summary => self.decode_tx_intent(comm.get_data()?, class)?,
+                SignMode::TxEd25519Verbose
+                | SignMode::TxSecp256k1Verbose
+                | SignMode::TxEd25519Summary
+                | SignMode::TxSecp256k1Summary => self.decode_tx_intent(comm.get_data()?, class)?,
             }
         }
 
@@ -274,12 +287,12 @@ impl<T: Copy> TxState<T> {
         let detected_type = self.processor.get_detected_tx_type();
 
         match sign_mode {
-            SignMode::Ed25519Verbose | SignMode::Secp256k1Verbose => {
+            SignMode::TxEd25519Verbose | SignMode::TxSecp256k1Verbose => {
                 self.display_transaction_fee(&detected_type);
 
                 Ok(())
             }
-            SignMode::Ed25519Summary | SignMode::Secp256k1Summary => match detected_type {
+            SignMode::TxEd25519Summary | SignMode::TxSecp256k1Summary => match detected_type {
                 DetectedTxType::Transfer(details) => {
                     transfer::display(&details, &mut self.processor);
 
@@ -297,9 +310,10 @@ impl<T: Copy> TxState<T> {
                     }
                 }
             },
-            SignMode::AuthEd25519 | SignMode::AuthSecp256k1 | SignMode::Ed25519PreAuthHash => {
-                Ok(())
-            }
+            SignMode::AuthEd25519
+            | SignMode::AuthSecp256k1
+            | SignMode::PreAuthHashEd25519
+            | SignMode::PreAuthHashSecp256k1 => Ok(()),
         }
     }
 

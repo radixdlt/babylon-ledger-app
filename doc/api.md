@@ -4,21 +4,22 @@ All communication is performed using APDU protocol ([see APDU description](apdu.
 
 ## Overview
 
-| API Name                                          | Instruction Code | Description                                                                                                                                                                                                                                                           |
-|---------------------------------------------------|------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [GetAppVersion](#getappversion)                   | 0x10             | Get application version as 3 bytes, where each byte represents version component: __Major__, __Minor__ and __Patch Level__.                                                                                                                                           |
-| [GetDeviceModel](#getdevicemodel)                 | 0x11             | Get device model code byte. __0__ corresponds to Nano S, __1__ - Nano S Plus, __2__ - Nano X                                                                                                                                                                          |
-| [GetDeviceId](#getdeviceid)                       | 0x12             | Get device ID byte array (32 bytes)                                                                                                                                                                                                                                   |
-| [GetAppSettings](#getappsettings)                 | 0x20             | Get application settings                                                                                                                                                                                                                                              |
-| [GetPubKeyEd25519](#getpubkeyed25519)             | 0x21             | Get Ed25519 public key for provided derivation path. Derivation path must conform to CAP-26 SLIP 10 HD Derivation Path Scheme.                                                                                                                                        |
-| [GetPubKeySecp256k1](#getpubkeysecp256k1)         | 0x31             | Get Secp256k1 public key for provided derivation path.                                                                                                                                                                                                                |
-| [SignTxEd25519](#signtxed25519)                   | 0x41             | Sign transaction intent using Ed25519 curve and given derivation path. Derivation path must conform to CAP-26 SLIP 10 HD Derivation Path Scheme. Signing is done in "advanced mode", when every instruction from transaction intent is decoded and displayed to user. |
-| [SignTxSecp256k1](#signtxsecp256k1)               | 0x51             | Sign transaction intent using Secp256k1 curve and given derivation path. Signing is done in "advanced mode", when every instruction from transaction intent is decoded and displayed to user.                                                                         |
-| [SignAuthEd25519](#signauthed25519)               | 0x61             | Sign provided 32 bytes digest using Ed25519 curve and given derivation path. Derivation path must conform to CAP-26 SLIP 10 HD Derivation Path Scheme.                                                                                                                |
-| [SignAuthSecp256k1](#signauthsecp256k1)           | 0x71             | Sign provided 32 bytes digest using Secp265k1 curve and given derivation path.                                                                                                                                                                                        |
-| [VerifyAddressEd25519](#verifyaddressed25519)     | 0x81             | Verify Bech32m address for a given derivation path for Ed25519 curve.                                                                                                                                                                                                 |
-| [VerifyAddressSecp256k1](#verifyaddresssecp256k1) | 0x91             | Verify Bech32m address for a given derivation path for Secp256k1 curve.                                                                                                                                                                                               |
-| [SignPreAuthHashEd25519](#signpreauthhashed25519) | 0xA1             | Sign provided pre-auth hash using Ed25519 curve and given derivation path. Derivation path must conform to CAP-26 SLIP 10 HD Derivation Path Scheme.                                                                                                                  |
+| API Name                                              | Instruction Code | Description                                                                                                                                                                                                                                                           |
+|-------------------------------------------------------|------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [GetAppVersion](#getappversion)                       | 0x10             | Get application version as 3 bytes, where each byte represents version component: __Major__, __Minor__ and __Patch Level__.                                                                                                                                           |
+| [GetDeviceModel](#getdevicemodel)                     | 0x11             | Get device model code byte. __0__ corresponds to Nano S, __1__ - Nano S Plus, __2__ - Nano X                                                                                                                                                                          |
+| [GetDeviceId](#getdeviceid)                           | 0x12             | Get device ID byte array (32 bytes)                                                                                                                                                                                                                                   |
+| [GetAppSettings](#getappsettings)                     | 0x20             | Get application settings                                                                                                                                                                                                                                              |
+| [GetPubKeyEd25519](#getpubkeyed25519)                 | 0x21             | Get Ed25519 public key for provided derivation path. Derivation path must conform to CAP-26 SLIP 10 HD Derivation Path Scheme.                                                                                                                                        |
+| [GetPubKeySecp256k1](#getpubkeysecp256k1)             | 0x31             | Get Secp256k1 public key for provided derivation path.                                                                                                                                                                                                                |
+| [SignTxEd25519](#signtxed25519)                       | 0x41             | Sign transaction intent using Ed25519 curve and given derivation path. Derivation path must conform to CAP-26 SLIP 10 HD Derivation Path Scheme. Signing is done in "advanced mode", when every instruction from transaction intent is decoded and displayed to user. |
+| [SignTxSecp256k1](#signtxsecp256k1)                   | 0x51             | Sign transaction intent using Secp256k1 curve and given derivation path. Signing is done in "advanced mode", when every instruction from transaction intent is decoded and displayed to user.                                                                         |
+| [SignAuthEd25519](#signauthed25519)                   | 0x61             | Sign provided 32 bytes digest using Ed25519 curve and given derivation path. Derivation path must conform to CAP-26 SLIP 10 HD Derivation Path Scheme.                                                                                                                |
+| [SignAuthSecp256k1](#signauthsecp256k1)               | 0x71             | Sign provided 32 bytes digest using Secp265k1 curve and given derivation path.                                                                                                                                                                                        |
+| [VerifyAddressEd25519](#verifyaddressed25519)         | 0x81             | Verify Bech32m address for a given derivation path for Ed25519 curve.                                                                                                                                                                                                 |
+| [VerifyAddressSecp256k1](#verifyaddresssecp256k1)     | 0x91             | Verify Bech32m address for a given derivation path for Secp256k1 curve.                                                                                                                                                                                               |
+| [SignPreAuthHashEd25519](#signpreauthhashed25519)     | 0xA1             | Sign provided pre-auth hash using Ed25519 curve and given derivation path. Derivation path must conform to CAP-26 SLIP 10 HD Derivation Path Scheme.                                                                                                                  |
+| [SignPreAuthHashSecp256k1](#signpreauthhashsecp256k1) | 0xB1             | Sign provided pre-auth hash using Secp256k1 curve and given derivation path.                                                                                                                                                                                          |
 
 ## GetAppVersion
 
@@ -137,8 +138,8 @@ This command is invoked in two steps:
 
 - Send derivation path.
 - Send transaction intent data (see below). This command can be sent one or more times, depending on the size of the
-  transaction intent. The last chunk is accompanied with class byte set to `0xAC`. Other (intermediate) chunks are
-  accompanied with class byte set to `0xAD`.
+  transaction intent. The last chunk is accompanied by class byte set to `0xAC`. Other (intermediate) chunks are
+  accompanied by class byte set to `0xAD`.
 
 APDU for derivation path:
 
@@ -175,8 +176,8 @@ This command is invoked in two steps:
 
 - Send derivation path.
 - Send transaction intent data (see below). This command can be sent one or more times, depending on the size of the
-  transaction intent. The last chunk is accompanied with class byte set to `0xAC`. Other (intermediate) chunks are
-  accompanied with class byte set to `0xAD`.
+  transaction intent. The last chunk is accompanied by class byte set to `0xAC`. Other (intermediate) chunks are
+  accompanied by class byte set to `0xAD`.
 
 APDU for derivation path:
 
@@ -313,13 +314,13 @@ APDU for derivation path:
 
 | CLA  | INS  | P1   | P2   | Data                                                                                                                                                                                                                                                                                 |
 |------|------|------|------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 0xAA | 0x61 | 0x00 | 0x00 | Derivation path in the following format:<br>byte 0 - number of elements in derivation path<br>bytes 1-5 - first element of derivation path in big endian format<br>bytes 6-9 - second element of derivation path in big endian format<br>... - remaining elements of derivation path |
+| 0xAA | 0xA1 | 0x00 | 0x00 | Derivation path in the following format:<br>byte 0 - number of elements in derivation path<br>bytes 1-5 - first element of derivation path in big endian format<br>bytes 6-9 - second element of derivation path in big endian format<br>... - remaining elements of derivation path |
 
 APDU for auth request data:
 
 | CLA  | INS  | P1   | P2   | Data                     |
 |------|------|------|------|--------------------------|
-| 0xAC | 0x61 | 0x00 | 0x00 | 32 bytes of blake2b hash |
+| 0xAC | 0xA1 | 0x00 | 0x00 | 32 bytes of blake2b hash |
 
 Upon successful sign, the device returns the signature for the given pre-authorized hash. The signature is returned in the following format:
 
@@ -328,5 +329,36 @@ Upon successful sign, the device returns the signature for the given pre-authori
 | byte 0-63   | Ed25519 signature  |
 | byte 64-95  | Ed25519 public key |
 | byte 96-127 | Calculated digest  |
+
+If user rejects the sign request, then the device returns error code 0x6e50 (User rejected the sign request).
+
+## SignPreAuthHashSecp256k1
+
+Sign pre-authorized hash using Ed25519 private key and derivation path.
+
+This command is invoked in two steps:
+
+- Send derivation path.
+- Send pre-auth subintent data. This packet uses class byte set to `0xAC`.
+
+APDU for derivation path:
+
+| CLA  | INS  | P1   | P2   | Data                                                                                                                                                                                                                                                                                 |
+|------|------|------|------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 0xAA | 0xB1 | 0x00 | 0x00 | Derivation path in the following format:<br>byte 0 - number of elements in derivation path<br>bytes 1-5 - first element of derivation path in big endian format<br>bytes 6-9 - second element of derivation path in big endian format<br>... - remaining elements of derivation path |
+
+APDU for auth request data:
+
+| CLA  | INS  | P1   | P2   | Data                     |
+|------|------|------|------|--------------------------|
+| 0xAC | 0xB1 | 0x00 | 0x00 | 32 bytes of blake2b hash |
+
+Upon successful sign, the device returns the signature for the given pre-authorized hash. The signature is returned in the following format:
+
+| Data        | Description          |
+|-------------|----------------------|
+| byte 0-64   | Secp256k1 signature  |
+| byte 65-97  | Secp256k1 public key |
+| byte 98-130 | Calculated digest    |
 
 If user rejects the sign request, then the device returns error code 0x6e50 (User rejected the sign request).

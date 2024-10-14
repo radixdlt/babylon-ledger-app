@@ -11,6 +11,6 @@ pub fn handle<T: Copy>(
     state: &mut TxState<T>,
 ) -> Result<(), AppError> {
     state
-        .sign_subintent(comm, class)
+        .sign_preauth_hash_ed25519(comm, class)
         .and_then(process_sign_outcome)
 }

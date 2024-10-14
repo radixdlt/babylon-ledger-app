@@ -26,6 +26,9 @@ pub fn dispatcher<T: Copy>(
         Command::VerifyAddressEd25519 => verify_address_ed25519::handle(comm),
         Command::VerifyAddressSecp256k1 => verify_address_secp256k1::handle(comm),
         Command::SignPreAuthHashEd25519 => sign_preauth_hash_ed25519::handle(comm, class, state),
+        Command::SignPreAuthHashSecp256k1 => {
+            sign_preauth_hash_secp256k1::handle(comm, class, state)
+        }
         Command::Unknown => Err(AppError::NotImplemented),
     }
 }

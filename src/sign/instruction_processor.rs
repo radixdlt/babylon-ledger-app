@@ -74,14 +74,17 @@ impl<T: Copy> InstructionProcessor<T> {
 
     pub fn set_network(&mut self) -> Result<(), AppError> {
         match self.state.sign_mode() {
-            SignMode::Ed25519Verbose
-            | SignMode::Ed25519Summary
+            SignMode::TxEd25519Verbose
+            | SignMode::TxEd25519Summary
             | SignMode::AuthEd25519
-            | SignMode::Ed25519PreAuthHash => {
+            | SignMode::PreAuthHashEd25519
+            | SignMode::PreAuthHashSecp256k1 => {
                 let network_id = self.state.network_id()?;
                 self.printer.set_network(network_id);
             }
-            SignMode::Secp256k1Verbose | SignMode::Secp256k1Summary | SignMode::AuthSecp256k1 => {
+            SignMode::TxSecp256k1Verbose
+            | SignMode::TxSecp256k1Summary
+            | SignMode::AuthSecp256k1 => {
                 self.printer.set_network(NetworkId::OlympiaMainNet);
             }
         };
@@ -90,14 +93,15 @@ impl<T: Copy> InstructionProcessor<T> {
 
     pub fn set_show_instructions(&mut self) {
         match self.state.sign_mode() {
-            SignMode::Secp256k1Summary
-            | SignMode::Ed25519Summary
+            SignMode::TxSecp256k1Summary
+            | SignMode::TxEd25519Summary
             | SignMode::AuthEd25519
             | SignMode::AuthSecp256k1
-            | SignMode::Ed25519PreAuthHash => {
+            | SignMode::PreAuthHashEd25519
+            | SignMode::PreAuthHashSecp256k1 => {
                 self.printer.set_show_instructions(false);
             }
-            SignMode::Secp256k1Verbose | SignMode::Ed25519Verbose => {
+            SignMode::TxSecp256k1Verbose | SignMode::TxEd25519Verbose => {
                 self.printer.set_show_instructions(true);
             }
         };
@@ -130,7 +134,7 @@ impl<T: Copy> InstructionProcessor<T> {
             CommandClass::Regular => {
                 self.state.init_sign(comm, sign_mode)?;
 
-                let hash_mode = if sign_mode == SignMode::Ed25519PreAuthHash {
+                let hash_mode = if sign_mode == SignMode::PreAuthHashEd25519 {
                     HashCalculatorMode::Subintent
                 } else {
                     HashCalculatorMode::Transaction
