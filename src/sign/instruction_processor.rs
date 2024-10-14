@@ -82,7 +82,9 @@ impl<T: Copy> InstructionProcessor<T> {
                 let network_id = self.state.network_id()?;
                 self.printer.set_network(network_id);
             }
-            SignMode::TxSecp256k1Verbose | SignMode::TxSecp256k1Summary | SignMode::AuthSecp256k1 => {
+            SignMode::TxSecp256k1Verbose
+            | SignMode::TxSecp256k1Summary
+            | SignMode::AuthSecp256k1 => {
                 self.printer.set_network(NetworkId::OlympiaMainNet);
             }
         };
