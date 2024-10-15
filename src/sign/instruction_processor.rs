@@ -2,7 +2,7 @@ use crate::io::Comm;
 use sbor::bech32::address::Address;
 use sbor::bech32::network::NetworkId;
 use sbor::digest::digest::Digest;
-use sbor::digest::hash_calculator::{HashCalculator, HashCalculatorMode};
+use sbor::digest::hash_calculator::{HashCalculator};
 use sbor::instruction_extractor::InstructionExtractor;
 use sbor::math::Decimal;
 use sbor::print::fanout::Fanout;
@@ -14,6 +14,7 @@ use sbor::sbor_decoder::{SborEvent, SborEventHandler};
 
 use crate::app_error::AppError;
 use crate::command_class::CommandClass;
+use crate::crypto::curves::Curve;
 use crate::crypto::hash::Blake2bHasher;
 use crate::sign::sign_mode::SignMode;
 use crate::sign::sign_outcome::SignOutcome;
@@ -73,19 +74,12 @@ impl<T: Copy> InstructionProcessor<T> {
     }
 
     pub fn set_network(&mut self) -> Result<(), AppError> {
-        match self.state.sign_mode() {
-            SignMode::TxEd25519Verbose
-            | SignMode::TxEd25519Summary
-            | SignMode::AuthEd25519
-            | SignMode::PreAuthHashEd25519
-            | SignMode::PreAuthHashSecp256k1
-            | SignMode::Ed25519Subintent => {
+        match self.state.sign_mode().curve() {
+            Curve::Ed25519 => {
                 let network_id = self.state.network_id()?;
                 self.printer.set_network(network_id);
             }
-            SignMode::TxSecp256k1Verbose
-            | SignMode::TxSecp256k1Summary
-            | SignMode::AuthSecp256k1 => {
+            Curve::Secp256k1 => {
                 self.printer.set_network(NetworkId::OlympiaMainNet);
             }
         };
@@ -93,20 +87,8 @@ impl<T: Copy> InstructionProcessor<T> {
     }
 
     pub fn set_show_instructions(&mut self) {
-        match self.state.sign_mode() {
-            SignMode::TxSecp256k1Summary
-            | SignMode::TxEd25519Summary
-            | SignMode::AuthEd25519
-            | SignMode::AuthSecp256k1
-            | SignMode::PreAuthHashEd25519
-            | SignMode::PreAuthHashSecp256k1
-            | | SignMode::Ed25519Subintent => {
-                self.printer.set_show_instructions(false);
-            }
-            SignMode::TxSecp256k1Verbose | SignMode::TxEd25519Verbose => {
-                self.printer.set_show_instructions(true);
-            }
-        };
+        self.printer
+            .set_show_instructions(self.state.sign_mode().shows_instructions());
     }
 
     pub fn set_tty(&mut self, tty: TTY<T>) {
@@ -135,16 +117,7 @@ impl<T: Copy> InstructionProcessor<T> {
         core::intrinsics::black_box(match class {
             CommandClass::Regular => {
                 self.state.init_sign(comm, sign_mode)?;
-
-                let hash_mode = match sign_mode {
-                    SignMode::PreAuthHashEd25519 | SignMode::PreAuthHashSecp256k1
-                    | SignMode::Ed25519Subintent | SignMode::Secp256k1Subintent => {
-                        HashCalculatorMode::Subintent
-                    }
-                    _ => HashCalculatorMode::Transaction,
-                };
-
-                self.calculator.start(hash_mode)
+                self.calculator.start(sign_mode.hash_mode())
             }
             CommandClass::Continuation | CommandClass::LastData => {
                 self.state.continue_sign(comm, class, sign_mode)

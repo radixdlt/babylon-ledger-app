@@ -7,7 +7,7 @@ use crate::sbor_decoder::SborEvent;
 #[repr(u8)]
 pub enum HashCalculatorMode {
     Transaction,
-    Subintent,
+    PreAuth,
 }
 
 #[derive(Copy, Clone, PartialEq)]
@@ -466,7 +466,7 @@ impl<T: Digester> HashCalculator<T> {
     pub fn finalize(&mut self) -> Result<Digest, T::Error> {
         match self.mode {
             HashCalculatorMode::Transaction => self.tx_finalize(),
-            HashCalculatorMode::Subintent => self.si_finalize(),
+            HashCalculatorMode::PreAuth => self.si_finalize(),
         }
     }
 
@@ -490,14 +490,14 @@ impl<T: Digester> HashCalculator<T> {
             HashCalculatorMode::Transaction => {
                 self.output_digester.update(&Self::TX_INITIAL_VECTOR)
             }
-            HashCalculatorMode::Subintent => Ok(()),
+            HashCalculatorMode::PreAuth => Ok(()),
         }
     }
 
     pub fn handle(&mut self, event: SborEvent) {
         match self.mode {
             HashCalculatorMode::Transaction => self.tx_handle(event),
-            HashCalculatorMode::Subintent => self.si_handle(event),
+            HashCalculatorMode::PreAuth => self.si_handle(event),
         }
     }
 }
@@ -866,7 +866,7 @@ mod tests {
         let mut calculator = HashCalculator::<TestDigester>::new();
         let mut decoder = SborDecoder::new(true);
 
-        let _ = calculator.start(HashCalculatorMode::Subintent);
+        let _ = calculator.start(HashCalculatorMode::PreAuth);
         match decoder.decode(&mut calculator, input) {
             Ok(_) => {}
             Err(_) => {
