@@ -36,7 +36,7 @@ impl<'a> MultipageValidator<'a> {
         let mut cur_page = 0;
 
         let draw_icon_and_text = |icon: Icon, strings: &[&str], bold: bool| {
-            // Draw icon on the center if there is no text.
+            // Draw icon in the center if there is no text.
             let x = match strings.len() {
                 0 => 60,
                 _ => 18,

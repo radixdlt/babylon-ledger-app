@@ -19,7 +19,7 @@ def call_and_check(firmware, backend, navigator, test_name, vector):
         if firmware.device.startswith("nano"):
             navigator.navigate_and_compare(ROOT_SCREENSHOT_PATH, test_name,
                                            [NavInsID.RIGHT_CLICK, NavInsID.RIGHT_CLICK,
-                                            NavInsID.RIGHT_CLICK, NavInsID.RIGHT_CLICK, ])
+                                            NavInsID.RIGHT_CLICK, NavInsID.BOTH_CLICK, ])
     pk = backend.last_async_response.data.decode('utf-8')
     assert pk == expected_pub_key, "Invalid address\nExpected: " + expected_pub_key + "\nReceived: " + pk
 
