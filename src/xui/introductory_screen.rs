@@ -5,12 +5,14 @@ use crate::ui::single_message::SingleMessage;
 #[cfg(not(target_os = "stax"))]
 pub fn display(sign_mode: SignMode) -> Result<(), AppError> {
     let text = match sign_mode {
-        SignMode::Ed25519Verbose
-        | SignMode::Secp256k1Verbose
-        | SignMode::Ed25519Summary
-        | SignMode::Secp256k1Summary => "Review\n\nTransaction",
+        SignMode::TxEd25519Verbose
+        | SignMode::TxSecp256k1Verbose
+        | SignMode::TxEd25519Summary
+        | SignMode::TxSecp256k1Summary => "Review\n\nTransaction",
         SignMode::AuthEd25519 | SignMode::AuthSecp256k1 => "Review\nOwnership\nProof",
-        SignMode::Ed25519PreAuthHash => "Review\nPre-authorization\nHash",
+        SignMode::PreAuthHashEd25519 | SignMode::PreAuthHashSecp256k1 => {
+            "Review\nPre-authorization\nHash"
+        }
         SignMode::Ed25519Subintent => "Review\nPre-authorization",
     };
 
