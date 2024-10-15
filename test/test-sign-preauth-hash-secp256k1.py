@@ -18,7 +18,7 @@ else:
     dongle = getDongle(False)
 
 instructionClass = "AA"
-instructionCode = "B1"
+instructionCode = "A2"
 p1 = "00"
 p2 = "00"
 dataLength = "00"

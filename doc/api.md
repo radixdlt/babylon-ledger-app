@@ -19,7 +19,7 @@ All communication is performed using APDU protocol ([see APDU description](apdu.
 | [VerifyAddressEd25519](#verifyaddressed25519)         | 0x81             | Verify Bech32m address for a given derivation path for Ed25519 curve.                                                                                                                                                                                                 |
 | [VerifyAddressSecp256k1](#verifyaddresssecp256k1)     | 0x91             | Verify Bech32m address for a given derivation path for Secp256k1 curve.                                                                                                                                                                                               |
 | [SignPreAuthHashEd25519](#signpreauthhashed25519)     | 0xA1             | Sign provided pre-auth hash using Ed25519 curve and given derivation path. Derivation path must conform to CAP-26 SLIP 10 HD Derivation Path Scheme.                                                                                                                  |
-| [SignPreAuthHashSecp256k1](#signpreauthhashsecp256k1) | 0xB1             | Sign provided pre-auth hash using Secp256k1 curve and given derivation path.                                                                                                                                                                                          |
+| [SignPreAuthHashSecp256k1](#signpreauthhashsecp256k1) | 0xA2             | Sign provided pre-auth hash using Secp256k1 curve and given derivation path.                                                                                                                                                                                          |
 
 ## GetAppVersion
 
@@ -334,7 +334,7 @@ If user rejects the sign request, then the device returns error code 0x6e50 (Use
 
 ## SignPreAuthHashSecp256k1
 
-Sign pre-authorized hash using Ed25519 private key and derivation path.
+Sign pre-authorized hash using Secp256k1 private key and derivation path.
 
 This command is invoked in two steps:
 
@@ -345,13 +345,13 @@ APDU for derivation path:
 
 | CLA  | INS  | P1   | P2   | Data                                                                                                                                                                                                                                                                                 |
 |------|------|------|------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 0xAA | 0xB1 | 0x00 | 0x00 | Derivation path in the following format:<br>byte 0 - number of elements in derivation path<br>bytes 1-5 - first element of derivation path in big endian format<br>bytes 6-9 - second element of derivation path in big endian format<br>... - remaining elements of derivation path |
+| 0xAA | 0xA2 | 0x00 | 0x00 | Derivation path in the following format:<br>byte 0 - number of elements in derivation path<br>bytes 1-5 - first element of derivation path in big endian format<br>bytes 6-9 - second element of derivation path in big endian format<br>... - remaining elements of derivation path |
 
 APDU for auth request data:
 
 | CLA  | INS  | P1   | P2   | Data                     |
 |------|------|------|------|--------------------------|
-| 0xAC | 0xB1 | 0x00 | 0x00 | 32 bytes of blake2b hash |
+| 0xAC | 0xA2 | 0x00 | 0x00 | 32 bytes of blake2b hash |
 
 Upon successful sign, the device returns the signature for the given pre-authorized hash. The signature is returned in the following format:
 

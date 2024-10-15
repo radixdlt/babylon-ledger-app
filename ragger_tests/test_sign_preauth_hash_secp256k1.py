@@ -11,7 +11,7 @@ ROOT_SCREENSHOT_PATH = Path(__file__).parent.resolve()
 
 CLA1 = 0xAA
 CLA2 = 0xAC
-INS = 0xB1
+INS = 0xA2
 
 
 def enable_blind_signing(navigator, test_name):
