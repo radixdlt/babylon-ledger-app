@@ -2,7 +2,6 @@
 
 import sys
 import os
-import hashlib
 
 from ledgerblue.comm import getDongle
 from ledgerblue.commTCP import getDongle as getDongleTCP
@@ -18,14 +17,28 @@ else:
     dongle = getDongle(False)
 
 instructionClass = "AA"
-instructionCode = "A2"
+instructionCode = "A4"
 p1 = "00"
 p2 = "00"
 dataLength = "00"
 
-print("Testing", "SignPreAuthHashSecp256k1", instructionCode)
+print("Testing", "SignPreAuthRawSecp256k1", instructionCode)
 
-test_hash_inputs = [b'0', b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8', b'9']
+
+def list_files():
+    dir_path = "data"
+    res = []
+    for path in os.listdir(dir_path):
+        if os.path.isfile(os.path.join(dir_path, path)):
+            res.append(os.path.join(dir_path, path))
+    return res
+
+
+def read_file(file):
+    print("Reading ", file)
+    with open(file, "rb") as f:
+        return f.read()
+
 
 def encode_bip32(path):
     elements = path.replace('H', "'").replace('"', "'").split('/')
@@ -37,16 +50,23 @@ def encode_bip32(path):
     return result
 
 
-def send_preauth_hash(data):
-    cls = "AC"
-    data_length = len(data).to_bytes(1, 'little').hex()
-    # print("Sending data_len = ", data_length, " len = ", len(data))
+def send_tx_intent(txn):
+    num_chunks = len(txn) // 255 + 1
+    # print("Sending txn (", len(txn), " bytes, ", num_chunks, " chunk(s))")
+    for i in range(num_chunks):
+        chunk = txn[i * 255:(i + 1) * 255]
+        cls = "AC" if i == num_chunks - 1 else "AB"
+        data_length = len(chunk).to_bytes(1, 'little').hex()
 
-    try:
-        return dongle.exchange(bytes.fromhex(cls + instructionCode + p1 + p2 + data_length + data.hex()))
-    except Exception as exception:
-        print("Error sending txn chunk: ", exception)
-        return None
+        # print("Chunk:", i, "data:", chunk.hex(), "len:", data_length, "cls:", cls)
+
+        try:
+            rc = dongle.exchange(bytes.fromhex(cls + instructionCode + p1 + p2 + data_length + chunk.hex()))
+            return rc
+        except Exception as e:
+            print("Error sending txn chunk: ", e)
+            return None
+
 
 def send_derivation_path(bip_path):
     path_data = encode_bip32(bip_path)
@@ -55,16 +75,17 @@ def send_derivation_path(bip_path):
 
     try:
         return dongle.exchange(bytes.fromhex(instructionClass + instructionCode + p1 + p2 + data_length + path_data))
-    except Exception as exception:
-        print("Error sending derivation path: ", exception)
+    except Exception as e:
+        print("Error sending derivation path: ", e)
         return None
 
 
-for inp in test_hash_inputs:
-    hash_calculator = hashlib.blake2b(digest_size=32)
-    hash_calculator.update(inp)
+for file_name in list_files():
+    if not file_name.endswith(".si"):
+        continue
+    data = read_file(file_name)
     send_derivation_path("m/44H/1022H/10H/525H/1238H")
-    rc = send_preauth_hash(hash_calculator.digest())
+    rc = send_tx_intent(data)
 
     if rc is None:
         print("Failed")

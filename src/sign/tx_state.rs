@@ -52,7 +52,7 @@ impl<T: Copy> TxState<T> {
         Ok(())
     }
 
-    pub fn sign_preauth_hash_ed25519(
+    pub fn sign_pre_auth_hash_ed25519(
         &mut self,
         comm: &mut Comm,
         class: CommandClass,
@@ -65,7 +65,7 @@ impl<T: Copy> TxState<T> {
         )
     }
 
-    pub fn sign_preauth_hash_secp256k1(
+    pub fn sign_pre_auth_hash_secp256k1(
         &mut self,
         comm: &mut Comm,
         class: CommandClass,
@@ -78,7 +78,7 @@ impl<T: Copy> TxState<T> {
         )
     }
 
-    pub fn sign_subintent(
+    pub fn sign_pre_auth_raw_ed25519(
         &mut self,
         comm: &mut Comm,
         class: CommandClass,
@@ -87,6 +87,19 @@ impl<T: Copy> TxState<T> {
             comm,
             class,
             SignMode::PreAuthRawEd25519,
+            TxIntentType::General,
+        )
+    }
+
+    pub fn sign_pre_auth_raw_secp256k1(
+        &mut self,
+        comm: &mut Comm,
+        class: CommandClass,
+    ) -> Result<SignOutcome, AppError> {
+        self.process_sign_with_mode(
+            comm,
+            class,
+            SignMode::PreAuthRawSecp256k1,
             TxIntentType::General,
         )
     }

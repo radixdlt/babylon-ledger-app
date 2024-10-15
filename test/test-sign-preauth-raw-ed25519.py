@@ -16,7 +16,7 @@ else:
     dongle = getDongle(False)
 
 instructionClass = "AA"
-instructionCode = "A2"
+instructionCode = "A3"
 p1 = "00"
 p2 = "00"
 dataLength = "00"
@@ -61,10 +61,10 @@ def send_tx_intent(txn):
 
         try:
             rc = dongle.exchange(bytes.fromhex(cls + instructionCode + p1 + p2 + data_length + chunk.hex()))
+            return rc
         except Exception as e:
             print("Error sending txn chunk: ", e)
             return None
-    return rc
 
 
 def send_derivation_path(bip_path):
