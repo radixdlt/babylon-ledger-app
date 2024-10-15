@@ -39,7 +39,7 @@ impl TryFrom<ApduHeader> for Command {
             0x81 => Ok(Command::VerifyAddressEd25519),
             0x91 => Ok(Command::VerifyAddressSecp256k1),
             0xA1 => Ok(Command::SignPreAuthHashEd25519),
-            0xB1 => Ok(Command::SignPreAuthHashSecp256k1),
+            0xA2 => Ok(Command::SignPreAuthHashSecp256k1),
             _ => Err(AppError::NotImplemented),
         }
     }
