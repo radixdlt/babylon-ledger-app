@@ -125,8 +125,12 @@ impl SigningFlowState {
         message: &[u8],
     ) -> Result<SignOutcome, AppError> {
         match sign_mode.curve() {
-            Curve::Ed25519 => KeyPair25519::derive(&self.path).and_then(|keypair| keypair.sign(comm, message)),
-            Curve::Secp256k1 => KeyPairSecp256k1::derive(&self.path).and_then(|keypair| keypair.sign(comm, message)),
+            Curve::Ed25519 => {
+                KeyPair25519::derive(&self.path).and_then(|keypair| keypair.sign(comm, message))
+            }
+            Curve::Secp256k1 => {
+                KeyPairSecp256k1::derive(&self.path).and_then(|keypair| keypair.sign(comm, message))
+            }
         }
     }
 
