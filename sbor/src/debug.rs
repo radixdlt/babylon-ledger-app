@@ -1,3 +1,4 @@
+#[cfg(test)]
 use core::arch::asm;
 use core::str::from_utf8;
 

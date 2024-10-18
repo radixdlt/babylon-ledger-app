@@ -8,10 +8,40 @@ pub mod tests {
         pub data: &'static [u8],
     }
 
-    const BLOBS: &[Blob] = &[Blob {
-        name: "checked_childless_subintent",
-        data: &SI_CHECKED_CHILDLESS_SUBINTENT,
-    }];
+    const BLOBS: &[Blob] = &[
+        Blob {
+            name: "checked_childless_subintent",
+            data: &SI_CHECKED_CHILDLESS_SUBINTENT,
+        },
+        Blob {
+            name: "subintent_vector_0",
+            data: &SI_VECTOR_0,
+        },
+        Blob {
+            name: "subintent_vector_1",
+            data: &SI_VECTOR_1,
+        },
+        Blob {
+            name: "subintent_vector_2",
+            data: &SI_VECTOR_2,
+        },
+        Blob {
+            name: "subintent_vector_3",
+            data: &SI_VECTOR_3,
+        },
+        Blob {
+            name: "subintent_vector_4",
+            data: &SI_VECTOR_4,
+        },
+        Blob {
+            name: "subintent_vector_5",
+            data: &SI_VECTOR_5,
+        },
+        Blob {
+            name: "subintent_vector_6",
+            data: &SI_VECTOR_6,
+        },
+    ];
 
     #[test]
     pub fn generate_binaries() {

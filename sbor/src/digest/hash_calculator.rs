@@ -238,20 +238,25 @@ impl<T: Digester> HashCalculator<T> {
                 nesting_level,
                 ..
             } => self.si_process_start(nesting_level),
+            SborEvent::ElementType { .. }
+                if self.si_state_machine.phase == SiHashPhase::ChildrenContent =>
+            {
+                self.si_state_machine.input_count = 0;
+            }
             SborEvent::End {
                 type_id: _,
                 nesting_level,
                 ..
             } => self.si_process_end(nesting_level),
-            SborEvent::Len(_) => {
-                if self.si_state_machine.phase == SiHashPhase::SingleBlob {
-                    self.si_state_machine.phase = SiHashPhase::SingleBlobLen
-                }
-                if self.si_state_machine.phase == SiHashPhase::Children {
+            SborEvent::Len(_) => match self.si_state_machine.phase {
+                SiHashPhase::SingleBlob => self.si_state_machine.phase = SiHashPhase::SingleBlobLen,
+                SiHashPhase::ChildrenContent => self.si_state_machine.input_count = 0,
+                SiHashPhase::Children => {
                     self.si_state_machine.phase = SiHashPhase::ChildrenContent;
                     self.si_state_machine.input_count = 0;
                 }
-            }
+                _ => {}
+            },
             _ => {}
         }
     }
@@ -272,6 +277,9 @@ impl<T: Digester> HashCalculator<T> {
             (SiHashPhase::Message, 2) => self.si_state_machine.phase = SiHashPhase::Children,
             (SiHashPhase::ChildrenContent, 2) => {
                 self.si_state_machine.phase = SiHashPhase::Instructions
+            }
+            (SiHashPhase::ChildrenContent, 3) => {
+                self.si_state_machine.input_count = 0;
             }
             (SiHashPhase::Instructions, 2) => {
                 self.si_state_machine.phase = SiHashPhase::DecodingError
@@ -895,5 +903,40 @@ mod tests {
             &SI_CHECKED_CHILDLESS_SUBINTENT,
             &SI_CHECKED_CHILDLESS_SUBINTENT_HASH,
         );
+    }
+
+    #[test]
+    fn test_si_vector_0() {
+        calculate_si_hash_and_compare(&SI_VECTOR_0, &SI_VECTOR_0_HASH);
+    }
+
+    #[test]
+    fn test_si_vector_1() {
+        calculate_si_hash_and_compare(&SI_VECTOR_1, &SI_VECTOR_1_HASH);
+    }
+
+    #[test]
+    fn test_si_vector_2() {
+        calculate_si_hash_and_compare(&SI_VECTOR_2, &SI_VECTOR_2_HASH);
+    }
+
+    #[test]
+    fn test_si_vector_3() {
+        calculate_si_hash_and_compare(&SI_VECTOR_3, &SI_VECTOR_3_HASH);
+    }
+
+    #[test]
+    fn test_si_vector_4() {
+        calculate_si_hash_and_compare(&SI_VECTOR_4, &SI_VECTOR_4_HASH);
+    }
+
+    #[test]
+    fn test_si_vector_5() {
+        calculate_si_hash_and_compare(&SI_VECTOR_5, &SI_VECTOR_5_HASH);
+    }
+
+    #[test]
+    fn test_si_vector_6() {
+        calculate_si_hash_and_compare(&SI_VECTOR_6, &SI_VECTOR_6_HASH);
     }
 }

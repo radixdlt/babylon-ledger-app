@@ -59,7 +59,11 @@
 #![feature(const_mut_refs)]
 #![feature(generic_const_exprs)]
 #![allow(incomplete_features)]
+#![allow(unexpected_cfgs)]
 #![cfg_attr(not(test), no_std)]
+
+extern crate alloc;
+
 pub mod bech32;
 pub mod decoder_error;
 pub mod digest;
