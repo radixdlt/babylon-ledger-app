@@ -135,7 +135,7 @@ impl SborDecoder {
             stack: [State::new(); STACK_DEPTH as usize],
             byte_count: 0,
             head: 0,
-            expect_leading_byte: expect_leading_byte,
+            expect_leading_byte,
             len_acc: 0,
             len_shift: 0,
         }

@@ -11,6 +11,7 @@ use crate::app_error::AppError;
 use crate::command_class::CommandClass;
 use crate::crypto::curves::Curve;
 use crate::settings::Settings;
+use crate::sign::decoding_mode::DecodingMode;
 use crate::sign::instruction_processor::InstructionProcessor;
 use crate::sign::sign_mode::SignMode;
 use crate::sign::sign_outcome::SignOutcome;
@@ -51,7 +52,7 @@ impl<T: Copy> TxState<T> {
         Ok(())
     }
 
-    pub fn sign_preauth_hash_ed25519(
+    pub fn sign_pre_auth_hash_ed25519(
         &mut self,
         comm: &mut Comm,
         class: CommandClass,
@@ -64,7 +65,7 @@ impl<T: Copy> TxState<T> {
         )
     }
 
-    pub fn sign_preauth_hash_secp256k1(
+    pub fn sign_pre_auth_hash_secp256k1(
         &mut self,
         comm: &mut Comm,
         class: CommandClass,
@@ -73,6 +74,32 @@ impl<T: Copy> TxState<T> {
             comm,
             class,
             SignMode::PreAuthHashSecp256k1,
+            TxIntentType::General,
+        )
+    }
+
+    pub fn sign_pre_auth_raw_ed25519(
+        &mut self,
+        comm: &mut Comm,
+        class: CommandClass,
+    ) -> Result<SignOutcome, AppError> {
+        self.process_sign_with_mode(
+            comm,
+            class,
+            SignMode::PreAuthRawEd25519,
+            TxIntentType::General,
+        )
+    }
+
+    pub fn sign_pre_auth_raw_secp256k1(
+        &mut self,
+        comm: &mut Comm,
+        class: CommandClass,
+    ) -> Result<SignOutcome, AppError> {
+        self.process_sign_with_mode(
+            comm,
+            class,
+            SignMode::PreAuthRawSecp256k1,
             TxIntentType::General,
         )
     }
@@ -140,6 +167,7 @@ impl<T: Copy> TxState<T> {
         intent_type: TxIntentType,
     ) -> Result<SignOutcome, AppError> {
         if class == CommandClass::Regular {
+            // Start of the processing
             self.reset();
             self.processor.set_intent_type(intent_type);
             self.processor.process_sign(comm, class, sign_mode)?;
@@ -149,15 +177,15 @@ impl<T: Copy> TxState<T> {
         } else {
             self.processor.process_sign(comm, class, sign_mode)?;
 
-            match sign_mode {
-                SignMode::AuthEd25519 | SignMode::AuthSecp256k1 => {
+            match sign_mode.decoding_mode() {
+                DecodingMode::Auth => {
                     return if class != CommandClass::LastData {
                         Err(AppError::BadAuthSignSequence)
                     } else {
                         self.process_sign_auth(comm, sign_mode)
                     }
                 }
-                SignMode::PreAuthHashEd25519 | SignMode::PreAuthHashSecp256k1 => {
+                DecodingMode::PreAuth => {
                     return if class != CommandClass::LastData {
                         Err(AppError::BadSubintentSignSequence)
                     } else if Settings::get().blind_signing {
@@ -167,15 +195,18 @@ impl<T: Copy> TxState<T> {
                         Err(AppError::BadSubintentSignState)
                     }
                 }
-                SignMode::TxEd25519Verbose
-                | SignMode::TxSecp256k1Verbose
-                | SignMode::TxEd25519Summary
-                | SignMode::TxSecp256k1Summary => self.decode_tx_intent(comm.get_data()?, class)?,
+                DecodingMode::Transaction => self.decode_intent(comm.get_data()?, class)?,
             }
         }
 
         if class == CommandClass::LastData {
-            self.finalize_sign_tx(comm, sign_mode)
+            if sign_mode == SignMode::PreAuthRawEd25519
+                || sign_mode == SignMode::PreAuthRawSecp256k1
+            {
+                self.finalize_sign_si(comm, sign_mode)
+            } else {
+                self.finalize_sign_tx(comm, sign_mode)
+            }
         } else {
             Ok(SignOutcome::SendNextPacket)
         }
@@ -200,7 +231,7 @@ impl<T: Copy> TxState<T> {
 
         let mut nonce_hex = [0u8; AUTH_CHALLENGE_LENGTH * 2];
 
-        Self::to_hex(challenge, &mut nonce_hex);
+        Self::convert_to_hex_text(challenge, &mut nonce_hex);
 
         auth_details::display(address, origin, &nonce_hex);
 
@@ -230,7 +261,7 @@ impl<T: Copy> TxState<T> {
         let digest = Digest(message.try_into().unwrap());
         let mut message_hex = [0u8; SUBINTENT_MESSAGE_LENGTH * 2];
 
-        Self::to_hex(message, &mut message_hex);
+        Self::convert_to_hex_text(message, &mut message_hex);
 
         pre_auth_hash_details::display(&message_hex);
 
@@ -244,7 +275,7 @@ impl<T: Copy> TxState<T> {
         }
     }
 
-    fn to_hex(message: &[u8], message_hex: &mut [u8; 64]) {
+    fn convert_to_hex_text(message: &[u8], message_hex: &mut [u8; 64]) {
         for (i, &byte) in message.iter().enumerate() {
             message_hex[i * 2] = upper_as_hex(byte);
             message_hex[i * 2 + 1] = lower_as_hex(byte);
@@ -260,6 +291,33 @@ impl<T: Copy> TxState<T> {
         self.display_tx_info(sign_mode, &digest)?;
 
         let rc = signature::ask_user(signature::SignType::TX);
+
+        if rc {
+            self.processor
+                .sign_message(comm, sign_mode, digest.as_bytes())
+        } else {
+            Ok(SignOutcome::SigningRejected)
+        }
+    }
+
+    fn finalize_sign_si(
+        &mut self,
+        comm: &mut Comm,
+        sign_mode: SignMode,
+    ) -> Result<SignOutcome, AppError> {
+        let digest = self.processor.finalize()?;
+
+        if !(Settings::get().blind_signing) {
+            return Err(AppError::BadSubintentSignState);
+        }
+
+        let mut message_hex = [0u8; SUBINTENT_MESSAGE_LENGTH * 2];
+
+        Self::convert_to_hex_text(digest.as_bytes(), &mut message_hex);
+
+        pre_auth_hash_details::display(&message_hex);
+
+        let rc = signature::ask_user(signature::SignType::PreAuthHash);
 
         if rc {
             self.processor
@@ -313,11 +371,13 @@ impl<T: Copy> TxState<T> {
             SignMode::AuthEd25519
             | SignMode::AuthSecp256k1
             | SignMode::PreAuthHashEd25519
-            | SignMode::PreAuthHashSecp256k1 => Ok(()),
+            | SignMode::PreAuthHashSecp256k1
+            | SignMode::PreAuthRawEd25519
+            | SignMode::PreAuthRawSecp256k1 => Ok(()),
         }
     }
 
-    fn decode_tx_intent(&mut self, data: &[u8], class: CommandClass) -> Result<(), AppError> {
+    fn decode_intent(&mut self, data: &[u8], class: CommandClass) -> Result<(), AppError> {
         let result = self.call_decoder(data);
 
         match result {

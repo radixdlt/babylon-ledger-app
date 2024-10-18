@@ -11,6 +11,6 @@ pub fn handle<T: Copy>(
     state: &mut TxState<T>,
 ) -> Result<(), AppError> {
     state
-        .sign_preauth_hash_secp256k1(comm, class)
+        .sign_pre_auth_hash_secp256k1(comm, class)
         .and_then(process_sign_outcome)
 }
