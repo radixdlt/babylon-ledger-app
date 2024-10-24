@@ -16,7 +16,7 @@ pub fn handle<T: Copy>(
         .process_sign_with_mode(
             comm,
             class,
-            SignMode::PreAuthHashSecp256k1,
+            SignMode::PreAuthRawSecp256k1,
             TxIntentType::General,
         )
         .and_then(process_sign_outcome)
