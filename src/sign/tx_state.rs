@@ -9,7 +9,6 @@ use sbor::utilities::conversion::{lower_as_hex, upper_as_hex};
 
 use crate::app_error::AppError;
 use crate::command_class::CommandClass;
-use crate::crypto::curves::Curve;
 use crate::settings::Settings;
 use crate::sign::decoding_mode::DecodingMode;
 use crate::sign::instruction_processor::InstructionProcessor;
@@ -50,89 +49,6 @@ impl<T: Copy> TxState<T> {
         comm.append(&Settings::get().as_bytes());
 
         Ok(())
-    }
-
-    pub fn sign_pre_auth_hash_ed25519(
-        &mut self,
-        comm: &mut Comm,
-        class: CommandClass,
-    ) -> Result<SignOutcome, AppError> {
-        self.process_sign_with_mode(
-            comm,
-            class,
-            SignMode::PreAuthHashEd25519,
-            TxIntentType::General,
-        )
-    }
-
-    pub fn sign_pre_auth_hash_secp256k1(
-        &mut self,
-        comm: &mut Comm,
-        class: CommandClass,
-    ) -> Result<SignOutcome, AppError> {
-        self.process_sign_with_mode(
-            comm,
-            class,
-            SignMode::PreAuthHashSecp256k1,
-            TxIntentType::General,
-        )
-    }
-
-    pub fn sign_pre_auth_raw_ed25519(
-        &mut self,
-        comm: &mut Comm,
-        class: CommandClass,
-    ) -> Result<SignOutcome, AppError> {
-        self.process_sign_with_mode(
-            comm,
-            class,
-            SignMode::PreAuthRawEd25519,
-            TxIntentType::General,
-        )
-    }
-
-    pub fn sign_pre_auth_raw_secp256k1(
-        &mut self,
-        comm: &mut Comm,
-        class: CommandClass,
-    ) -> Result<SignOutcome, AppError> {
-        self.process_sign_with_mode(
-            comm,
-            class,
-            SignMode::PreAuthRawSecp256k1,
-            TxIntentType::General,
-        )
-    }
-
-    pub fn sign_auth(
-        &mut self,
-        comm: &mut Comm,
-        class: CommandClass,
-        curve: Curve,
-    ) -> Result<SignOutcome, AppError> {
-        let sign_mode = match curve {
-            Curve::Ed25519 => SignMode::AuthEd25519,
-            Curve::Secp256k1 => SignMode::AuthSecp256k1,
-        };
-        self.process_sign_with_mode(comm, class, sign_mode, TxIntentType::General)
-    }
-
-    pub fn sign_tx(
-        &mut self,
-        comm: &mut Comm,
-        class: CommandClass,
-        curve: Curve,
-    ) -> Result<SignOutcome, AppError> {
-        let settings = Settings::get();
-
-        let sign_mode = match (curve, settings.verbose_mode) {
-            (Curve::Ed25519, true) => SignMode::TxEd25519Verbose,
-            (Curve::Secp256k1, true) => SignMode::TxSecp256k1Verbose,
-            (Curve::Ed25519, false) => SignMode::TxEd25519Summary,
-            (Curve::Secp256k1, false) => SignMode::TxSecp256k1Summary,
-        };
-
-        self.process_sign_with_mode(comm, class, sign_mode, TxIntentType::Transfer)
     }
 
     pub fn process_sign_with_mode(
