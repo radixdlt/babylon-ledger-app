@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use core::result::Result;
 
 use crate::digest::digest::Digest;
@@ -223,7 +225,7 @@ impl<T: Digester> TxHashCalculator<T> {
 }
 
 impl<T: Digester> TxHashCalculator<T> {
-    fn handle_si(&mut self, event: SborEvent) {}
+    fn handle_si(&mut self, _event: SborEvent) {}
 }
 
 // Common part + externally visible API for both transaction and subintent hash calculators
