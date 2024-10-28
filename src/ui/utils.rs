@@ -34,9 +34,6 @@ pub trait TopCenter {
     fn draw_top_center(&self);
 }
 
-pub const DEFAULT_PADDING: usize = 11;
-pub const DEFAULT_ICON_HEIGHT: usize = 14;
-
 impl TopCenter for Icon<'_> {
     fn draw_top_center(&self) {
         Icon {

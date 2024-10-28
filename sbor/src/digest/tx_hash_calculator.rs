@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use core::result::Result;
 
 use crate::digest::digest::Digest;
@@ -31,16 +29,6 @@ enum TxHashPhase {
 #[repr(u8)]
 enum SiHashPhase {
     Start,
-    Header,
-    Blobs,
-    Message,
-    Constraints,
-    Instructions,
-    SingleBlob,
-    SingleBlobLen,
-    SingleBlobData,
-    DecodingError,
-    HashingError,
 }
 
 #[derive(Copy, Clone)]

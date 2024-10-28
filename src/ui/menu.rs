@@ -35,8 +35,6 @@ pub struct Menu<'a, const N: usize> {
     current: usize,
 }
 
-const HALF_ICON_WIDTH: usize = 7;
-
 const ON_TEXT: &str = "\n\nEnabled";
 const OFF_TEXT: &str = "\n\nDisabled";
 

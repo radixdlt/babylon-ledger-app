@@ -9,7 +9,7 @@ pub mod main_menu {
         CERTIFICATE_ICON, COGGLE_ICON, DASHBOARD_X_ICON, PROCESSING_ICON,
     };
     use ledger_device_sdk::ui::gadgets::clear_screen;
-    const APPLICATION: &str = env!("CARGO_PKG_DESCRIPTION");
+    
     const APPLICATION_ABOUT: &str = concat!(
         env!("CARGO_PKG_DESCRIPTION"),
         "\n(c) 2022-23\nRDX Works Ltd."

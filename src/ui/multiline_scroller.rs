@@ -38,14 +38,6 @@ pub const LINE2_Y: usize = (SCREEN_HEIGHT - VERTICAL_SPACING) / 2;
 pub const LINE3_Y: usize = LINE2_Y + VERTICAL_SPACING;
 
 impl<'a> MultilineMessageScroller<'a> {
-    pub fn new(message: &'a str) -> Self {
-        MultilineMessageScroller {
-            message,
-            title: None,
-            show_right_arrow: false,
-        }
-    }
-
     pub fn with_title(title: &'a str, message: &'a str, show_right_arrow: bool) -> Self {
         MultilineMessageScroller {
             message,

@@ -7,7 +7,7 @@ use sbor::digest::digest::{Digest, BLAKE2B_DIGEST_SIZE};
 use sbor::digest::digester::Digester;
 
 use crate::app_error::{to_result, AppError};
-use crate::crypto::types::size_t;
+use crate::crypto::types::SizeT;
 
 #[repr(C, align(4))]
 pub struct Blake2bHasher([u8; Self::WORK_AREA_SIZE]);
@@ -21,7 +21,7 @@ impl Drop for Blake2bHasher {
 }
 
 extern "C" {
-    pub fn cx_hash_init_ex(context: *mut u8, hash_type: cx_md_t, output_size: size_t) -> u32;
+    pub fn cx_hash_init_ex(context: *mut u8, hash_type: cx_md_t, output_size: SizeT) -> u32;
 }
 
 extern "C" {
@@ -69,19 +69,6 @@ impl Blake2bHasher {
         hasher.finalize()
     }
 
-    pub fn for_auth(
-        &mut self,
-        nonce: &[u8],
-        address: &[u8],
-        origin: &[u8],
-    ) -> Result<Digest, AppError> {
-        self.init()?;
-        self.update(nonce)?;
-        self.update(address)?;
-        self.update(origin)?;
-        self.finalize()
-    }
-
     pub fn reset(&mut self) {
         unsafe {
             write_bytes(self, 0, 1);
@@ -95,7 +82,7 @@ impl Blake2bHasher {
             cx_hash_init_ex(
                 self.0.as_mut_ptr(),
                 CX_BLAKE2B,
-                BLAKE2B_DIGEST_SIZE as size_t,
+                BLAKE2B_DIGEST_SIZE as SizeT,
             )
         };
 

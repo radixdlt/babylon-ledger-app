@@ -107,10 +107,6 @@ impl<T: Copy> InstructionProcessor<T> {
         };
     }
 
-    pub fn set_tty(&mut self, tty: TTY<T>) {
-        self.printer.set_tty(tty);
-    }
-
     pub fn reset(&mut self) {
         self.state.reset();
         self.calculator.reset();
