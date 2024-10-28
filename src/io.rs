@@ -1,3 +1,5 @@
+// Suppress warnings about StatusWords variants not being used
+#![allow(dead_code)]
 use core::convert::TryFrom;
 
 #[cfg(target_os = "nanox")]
@@ -15,6 +17,7 @@ use ledger_secure_sdk_sys::*;
 use crate::app_error::AppError;
 use crate::command::Command;
 
+// These codes are from the Ledger SDK, so we ought to support them even if they are not used
 #[derive(Copy, Clone)]
 #[repr(u16)]
 pub enum StatusWords {
@@ -304,10 +307,6 @@ impl Comm {
                 (len, _) => get_data_from_buffer(len, 5),
             }
         }
-    }
-
-    pub fn get(&self, start: usize, end: usize) -> &[u8] {
-        &self.apdu_buffer[start..end]
     }
 
     pub fn append(&mut self, m: &[u8]) {

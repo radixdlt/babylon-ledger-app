@@ -18,7 +18,6 @@ pub enum Command {
     VerifyAddressSecp256k1,
     SignPreAuthHashEd25519,
     SignPreAuthHashSecp256k1,
-    Unknown,
 }
 
 impl TryFrom<ApduHeader> for Command {
