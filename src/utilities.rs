@@ -1,3 +1,5 @@
+// The code in this file is used only for debugging. Under normal circumstances, it is not invoked nor referenced.
+#![allow(dead_code)]
 #[cfg(debug_assertions)]
 use core::str::from_utf8;
 
