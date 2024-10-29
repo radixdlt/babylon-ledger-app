@@ -81,6 +81,8 @@ struct State {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
+// State of the decoder after processing a byte
+// Each state returns the number of bytes processed
 pub enum DecodingOutcome {
     Done(usize),
     NeedMoreData(usize),
@@ -122,10 +124,10 @@ pub trait SborEventHandler {
 #[repr(C, packed)]
 pub struct SborDecoder {
     stack: [State; STACK_DEPTH as usize],
-    byte_count: usize,
-    len_acc: usize,
-    head: u8,
-    len_shift: u8,
+    byte_count: usize, // Number of processed bytes
+    len_acc: usize,    // Encoded length accumulator
+    head: u8,          // Decoding stack head index
+    len_shift: u8,     // Number of bits which need to be shifted in len_acc to get the final value
     expect_leading_byte: bool,
 }
 

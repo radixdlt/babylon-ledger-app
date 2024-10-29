@@ -9,7 +9,6 @@ use crate::ui::multiline_scroller::LINE2_Y;
 use crate::ui::utils::{CenteredText, TopCenter};
 
 pub enum MenuFeature<'a> {
-    Plain,
     Icon(&'a Icon<'a>),
     OnOffState(fn() -> bool),
 }
@@ -35,8 +34,6 @@ pub struct Menu<'a, const N: usize> {
     current: usize,
 }
 
-const HALF_ICON_WIDTH: usize = 7;
-
 const ON_TEXT: &str = "\n\nEnabled";
 const OFF_TEXT: &str = "\n\nDisabled";
 
@@ -51,9 +48,6 @@ impl<'a, const N: usize> Menu<'a, N> {
         let item = &self.items[self.current];
 
         match item.feature {
-            MenuFeature::Plain => {
-                item.text.draw_centered(true);
-            }
             MenuFeature::Icon(icon) => {
                 item.text.place(
                     Location::Custom(LINE2_Y + icon.icon.height as usize / 2),

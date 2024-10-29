@@ -7,11 +7,10 @@ use crate::app_error::{to_result, AppError};
 use crate::crypto::bip32::Bip32Path;
 use crate::crypto::curves::Curve;
 use crate::crypto::key_pair::InternalKeyPair;
-use crate::crypto::types::size_t;
+use crate::crypto::types::SizeT;
 use crate::sign::sign_outcome::SignOutcome;
 
 pub const ED25519_PUBLIC_KEY_LEN: usize = 32;
-pub const ED25519_PRIVATE_KEY_LEN: usize = 32;
 pub const ED25519_SIGNATURE_LEN: usize = 64;
 
 pub struct KeyPair25519 {
@@ -37,9 +36,9 @@ extern "C" {
         pvkey: *const cx_ecfp_private_key_t,
         hashID: cx_md_t,
         hash: *const u8,
-        hash_len: size_t,
+        hash_len: SizeT,
         sig: *mut u8,
-        sig_len: size_t,
+        sig_len: SizeT,
     ) -> cx_err_t;
 }
 
@@ -54,9 +53,9 @@ impl KeyPair25519 {
                 &self.origin.private,
                 CX_SHA512,
                 message.as_ptr(),
-                message.len() as size_t,
+                message.len() as SizeT,
                 comm.work_buffer.as_mut_ptr(),
-                ED25519_SIGNATURE_LEN as size_t,
+                ED25519_SIGNATURE_LEN as SizeT,
             )
         };
 
@@ -102,9 +101,5 @@ impl KeyPair25519 {
         }
 
         pk
-    }
-
-    pub fn private(&self) -> &[u8] {
-        &self.origin.private.d
     }
 }

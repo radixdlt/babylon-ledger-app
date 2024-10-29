@@ -1,6 +1,5 @@
 #![no_std]
 #![no_main]
-#![allow(dead_code)]
 #![feature(result_option_inspect)]
 #![feature(asm_const)]
 #![feature(cfg_version)]

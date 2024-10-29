@@ -91,10 +91,6 @@ impl<T: Copy> InstructionProcessor<T> {
             .set_show_instructions(self.state.sign_mode().shows_instructions());
     }
 
-    pub fn set_tty(&mut self, tty: TTY<T>) {
-        self.printer.set_tty(tty);
-    }
-
     pub fn reset(&mut self) {
         self.state.reset();
         self.calculator.reset();

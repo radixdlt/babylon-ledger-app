@@ -10,7 +10,7 @@ pub fn dispatcher<T: Copy>(
     ins: Command,
     state: &mut TxState<T>,
 ) -> Result<(), AppError> {
-    let class = CommandClass::from_comm(comm)?;
+    let class = core::intrinsics::black_box(CommandClass::from_comm(comm))?;
 
     match ins {
         Command::GetAppVersion => get_app_version::handle(comm),
@@ -31,6 +31,5 @@ pub fn dispatcher<T: Copy>(
         }
         Command::SignPreAuthRawEd25519 => sign_preauth_raw_ed25519::handle(comm, class, state),
         Command::SignPreAuthRawSecp256k1 => sign_preauth_raw_secp256k1::handle(comm, class, state),
-        Command::Unknown => Err(AppError::NotImplemented),
     }
 }
