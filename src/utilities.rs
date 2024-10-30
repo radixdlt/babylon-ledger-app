@@ -53,3 +53,24 @@ pub mod debug {
     }
 }
  */
+
+macro_rules! dbg_print {
+    ($($args:tt)*) => {
+
+        let mut msg = [0u8; 300];
+
+        match format_no_std::show(
+            &mut msg,
+            format_args!($($args)*)
+        ) {
+            Ok(s) => {
+                debug_print(s);
+            }
+            Err(_) => {
+                debug_print("🙅‍♀️ Too long string literal message or args to format sent to macro dbg_print!");
+            }
+        }
+
+    }
+}
+pub(crate) use dbg_print;

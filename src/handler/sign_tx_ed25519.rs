@@ -1,4 +1,6 @@
 use crate::io::Comm;
+use ledger_device_sdk::testing::debug_print;
+
 use sbor::print::tx_intent_type::TxIntentType;
 
 use crate::app_error::AppError;

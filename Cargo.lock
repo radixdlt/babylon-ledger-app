@@ -34,6 +34,7 @@ name = "babylon-ledger-app"
 version = "0.7.29"
 dependencies = [
  "blake2",
+ "format_no_std",
  "include_gif",
  "ledger_device_sdk",
  "ledger_secure_sdk_sys",
@@ -294,6 +295,12 @@ checksum = "da0e4dd2a88388a1f4ccc7c9ce104604dab68d9f408dc34cd45823d5a9069095"
 dependencies = [
  "spin",
 ]
+
+[[package]]
+name = "format_no_std"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9ae45e32b0bfe2c62c805f8e87027b5aa08562000326edbc5b421ab6d92873a7"
 
 [[package]]
 name = "generic-array"
