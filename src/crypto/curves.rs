@@ -16,7 +16,7 @@ use crate::crypto::ed25519::KeyPair25519;
 use crate::crypto::hash::Blake2bHasher;
 use crate::crypto::key_pair::InternalKeyPair;
 use crate::crypto::secp256k1::KeyPairSecp256k1;
-use crate::crypto::types::size_t;
+use crate::crypto::types::SizeT;
 
 pub const INTERNAL_SEED_SIZE: usize = 32;
 
@@ -41,14 +41,14 @@ extern "C" {
     fn cx_ecfp_init_public_key_no_throw(
         curve: cx_curve_t,
         raw_key: *const u8,
-        key_len: size_t,
+        key_len: SizeT,
         key: *mut cx_ecfp_public_key_t,
     ) -> cx_err_t;
 
     fn cx_ecfp_init_private_key_no_throw(
         curve: cx_curve_t,
         raw_key: *const u8,
-        key_len: size_t,
+        key_len: SizeT,
         private_key: *mut cx_ecfp_private_key_t,
     ) -> cx_err_t;
 
@@ -142,7 +142,7 @@ impl Curve {
             cx_ecfp_init_private_key_no_throw(
                 *self as cx_curve_t,
                 &seed.0 as *const u8,
-                seed.0.len() as size_t,
+                seed.0.len() as SizeT,
                 &mut priv_key,
             )
         };

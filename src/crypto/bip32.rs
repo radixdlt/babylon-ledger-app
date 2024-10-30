@@ -17,14 +17,10 @@ const BIP32_ENTITY_INDEX_INDEX: usize = 5;
 const OLYMPIA_REQUIRED_LEN: u8 = 5;
 const OLYMPIA_LEAD_WORD_INDEX: usize = 0;
 const OLYMPIA_COIN_TYPE_INDEX: usize = 1;
-const OLYMPIA_ELEMENT1_INDEX: usize = 3;
-const OLYMPIA_ELEMENT2_INDEX: usize = 4;
-const OLYMPIA_ELEMENT3_INDEX: usize = 5;
 
 const BIP32_HARDENED: u32 = 0x80000000u32;
 const BIP32_LEAD_WORD: u32 = 44u32 | BIP32_HARDENED; // 0
 const BIP32_COIN_TYPE: u32 = 1022u32 | BIP32_HARDENED; // 1
-const BIP32_MAX_NETWORK_ID: u32 = 255u32; // 2
 const BIP32_ENTITY_ACCOUNT: u32 = 525u32 | BIP32_HARDENED; // 3
 const BIP32_ENTITY_IDENTITY: u32 = 618u32 | BIP32_HARDENED; // 3
 
@@ -241,21 +237,6 @@ impl Bip32Path {
             path: [0u32; MAX_BIP32_PATH_LEN],
             len,
         }
-    }
-
-    pub const fn for_path(some_path: &[u32]) -> Self {
-        let mut path = Bip32Path {
-            len: some_path.len() as u8,
-            path: [0; MAX_BIP32_PATH_LEN],
-        };
-
-        let mut i = 0;
-
-        while i < some_path.len() {
-            path.path[i] = some_path[i];
-            i += 1;
-        }
-        path
     }
 
     pub fn network_id(&self) -> Result<NetworkId, AppError> {

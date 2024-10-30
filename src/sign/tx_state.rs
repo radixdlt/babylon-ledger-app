@@ -19,8 +19,6 @@ use crate::xui::{
 };
 
 const AUTH_CHALLENGE_LENGTH: usize = 32;
-const AUTH_DAPP_ADDRESS_LENGTH: usize = 70;
-const AUTH_ORIGIN_LENGTH: usize = 150;
 const AUTH_MIN_DAPP_ADDRESS_LENGTH: usize = 2; // 1 byte length + 1 byte address
 const AUTH_MIN_ORIGIN_LENGTH: usize = 10; // 1 byte length + "https://a"
 const AUTH_MIN_VALID_LENGTH: usize =

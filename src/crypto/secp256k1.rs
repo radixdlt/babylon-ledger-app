@@ -10,7 +10,7 @@ use crate::app_error::{to_result, AppError};
 use crate::crypto::bip32::Bip32Path;
 use crate::crypto::curves::Curve;
 use crate::crypto::key_pair::InternalKeyPair;
-use crate::crypto::types::size_t;
+use crate::crypto::types::SizeT;
 use crate::sign::sign_outcome::SignOutcome;
 
 const PUB_KEY_TYPE_UNCOMPRESSED: u8 = 0x04;
@@ -18,12 +18,10 @@ const PUB_KEY_TYPE_COMPRESSED_Y_EVEN: u8 = 0x02;
 const PUB_KEY_TYPE_COMPRESSED_Y_ODD: u8 = 0x03;
 const PUB_KEY_UNCOMPRESSED_LEN: usize = 65;
 const PUB_KEY_COMPRESSED_LEN: usize = 33;
-const PRIV_KEY_LEN: usize = 32;
 const PUB_KEY_X_COORDINATE_SIZE: usize = 32;
 const PUB_KEY_UNCOMPRESSED_LAST_BYTE: usize = 64;
 const DER_MAX_LEN: usize = 72;
 const MAX_DER_OFFSET: usize = DER_MAX_LEN - 32;
-pub const SECP256K1_SIGNATURE_LEN: usize = 65;
 pub const SECP256K1_PUBLIC_KEY_LEN: usize = PUB_KEY_COMPRESSED_LEN;
 
 pub struct KeyPairSecp256k1 {
@@ -62,9 +60,9 @@ extern "C" {
         mode: u32,
         hashID: cx_md_t,
         hash: *const u8,
-        hash_len: size_t,
+        hash_len: SizeT,
         sig: *mut u8,
-        sig_len: *mut size_t,
+        sig_len: *mut SizeT,
         info: *mut u32,
     ) -> cx_err_t;
 }
@@ -80,17 +78,17 @@ impl KeyPairSecp256k1 {
     pub fn sign(&self, comm: &mut Comm, message: &[u8]) -> Result<SignOutcome, AppError> {
         unsafe {
             let mut info: u32 = 0;
-            let mut len: size_t = DER_MAX_LEN as size_t;
+            let mut len: SizeT = DER_MAX_LEN as SizeT;
 
             let rc = cx_ecdsa_sign_no_throw(
                 &self.origin.private,
                 CX_RND_TRNG | CX_LAST,
                 CX_NONE,
                 message.as_ptr(),
-                message.len() as size_t,
+                message.len() as SizeT,
                 comm.work_buffer.as_mut_ptr(),
-                &mut len as *mut size_t,
-                &mut info as *mut size_t,
+                &mut len as *mut SizeT,
+                &mut info as *mut SizeT,
             );
 
             to_result(rc)?;
@@ -155,9 +153,5 @@ impl KeyPairSecp256k1 {
         pk[1..].copy_from_slice(&self.origin.public.W[1..1 + PUB_KEY_X_COORDINATE_SIZE]);
 
         pk
-    }
-
-    pub fn private(&self) -> &[u8] {
-        &self.origin.private.d
     }
 }

@@ -33,14 +33,9 @@ pub enum AppError {
 
     BadTxSignSequence = 0x6e31,
     BadTxSignLen = 0x6e32,
-    BadTxSignInitialState = 0x6e33,
-    BadTxSignStart = 0x6e34,
     BadTxSignType = 0x6e35,
-    BadTxSignDigestState = 0x6e36,
-    BadTxSignRequestedState = 0x6e37,
     BadTxSignHashSignState = 0x6e38, // Hash signing is disabled
 
-    BadTxSignDecoderErrorInvalidInput = 0x6e41,
     BadTxSignDecoderErrorInvalidLen = 0x6e42,
     BadTxSignDecoderErrorInvalidState = 0x6e43,
     BadTxSignDecoderErrorStackOverflow = 0x6e44,

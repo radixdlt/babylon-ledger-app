@@ -15,8 +15,6 @@ pub struct MultipageValidator<'a> {
     cancel: &'a [&'a str],
 }
 
-const HALF_ICON_WIDTH: usize = 7;
-
 impl<'a> MultipageValidator<'a> {
     pub const fn new(
         message: &'a [&'a str],

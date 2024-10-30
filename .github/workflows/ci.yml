@@ -46,3 +46,5 @@ jobs:
           rm -rf .cargo
           cd sbor
           cargo test
+          cd ../simple-bigint
+          cargo test
