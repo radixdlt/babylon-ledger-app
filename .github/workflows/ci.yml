@@ -35,12 +35,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install toolchains
-        uses: actions-rs/toolchain@v1
+        uses: RDXWorks-actions/toolchain@master
         with:
           toolchain: nightly-2023-05-28
           override: true
           components: rust-src
-      - uses: actions/checkout@v2
+      - uses: RDXWorks-actions/checkout@main
       - name: Unit tests
         run: |
           rm -rf .cargo
