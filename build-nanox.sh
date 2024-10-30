@@ -1,2 +1,2 @@
 #!/bin/sh
-cargo ledger build nanox
+./`dirname $0`/build.sh nanox

@@ -1,3 +1,2 @@
 #!/bin/sh
-cargo ledger build nanosplus
-
+./`dirname $0`/build.sh nanosplus
