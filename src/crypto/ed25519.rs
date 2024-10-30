@@ -73,7 +73,7 @@ impl KeyPair25519 {
             0x00
         };
 
-        for i in 0..32 {
+        for i in 0..ED25519_PUBLIC_KEY_LEN {
             if i == 31 {
                 comm.append(&[self.origin.public.W[64 - i] ^ flip_bit]);
             } else {
@@ -91,7 +91,7 @@ impl KeyPair25519 {
     pub fn public_bytes(&self) -> [u8; ED25519_PUBLIC_KEY_LEN] {
         let mut pk = [0u8; ED25519_PUBLIC_KEY_LEN];
 
-        for (i, _) in pk.iter().enumerate() {
+        for i in 0..pk.len() {
             pk[i] = self.origin.public.W[64 - i];
         }
 
