@@ -55,6 +55,8 @@ def sign_tx_secp256k1(firmware, backend, navigator, click_count, file_name, test
     except Exception as e:
         if click_count == 0:
             return
+        print("Communication error ", e)
+        raise
 
     r = int.from_bytes(rc[1:33], byteorder='big', signed=False)
     s = int.from_bytes(rc[33:65], byteorder='big', signed=False)
@@ -67,6 +69,7 @@ def sign_tx_secp256k1(firmware, backend, navigator, click_count, file_name, test
         assert rc[98:130].hex() == vector[0], "Invalid calculated hash\nExpected: " + vector[0] + "\nReceived: " + rc[98:130].hex()
     except Exception as e:
         print("Invalid signature ", e)
+        raise 
 
 
 def test_sign_tx_secp256k1_call_function(firmware, backend, navigator, test_name):

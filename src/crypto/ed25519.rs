@@ -91,12 +91,9 @@ impl KeyPair25519 {
     pub fn public_bytes(&self) -> [u8; ED25519_PUBLIC_KEY_LEN] {
         let mut pk = [0u8; ED25519_PUBLIC_KEY_LEN];
 
-        self.origin.public.W[33..65]
-            .iter()
-            .enumerate()
-            .for_each(|(i, &v)| {
-                pk[31 - i] = v;
-            });
+        (0..ED25519_PUBLIC_KEY_LEN).for_each(|i| {
+            pk[i] = self.origin.public.W[64 - i];
+        });
 
         if self.origin.public.W[32] & 1u8 == 1 {
             pk[31] |= 0x80;

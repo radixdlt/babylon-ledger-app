@@ -10,7 +10,6 @@ INS = 0x41
 DATA_PATH = str(Path(__file__).parent.joinpath("data").absolute()) + "/"
 ROOT_SCREENSHOT_PATH = Path(__file__).parent.resolve()
 
-
 def read_file(file):
     with open(DATA_PATH + file, "rb") as f:
         return f.read()
@@ -53,12 +52,15 @@ def sign_tx_ed25519(firmware, backend, navigator, click_count, file_name, test_n
     except Exception as e:
         if click_count == 0:
             return
+        print("Communication error ", e)
+        raise 
 
     pubkey = ed25519.Ed25519PublicKey.from_public_bytes(bytes(rc[64:96]))
     try:
         pubkey.verify(bytes(rc[0:64]), bytes(rc[96:128]))
     except Exception as e:
         print("Invalid signature ", e)
+        raise 
 
 
 def test_sign_tx_ed25519_call_function(firmware, backend, navigator, test_name):
