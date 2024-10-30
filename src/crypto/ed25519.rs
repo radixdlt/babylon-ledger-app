@@ -73,7 +73,14 @@ impl KeyPair25519 {
             0x00
         };
 
-        for i in 0..32 {
+        // for i in 0..32 {
+        //     if i == 31 {
+        //         comm.append(&[self.origin.public.W[64 - i] ^ flip_bit]);
+        //     } else {
+        //         comm.append(&[self.origin.public.W[64 - i]]);
+        //     }
+        // }
+        for (i, _) in self.origin.public.W.iter().enumerate() {
             if i == 31 {
                 comm.append(&[self.origin.public.W[64 - i] ^ flip_bit]);
             } else {
