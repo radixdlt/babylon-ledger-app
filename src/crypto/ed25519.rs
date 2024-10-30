@@ -88,7 +88,6 @@ impl KeyPair25519 {
     // To build compressed version of the public key we need to do following:
     // 1. Reverse the order of the bytes (we need only Y coordinate and in opposite byte order)
     // 2. Flip bit in the last byte, depending on the flag which is attached to X coordinate.
-    #[allow(clippy::needless_range_loop)]
     pub fn public_bytes(&self) -> [u8; ED25519_PUBLIC_KEY_LEN] {
         let mut pk = [0u8; ED25519_PUBLIC_KEY_LEN];
 
