@@ -2,8 +2,8 @@ name: BabylonLedgerApp
 
 on:
   push:
-    branches:
-      master
+    # branches:
+    #   master
   pull_request:
   workflow_dispatch:
     inputs:
@@ -35,12 +35,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install toolchains
-        uses: RDXWorks-actions/toolchain@master
+        uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly-2023-05-28
           override: true
           components: rust-src
-      - uses: RDXWorks-actions/checkout@main
+      - uses: actions/checkout@v2
       - name: Unit tests
         run: |
           rm -rf .cargo
