@@ -19,14 +19,14 @@ The code in this branch contains following changes:
 
 ## Build
 
-Simplest way to build app is to use [application builder container](https://github.com/LedgerHQ/ledger-app-builder) provided by Ledger. 
+Simplest way to build app is to use [application builder container](https://github.com/LedgerHQ/ledger-app-builder) shell provided by Ledger. 
 In particular, most convenient variant is the one which enables testing along with the building.
 For convenience, one can use script provided in the project root directory:
 
 ```shell
 run-dev-tools.sh
 ```
-Once container is running, use following commands to build and tests the application:
+Once the container shell is running, use following commands to build and tests the application:
 
 Build for Nano S:
 ```shell
@@ -62,12 +62,58 @@ For Nano X:
 ./test-nanox.sh
 ```
 
+## Sideloading
+> [!IMPORTANT]
+> Sideloading does not work on Ledger Nano X
+
+> [!IMPORTANT]
+> Sideload **not** from *shell* (you can run `exit` to get out from `./run-dev-tools.sh`), but rather from *host*.
+
+You can install the locally built binaries onto your physical Ledger Nano S, or Nano S Plus by running a flash script from *host*, not from *shell*. Note that Nano X does not support this.
+
+But before doing so you must install the prerequisites on your host. This requires Python3.
+
+```sh
+python3 -m pip config set global.break-system-packages true && pip3 install protobuf==3.20.3 && pip3 install ledgerwallet==0.5.1
+```
+
+> [!NOTE]
+> I did not manage to get it working using `venv`. But when I used `global.break-system-packages true` it worked.
+> Verified to work with Secure Elements firmware version `1.1.2` on Nano S Plus.
+
+If you get hit by the notorious [Invalid status 6512 (Unknown Reason)](https://github.com/LedgerHQ/ledgerctl/issues/65) error, then you might need to try a newer version of [`ledgerwallet`](https://github.com/LedgerHQ/ledgerctl/releases) and or newer firmware.
+
+Then you can finally sideload the built binary, like so:
+
+```sh
+./flash-nanosplus.sh
+```
+
+or alternatively for Nano S
+
+```sh
+./flash-nanos.sh
+```
+
+
+If you see seomthing like:
+```sh
+Dumping APDU installation file to /Users/alexandercyon/Developer/babylon-ledger-app/target/nanosplus/release/babylon-ledger-app.apdu
+[WARNING] JSON files will be deprecated in future version
+[WARNING] JSON files will be deprecated in future version
+```
+then you probably have succeeded.
+
+> [!NOTE]
+> Flashing of Nano S Plus seemed harded than Nano S. So if you start with Nano S, there are no guarantuees that it will work with Nano S Plus.
+
 ## Local Build Environment Setup
 
 This type of setup in details described [here](https://github.com/LedgerHQ/app-boilerplate-rust).
 
 ## Development Device Setup (Nano S)
 
+> [!CAUTION]
 > ☣️ ONLY Use a dedicated Ledger device for development. Don't use one with "funds on".
 
 The device used for development is configured with specific seed phrase, so generated keys could be predicted.
@@ -87,6 +133,7 @@ In order to reset device to factory defaults, follow steps below:
 
 #### Enter Recovery Mode
 
+> [!NOTE]
 > ⚠️ Recovery mode could be entered only if device is brand new or after hardware reset. If device fails to enter
 > recovery mode (shows PIN entry screen shortly after `Recovery``message), then device must be reset to factory settings.️
 
