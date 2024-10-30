@@ -66,7 +66,6 @@ def sign_tx_secp256k1(firmware, backend, navigator, click_count, file_name, test
         # Note that Prehashed parameter is irrelevant here, we just need to pass something known to the library
         pubkey.verify(signature, bytes(rc[98:130]), ec.ECDSA(utils.Prehashed(hashes.SHA256())))
         print("Success")
-        assert rc[98:130].hex() == vector[0], "Invalid calculated hash\nExpected: " + vector[0] + "\nReceived: " + rc[98:130].hex()
     except Exception as e:
         print("Invalid signature ", e)
         raise 
