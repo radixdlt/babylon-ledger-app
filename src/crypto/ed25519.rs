@@ -73,7 +73,7 @@ impl KeyPair25519 {
             0x00
         };
 
-        for i in 0..32 {
+        for i in 0..ED25519_PUBLIC_KEY_LEN {
             if i == 31 {
                 comm.append(&[self.origin.public.W[64 - i] ^ flip_bit]);
             } else {
@@ -88,13 +88,12 @@ impl KeyPair25519 {
     // To build compressed version of the public key we need to do following:
     // 1. Reverse the order of the bytes (we need only Y coordinate and in opposite byte order)
     // 2. Flip bit in the last byte, depending on the flag which is attached to X coordinate.
-    #[allow(clippy::needless_range_loop)]
     pub fn public_bytes(&self) -> [u8; ED25519_PUBLIC_KEY_LEN] {
         let mut pk = [0u8; ED25519_PUBLIC_KEY_LEN];
 
-        for i in 0..32 {
+        (0..ED25519_PUBLIC_KEY_LEN).for_each(|i| {
             pk[i] = self.origin.public.W[64 - i];
-        }
+        });
 
         if self.origin.public.W[32] & 1u8 == 1 {
             pk[31] |= 0x80;

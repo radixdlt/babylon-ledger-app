@@ -1,47 +1,37 @@
-// The code in this file is used only for debugging. Under normal circumstances, it is not invoked nor referenced.
-#![allow(dead_code)]
-#[cfg(debug_assertions)]
-use core::str::from_utf8;
-
-#[cfg(debug_assertions)]
-use ledger_device_sdk::testing::debug_print;
-#[cfg(debug_assertions)]
-use sbor::utilities::conversion::{to_hex_str, to_str};
-
 pub mod version;
 
-#[cfg(debug_assertions)]
-pub fn debug_u32(value: u32) {
-    debug_prepared_message(&to_str(value));
-}
+// Useful helper function which prints current stack position.
+// When necessary, uncomment code below and make module sbor::print::primitives public to make code compile
 
-#[cfg(debug_assertions)]
-pub fn debug_u32_hex(value: u32) {
-    debug_prepared_message(&to_hex_str(value));
-}
-
-#[cfg(debug_assertions)]
-pub fn debug_prepared_message(message: &[u8]) {
-    debug_print(from_utf8(message).unwrap());
-    debug_print("\n");
-}
-
-#[cfg(debug_assertions)]
-pub fn debug_print_byte(byte: u8) {
-    let mut buffer = [0u8; 1];
-    buffer[0] = byte;
-    debug_print(from_utf8(&buffer).unwrap());
-}
 /*
-// Useful helper function which prints current stack position
-// requires making module sbor::print::primitives public
-
 #[cfg(debug_assertions)]
 pub mod debug {
     use core::str::from_utf8;
-    use nanos_ui::ui::clear_screen;
+    use ledger_device_sdk::testing::debug_print;
+    use ledger_device_sdk::ui::gadgets::clear_screen;
     use sbor::static_vec::StaticVec;
+    use sbor::utilities::conversion::{to_hex_str, to_str};
+
     use crate::ui::single_message::SingleMessage;
+
+    pub fn debug_u32(value: u32) {
+        debug_prepared_message(&to_str(value));
+    }
+
+    pub fn debug_u32_hex(value: u32) {
+        debug_prepared_message(&to_hex_str(value));
+    }
+
+    pub fn debug_prepared_message(message: &[u8]) {
+        debug_print(from_utf8(message).unwrap());
+        debug_print("\n");
+    }
+
+    pub fn debug_print_byte(byte: u8) {
+        let mut buffer = [0u8; 1];
+        buffer[0] = byte;
+        debug_print(from_utf8(&buffer).unwrap());
+    }
 
     pub fn display_memory(lead_byte: u8) {
         clear_screen();
@@ -52,4 +42,4 @@ pub mod debug {
         SingleMessage::new(from_utf8(number.as_slice()).unwrap()).show_and_wait();
     }
 }
- */
+*/
