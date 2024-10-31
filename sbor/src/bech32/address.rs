@@ -4,6 +4,8 @@ use crate::bech32::network::NetworkId;
 use crate::math::StaticVec;
 use crate::type_info::ADDRESS_STATIC_LEN;
 
+/// Reusable storage for various types of addresses. All addresses share same length.
+/// For convenience in use with stream decoders, additional boolean flag is maintained. 
 #[derive(Copy, Clone, Debug)]
 pub struct Address {
     address: [u8; ADDRESS_STATIC_LEN as usize],

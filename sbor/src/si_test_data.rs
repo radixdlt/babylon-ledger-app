@@ -1,3 +1,5 @@
+/// Subintent test vectors
+
 #[cfg(test)]
 pub mod tests {
     pub const SI_CHECKED_CHILDLESS_SUBINTENT: [u8; 105] = [

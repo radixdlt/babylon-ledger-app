@@ -96,17 +96,14 @@ impl<T: Copy> TxState<T> {
                     return if class != CommandClass::LastData {
                         Err(AppError::BadAuthSignSequence)
                     } else {
-                        self.process_sign_auth(comm, sign_mode)
+                        self.finalize_sign_auth(comm, sign_mode)
                     }
                 }
                 DecodingMode::PreAuth => {
                     return if class != CommandClass::LastData {
                         Err(AppError::BadSubintentSignSequence)
-                    } else if Settings::get().blind_signing {
-                        self.process_sign_pre_auth_hash(comm, sign_mode)
                     } else {
-                        hash::error();
-                        Err(AppError::BadSubintentSignState)
+                        self.finalize_sign_si_hash(comm, sign_mode)
                     }
                 }
                 DecodingMode::Transaction => self.decode_intent(comm.get_data()?, class)?,
@@ -117,7 +114,7 @@ impl<T: Copy> TxState<T> {
             if sign_mode == SignMode::PreAuthRawEd25519
                 || sign_mode == SignMode::PreAuthRawSecp256k1
             {
-                self.finalize_sign_si(comm, sign_mode)
+                self.finalize_sign_raw_si(comm, sign_mode)
             } else {
                 self.finalize_sign_tx(comm, sign_mode)
             }
@@ -126,7 +123,7 @@ impl<T: Copy> TxState<T> {
         }
     }
 
-    fn process_sign_auth(
+    fn finalize_sign_auth(
         &mut self,
         comm: &mut Comm,
         sign_mode: SignMode,
@@ -160,35 +157,6 @@ impl<T: Copy> TxState<T> {
         }
     }
 
-    fn process_sign_pre_auth_hash(
-        &mut self,
-        comm: &mut Comm,
-        sign_mode: SignMode,
-    ) -> Result<SignOutcome, AppError> {
-        let message = comm.get_data()?;
-
-        if message.len() != SUBINTENT_MESSAGE_LENGTH {
-            return Err(AppError::BadSubintentSignRequest);
-        }
-
-        // The length is already checked above
-        let digest = Digest(message.try_into().unwrap());
-        let mut message_hex = [0u8; SUBINTENT_MESSAGE_LENGTH * 2];
-
-        Self::convert_to_hex_text(message, &mut message_hex);
-
-        pre_auth_hash_details::display(&message_hex);
-
-        let rc = signature::ask_user(signature::SignType::PreAuthHash);
-
-        if rc {
-            self.processor
-                .sign_message(comm, sign_mode, digest.as_bytes())
-        } else {
-            Ok(SignOutcome::SigningRejected)
-        }
-    }
-
     fn convert_to_hex_text(message: &[u8], message_hex: &mut [u8; 64]) {
         for (i, &byte) in message.iter().enumerate() {
             message_hex[i * 2] = upper_as_hex(byte);
@@ -214,7 +182,27 @@ impl<T: Copy> TxState<T> {
         }
     }
 
-    fn finalize_sign_si(
+    fn finalize_sign_si_hash(
+        &mut self,
+        comm: &mut Comm,
+        sign_mode: SignMode,
+    ) -> Result<SignOutcome, AppError> {
+        if !(Settings::get().blind_signing) {
+            return Err(AppError::BadSubintentSignState);
+        }
+
+        let message = comm.get_data()?;
+
+        if message.len() != SUBINTENT_MESSAGE_LENGTH {
+            return Err(AppError::BadSubintentSignRequest);
+        }
+
+        // The length is already checked above
+        let digest = Digest(message.try_into().unwrap());
+        self.finalize_sign_si(comm, sign_mode, message, &digest)
+    }
+
+    fn finalize_sign_raw_si(
         &mut self,
         comm: &mut Comm,
         sign_mode: SignMode,
@@ -224,10 +212,19 @@ impl<T: Copy> TxState<T> {
         if !(Settings::get().blind_signing) {
             return Err(AppError::BadSubintentSignState);
         }
-
+        
+        self.finalize_sign_si(comm, sign_mode, digest.as_bytes(), &digest)
+    }
+    
+    fn finalize_sign_si(
+        &mut self,
+        comm: &mut Comm,
+        sign_mode: SignMode,
+        message: &[u8],
+        digest: &Digest
+    ) -> Result<SignOutcome, AppError> {
         let mut message_hex = [0u8; SUBINTENT_MESSAGE_LENGTH * 2];
-
-        Self::convert_to_hex_text(digest.as_bytes(), &mut message_hex);
+        Self::convert_to_hex_text(message, &mut message_hex);
 
         pre_auth_hash_details::display(&message_hex);
 

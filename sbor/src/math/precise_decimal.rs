@@ -6,6 +6,7 @@ use crate::static_vec::StaticVec;
 #[derive(Copy, Clone)]
 pub struct PreciseDecimal(BigInt<256>);
 
+/// Ledger app-specific counterpart of the Scrypto PreciseDecimal type
 impl PreciseDecimal {
     pub const SIZE_IN_BYTES: usize = BigInt::<256>::NUM_BYTES;
     pub const SCALE: usize = 36;

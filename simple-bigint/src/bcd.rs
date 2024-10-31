@@ -1,11 +1,11 @@
 use crate::ceil_div;
 
-// Implementation of the simple BCD convertor/accumulator
-// Algorithm is a quite straightforward implementation of the double-dabble algorithm.
-// https://en.wikipedia.org/wiki/Double_dabble
+/// Implementation of the simple BCD convertor/accumulator
+/// Algorithm is a quite straightforward implementation of the double-dabble algorithm.
+/// https://en.wikipedia.org/wiki/Double_dabble
 
-// N - corresponds to number of bits of the equivalent binary representation
-// Actual storage is 4/3 of the N because BCD representation is less dense than binary.
+/// N - corresponds to number of bits of the equivalent binary representation
+/// Actual storage is 4/3 of the N because BCD representation is less dense than binary.
 #[derive(Copy, Clone)]
 pub struct BCD<const N: usize>
 where
