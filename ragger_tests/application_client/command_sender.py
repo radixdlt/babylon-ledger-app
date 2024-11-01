@@ -9,8 +9,10 @@ from application_client.curve import C
 
 MAX_APDU_LEN: int = 255
 
-CLA: int = 0xAA
-CLA2: int = 0xAC
+class CommandContination(IntEnum):
+    Init        = 0xAA
+    Continue    = 0xAB
+    Finalize    = 0xAC
 
 class P1(IntEnum):
     # Parameter 1 for first APDU number.
@@ -30,7 +32,7 @@ class CommandSender:
         p1: P1 = P1.START, 
         p2: P2 = P2.LAST, 
         data: bytes = b"",
-        cla: int = CLA
+        cla: CommandContination = CommandContination.Init
     ) -> RAPDU:
         print(f"🛰️ sending data (exchange): {data.hex()}")
         rc = self.backend.exchange(cla=cla, ins=ins, p1=p1, p2=p2, data=data)
@@ -46,7 +48,7 @@ class CommandSender:
         p1: P1 = P1.START, 
         p2: P2 = P2.LAST, 
         data: bytes = b"",
-        cla: int = CLA
+        cla: CommandContination = CommandContination.Init
     ) -> Generator[None, None, None]:
         print(f"🛰️ sending data (exchange_async): {data.hex()}")
         with self.backend.exchange_async(cla=cla, ins=ins, p1=p1, p2=p2, data=data):
@@ -75,6 +77,11 @@ class CommandSender:
     def get_device_model(self) -> RAPDU:
         return self._send_ins(
             ins=InsType.GET_DEVICE_MODEL,
+        )
+    
+    def get_app_settings(self) -> RAPDU:
+        return self._send_ins(
+            ins=InsType.GET_APP_SETTINGS,
         )
     
     def get_public_key(
@@ -117,15 +124,14 @@ class CommandSender:
             pass            
 
     @contextmanager
-    def send_sign_auth(
+    def send_sign_generic(
         self, 
-        curve: C,
+        ins: InsType,
         navigate_path: Callable[[], None],
         navigate_sign: Callable[[], None],
         path: str, 
-        rola_challenge: bytes
+        payload: bytes
     ):
-        ins = curve.ins_sign_rola()
         self._send_derivation_path(
             navigate=navigate_path,
             ins=ins,
@@ -133,12 +139,25 @@ class CommandSender:
         )
         
         self.backend._last_async_response = None
+        num_chunks = len(payload) // 255 + 1
+        print(f"🛰️ sending {num_chunks} chunks")
 
-        with self._async_send_ins(
-            navigate=navigate_sign, 
-            ins=ins, 
-            data=rola_challenge,
-            cla=CLA2 # Continuation
-        ):
-            yield self.get_optional_async_response()
+        for i in range(num_chunks):
+            chunk = payload[i * 255:(i + 1) * 255]
+            is_last = i == num_chunks - 1
+
+            if not is_last:
+                self._send_ins(
+                    ins=ins,
+                    data=chunk,
+                    cla=CommandContination.Continue
+                )
+            else:
+                with self._async_send_ins(
+                    navigate=navigate_sign, 
+                    ins=ins, 
+                    data=chunk,
+                    cla=CommandContination.Finalize
+                ):
+                    yield self.get_optional_async_response()
       

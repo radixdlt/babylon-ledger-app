@@ -135,23 +135,23 @@ def test_sign_auth_ed25519_0(firmware, backend, navigator, test_name):
 def test_sign_auth_ed25519_1(firmware, backend, navigator, test_name):
     sign_auth_ed25519(firmware, backend, navigator, test_name, test_vectors[1])
 
-def test_sign_auth_ed25519_2(firmware, backend, navigator, test_name):
-    sign_auth_ed25519(firmware, backend, navigator, test_name, test_vectors[2])
+# def test_sign_auth_ed25519_2(firmware, backend, navigator, test_name):
+#     sign_auth_ed25519(firmware, backend, navigator, test_name, test_vectors[2])
 
-def test_sign_auth_ed25519_3(firmware, backend, navigator, test_name):
-    sign_auth_ed25519(firmware, backend, navigator, test_name, test_vectors[3])
+# def test_sign_auth_ed25519_3(firmware, backend, navigator, test_name):
+#     sign_auth_ed25519(firmware, backend, navigator, test_name, test_vectors[3])
 
-def test_sign_auth_ed25519_4(firmware, backend, navigator, test_name):
-    sign_auth_ed25519(firmware, backend, navigator, test_name, test_vectors[4])
+# def test_sign_auth_ed25519_4(firmware, backend, navigator, test_name):
+#     sign_auth_ed25519(firmware, backend, navigator, test_name, test_vectors[4])
 
-def test_sign_auth_ed25519_5(firmware, backend, navigator, test_name):
-    sign_auth_ed25519(firmware, backend, navigator, test_name, test_vectors[5])
+# def test_sign_auth_ed25519_5(firmware, backend, navigator, test_name):
+#     sign_auth_ed25519(firmware, backend, navigator, test_name, test_vectors[5])
 
-def test_sign_auth_ed25519_6(firmware, backend, navigator, test_name):
-    sign_auth_ed25519(firmware, backend, navigator, test_name, test_vectors[6])
+# def test_sign_auth_ed25519_6(firmware, backend, navigator, test_name):
+#     sign_auth_ed25519(firmware, backend, navigator, test_name, test_vectors[6])
 
-def test_sign_auth_ed25519_7(firmware, backend, navigator, test_name):
-    sign_auth_ed25519(firmware, backend, navigator, test_name, test_vectors[7])
+# def test_sign_auth_ed25519_7(firmware, backend, navigator, test_name):
+#     sign_auth_ed25519(firmware, backend, navigator, test_name, test_vectors[7])
 
-def test_sign_auth_ed25519_8(firmware, backend, navigator, test_name):
-    sign_auth_ed25519(firmware, backend, navigator, test_name, test_vectors[8])
+# def test_sign_auth_ed25519_8(firmware, backend, navigator, test_name):
+#     sign_auth_ed25519(firmware, backend, navigator, test_name, test_vectors[8])

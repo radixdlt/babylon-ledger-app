@@ -77,7 +77,7 @@ class Version(NamedTuple):
     patch: int
 
 @dataclass
-class ROLAResponse(ABC):
+class SignedPayload(ABC):
     key: PK
     hash: bytes
     signature: bytes
@@ -116,7 +116,7 @@ class ROLAResponse(ABC):
 
     @classmethod
     @abstractmethod
-    def unpack_response(cls, response: bytes) -> ROLAResp:
+    def unpack_response(cls, response: bytes) -> Signed:
         pass
 
     @classmethod
@@ -141,7 +141,7 @@ class ROLAResponse(ABC):
 
         return key, hash, signature
 
-class ROLAResponseEd25519(ROLAResponse):
+class SignedPayloadEd25519(SignedPayload):
     key: Curve25519PublicKey
 
     @classmethod
@@ -165,11 +165,11 @@ class ROLAResponseEd25519(ROLAResponse):
         return cls.sig_len() + cls.key_len() + cls.hash_len()
 
     @classmethod
-    def unpack_response(cls, response: bytes) -> ROLAResp:
+    def unpack_response(cls, response: bytes) -> Signed:
         (key, hash, signature) = cls.raw_unpack_response(response)
-        return ROLAResponseEd25519(key=key, hash=hash, signature=signature)
+        return SignedPayloadEd25519(key=key, hash=hash, signature=signature)
         
-class ROLAResponseSecp256k1(ROLAResponse):
+class SignedPayloadSecp256k1(SignedPayload):
     key: EllipticCurvePublicKey
 
     @classmethod
@@ -185,9 +185,9 @@ class ROLAResponseSecp256k1(ROLAResponse):
         return utils.encode_dss_signature(r, s)
 
     @classmethod
-    def unpack_response(cls, response: bytes) -> ROLAResp:
+    def unpack_response(cls, response: bytes) -> Signed:
         (key, hash, signature) = cls.raw_unpack_response(response)
-        return ROLAResponseSecp256k1(key=key, hash=hash, signature=signature)
+        return SignedPayloadSecp256k1(key=key, hash=hash, signature=signature)
 
     @classmethod
     def expected_len(cls) -> int:
@@ -201,7 +201,7 @@ class ROLAResponseSecp256k1(ROLAResponse):
     def key_len(cls) -> int:
         return 33
 
-ROLAResp = TypeVar('ROLAResp', bound=ROLAResponse)
+Signed = TypeVar('SignedPayload', bound=SignedPayload)
 
 def unpack_get_version_response(response: bytes) -> Version:
     assert len(response) == 3
@@ -217,3 +217,20 @@ class LedgerModel(IntEnum):
     def unpack(raw: bytes) -> LedgerModel:
         int_val = int.from_bytes(raw, byteorder='big', signed=False)
         return LedgerModel(int_val)
+
+class LedgerAppSettings(NamedTuple):
+    is_verbose_mode_enabled: bool
+    is_blind_signing_enabled: bool
+
+    def unpack(raw: bytes) -> LedgerAppSettings:
+        print(f"📦🔮 unpacking LedgerAppSettings from raw: {raw.hex()} ")
+        is_blind = bool(int.from_bytes(raw[1:2], byteorder='big', signed=False))
+        is_verbose = bool(int.from_bytes(raw[0:1], byteorder='big', signed=False))
+        print(f"📦🔮 unpacking LedgerAppSettings is_verbose: {is_verbose}, is_blind: {is_blind} ")
+
+        settings = LedgerAppSettings(
+            is_verbose_mode_enabled=is_verbose, 
+            is_blind_signing_enabled=is_blind
+        )
+
+        return settings

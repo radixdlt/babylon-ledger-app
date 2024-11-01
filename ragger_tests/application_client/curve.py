@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import TypeVar
 
 from application_client.instruction_type import InsType
-from response_unpacker import PK, Curve25519PublicKey, ROLAResponseEd25519, ROLAResponseSecp256k1, ROLAResp, Secp256k1PublicKey
+from response_unpacker import PK, Curve25519PublicKey, SignedPayloadEd25519, SignedPayloadSecp256k1, Signed, Secp256k1PublicKey
 
 class Curve(ABC):
    
@@ -13,7 +13,7 @@ class Curve(ABC):
 
     @classmethod
     @abstractmethod
-    def unpack_rola_response(cls, response: bytes) -> ROLAResp:
+    def unpack_signed(cls, response: bytes) -> Signed:
         pass
 
     @classmethod
@@ -73,8 +73,8 @@ class SECP256K1(Curve):
         return InsType.SIGN_PRE_AUTH_RAW_SECP256K1
     
     @classmethod
-    def unpack_rola_response(cls, response: bytes) -> ROLAResponseSecp256k1:
-        return ROLAResponseSecp256k1.unpack_response(response)
+    def unpack_signed(cls, response: bytes) -> SignedPayloadSecp256k1:
+        return SignedPayloadSecp256k1.unpack_response(response)
 
     @classmethod
     def unpack_pubkey(cls, response: bytes) -> PK:
@@ -108,8 +108,8 @@ class Curve25519(Curve):
         return InsType.SIGN_PRE_AUTH_RAW_ED25519
     
     @classmethod
-    def unpack_rola_response(cls, response: bytes) -> ROLAResponseEd25519:
-        return ROLAResponseEd25519.unpack_response(response)
+    def unpack_signed(cls, response: bytes) -> SignedPayloadEd25519:
+        return SignedPayloadEd25519.unpack_response(response)
     
     @classmethod
     def unpack_pubkey(cls, response: bytes) -> PK:

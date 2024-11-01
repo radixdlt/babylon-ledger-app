@@ -21,3 +21,8 @@ def test_get_version(backend: BackendInterface):
     app = App(backend)
     actual = app.get_version()
     assert actual == expected
+
+# def test_get_app_settings(backend: BackendInterface):
+#     app = App(backend)
+#     settings = app.get_app_settings()
+#     assert settings.is_blind_signing_enabled == True

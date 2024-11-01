@@ -2,7 +2,7 @@ from typing import Generator, Callable, Optional
 from contextlib import contextmanager
 
 from ragger.backend.interface import BackendInterface, RAPDU
-from response_unpacker import PK, LedgerModel, Version, ROLAResponseEd25519, ROLAResponseSecp256k1, ROLAResp, unpack_get_version_response
+from response_unpacker import PK, LedgerAppSettings, LedgerModel, Version, SignedPayloadEd25519, SignedPayloadSecp256k1, Signed, unpack_get_version_response
 from command_sender import CommandSender, InsType
 from request_packer import RequestPacker
 from application_client.curve import C
@@ -21,6 +21,10 @@ class App:
     def get_device_id(self) -> str:
         rapdu = self.sender.get_device_id()
         return rapdu.data.hex()
+    
+    def get_app_settings(self) -> LedgerAppSettings:
+        rapdu = self.sender.get_app_settings()
+        return LedgerAppSettings.unpack(raw=rapdu.data)
     
     def get_device_model(self) -> LedgerModel:
         rapdu = self.sender.get_device_model()
@@ -58,28 +62,21 @@ class App:
         return response.data.decode('utf-8')
 
     @contextmanager
-    def __sign_rola(
+    def __sign_generic(
         self, 
-        curve: C,
+        ins: InsType,
         navigate_path: Callable[[], None],
         navigate_sign: Callable[[], None],
         path: str, 
-        dapp_def_addr: str, 
-        origin: str, 
-        nonce: bytes
+        payload: bytes
     ) -> Generator[RAPDU, None, None]:
-        rola_challenge = RequestPacker.pack_rola_request(
-            dapp_def_addr=dapp_def_addr, 
-            origin=origin, 
-            nonce=nonce
-        )
         global maybe
-        with self.sender.send_sign_auth(
-            curve=curve,
+        with self.sender.send_sign_generic(
+            ins,
             navigate_path=navigate_path,
             navigate_sign=navigate_sign,
             path=path,
-            rola_challenge=rola_challenge
+            payload=payload
         ) as response:
             maybe = response
         yield maybe if maybe is not None else self.sender.get_async_response()
@@ -93,7 +90,7 @@ class App:
         nonce: bytes,
         navigate_path: Callable[[], None] = lambda: None,
         navigate_sign: Callable[[], None] = lambda: None
-    ) -> ROLAResp:
+    ) -> Signed:
         """
         Forms a ROLA Challenge from (`dapp_def_addr`, `origin`, `nonce`) and signs it
         using `path`. This will send two APDU requests to the Ledger, one first with
@@ -113,21 +110,43 @@ class App:
         :param navigate_sign: A closure passed to confirm signing of the ROLA challenge, use `navigator.navigate_and_compare` to pass in interactions. **Pass an empty closure (`lambda: None`) if you are using a physical device** 
         :type navigate_sign: Optional closure (`Callable`)
 
-        :return: The a ROLAEd25519Response parse from the APDU response.
-        :rtype: ROLAEd25519Response
+        :return: A signed payload parsed from the APDU response containing `(hash, signature, public_key)`
+        :rtype: Signed
         """
+        rola_challenge = RequestPacker.pack_rola_request(
+            dapp_def_addr=dapp_def_addr, 
+            origin=origin, 
+            nonce=nonce
+        )
         global response
-        with self.__sign_rola(
-            curve=curve,
+        with self.__sign_generic(
+            ins=curve.ins_sign_rola(),
             navigate_path=navigate_path,
             navigate_sign=navigate_sign,
             path=path,
-            dapp_def_addr=dapp_def_addr,
-            origin=origin,
-            nonce=nonce
+            payload=rola_challenge
         ) as res:
             response = res
-        return curve.unpack_rola_response(response=response.data)
+        return curve.unpack_signed(response=response.data)
+
+    def sign_tx(
+        self, 
+        curve: C,
+        path: str, 
+        txn: bytes,
+        navigate_path: Callable[[], None] = lambda: None,
+        navigate_sign: Callable[[], None] = lambda: None
+    ) -> Signed:
+        global response
+        with self.__sign_generic(
+            ins=curve.ins_sign_tx(),
+            navigate_path=navigate_path,
+            navigate_sign=navigate_sign,
+            path=path,
+            payload=txn
+        ) as res:
+            response = res
+        return curve.unpack_signed(response=response.data)
 
     def get_public_key(
         self, 
