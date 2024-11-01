@@ -7,8 +7,7 @@ This repository follows quite traditional branching policy:
 - `main` contains the current released version
 - `develop` collects all changes planned for inclusion into the next release
 
-## Future Version Changes Summary
-The code in this branch contains following changes:
+## Changes Summary
 - Separation of the UI components. This is necessary for the future implementation of the Stax device support.
 - Fixes for UI according to the comments from Ledger team:
   - Dashboard icon position (should be at the right)
