@@ -87,6 +87,22 @@ class CommandSender:
             data=pack_derivation_path(path)
         )
     
+    @contextmanager
+    def send_verify_address(
+        self,
+        curve: C,
+        navigate: Callable[[], None],
+        path: str
+    ):
+        ins = curve.ins_verify_address()
+        with self._async_send_ins(
+            navigate=navigate, 
+            ins=ins, 
+            data=pack_derivation_path(path)
+        ):
+            yield self.get_optional_async_response()
+      
+    
     def _send_derivation_path(
         self, 
         navigate: Callable[[], None],

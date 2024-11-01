@@ -25,6 +25,37 @@ class App:
     def get_device_model(self) -> LedgerModel:
         rapdu = self.sender.get_device_model()
         return LedgerModel.unpack(raw=rapdu.data)
+    
+    @contextmanager
+    def __verify_address(
+        self, 
+        curve: C,
+        navigate: Callable[[], None],
+        path: str, 
+    ) -> Generator[RAPDU, None, None]:
+        global maybe
+        with self.sender.send_verify_address(
+            curve=curve,
+            navigate=navigate,
+            path=path,
+        ) as response:
+            maybe = response
+        yield maybe if maybe is not None else self.sender.get_async_response()
+
+    def verify_address(
+        self, 
+        curve: C,
+        path: str, 
+        navigate: Callable[[], None] = lambda: None
+    ) -> str:
+        global response
+        with self.__verify_address(
+            curve=curve,
+            navigate=navigate,
+            path=path
+        ) as res:
+            response = res
+        return response.data.decode('utf-8')
 
     @contextmanager
     def __sign_rola(
