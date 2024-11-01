@@ -1,7 +1,7 @@
 use crate::ui::multiline_scroller::{LINE1_Y, LINE2_Y, LINE3_Y};
 use include_gif::include_gif;
 use ledger_device_sdk::ui::bagls::Icon;
-use ledger_device_sdk::ui::bitmaps::{Glyph, BACK};
+use ledger_device_sdk::ui::bitmaps::Glyph;
 use ledger_device_sdk::ui::layout::{Draw, Layout, Location, StringPlace};
 use ledger_device_sdk::ui::{SCREEN_HEIGHT, SCREEN_WIDTH};
 
@@ -49,4 +49,3 @@ impl TopCenter for Icon<'_> {
 
 pub const RADIX_LOGO: Glyph = Glyph::from_include(include_gif!("icons/nanox_app_radix.gif"));
 pub const RADIX_LOGO_ICON: Icon = Icon::from(&RADIX_LOGO);
-pub const BACK_ICON: Icon = Icon::from(&BACK);

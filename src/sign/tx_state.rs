@@ -207,12 +207,11 @@ impl<T: Copy> TxState<T> {
         comm: &mut Comm,
         sign_mode: SignMode,
     ) -> Result<SignOutcome, AppError> {
-        let digest = self.processor.finalize()?;
-
         if !(Settings::get().blind_signing) {
             return Err(AppError::BadSubintentSignState);
         }
 
+        let digest = self.processor.finalize()?;
         self.finalize_sign_si(comm, sign_mode, &digest)
     }
 

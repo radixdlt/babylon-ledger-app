@@ -439,10 +439,10 @@ impl<T: Digester> HashCalculator<T> {
 
     fn si_finalize(&mut self) -> Result<Digest, T::Error> {
         let digest = self.output_digester.finalize()?;
-        self.work_digester.reset();
-        self.work_digester.update(&Self::SI_INITIAL_VECTOR)?;
-        self.work_digester.update(digest.as_bytes())?;
-        self.work_digester.finalize()
+        self.output_digester.init()?;
+        self.output_digester.update(&Self::SI_INITIAL_VECTOR)?;
+        self.output_digester.update(digest.as_bytes())?;
+        self.output_digester.finalize()
     }
 }
 
