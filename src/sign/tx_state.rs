@@ -199,7 +199,7 @@ impl<T: Copy> TxState<T> {
 
         // The length is already checked above
         let digest = Digest(message.try_into().unwrap());
-        self.finalize_sign_si(comm, sign_mode, message, &digest)
+        self.finalize_sign_si(comm, sign_mode, &digest)
     }
 
     fn finalize_sign_raw_si(
@@ -213,18 +213,18 @@ impl<T: Copy> TxState<T> {
             return Err(AppError::BadSubintentSignState);
         }
 
-        self.finalize_sign_si(comm, sign_mode, digest.as_bytes(), &digest)
+        self.finalize_sign_si(comm, sign_mode, &digest)
     }
 
     fn finalize_sign_si(
         &mut self,
         comm: &mut Comm,
         sign_mode: SignMode,
-        message: &[u8],
         digest: &Digest,
     ) -> Result<SignOutcome, AppError> {
         let mut message_hex = [0u8; SUBINTENT_MESSAGE_LENGTH * 2];
-        Self::convert_to_hex_text(message, &mut message_hex);
+
+        Self::convert_to_hex_text(digest.as_bytes(), &mut message_hex);
 
         pre_auth_hash_details::display(&message_hex);
 

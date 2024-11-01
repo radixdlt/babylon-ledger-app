@@ -57,7 +57,7 @@ impl<T: Copy> InstructionProcessor<T> {
         sign_mode: SignMode,
         message: &[u8],
     ) -> Result<SignOutcome, AppError> {
-        self.state.sign_message(comm, sign_mode, message)
+        core::intrinsics::black_box(self.state.sign_message(comm, sign_mode, message))
     }
 
     pub fn auth_digest(
