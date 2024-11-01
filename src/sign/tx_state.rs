@@ -212,16 +212,16 @@ impl<T: Copy> TxState<T> {
         if !(Settings::get().blind_signing) {
             return Err(AppError::BadSubintentSignState);
         }
-        
+
         self.finalize_sign_si(comm, sign_mode, digest.as_bytes(), &digest)
     }
-    
+
     fn finalize_sign_si(
         &mut self,
         comm: &mut Comm,
         sign_mode: SignMode,
         message: &[u8],
-        digest: &Digest
+        digest: &Digest,
     ) -> Result<SignOutcome, AppError> {
         let mut message_hex = [0u8; SUBINTENT_MESSAGE_LENGTH * 2];
         Self::convert_to_hex_text(message, &mut message_hex);

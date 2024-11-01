@@ -1,5 +1,4 @@
 /// Various SBOR type information
-
 use crate::math::{Decimal, PreciseDecimal};
 use core::option::Option;
 use core::prelude::rust_2024::derive;
@@ -82,9 +81,9 @@ pub enum DecoderPhase {
 #[repr(C, align(4))]
 #[derive(Copy, Clone, Debug)]
 pub struct TypeInfo {
-    pub next_phases: &'static [DecoderPhase],   // Decoding phases for this type
-    pub fixed_len: u8,                          // Fixed length of this type (if greater than zero)
-    pub type_id: u8,                            // Type ID
+    pub next_phases: &'static [DecoderPhase], // Decoding phases for this type
+    pub fixed_len: u8,                        // Fixed length of this type (if greater than zero)
+    pub type_id: u8,                          // Type ID
 }
 
 /// Placeholder, it is here for completeness (i.e. each type has a corresponding TypeInfo)
@@ -120,7 +119,6 @@ const LIST_DECODING: [DecoderPhase; 4] = [
     DecoderPhase::ReadingLen,
     DecoderPhase::ReadingData,
 ];
-
 
 /// Decoding phases for maps.
 const MAP_DECODING: [DecoderPhase; 5] = [

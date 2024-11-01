@@ -1,7 +1,7 @@
 use crate::bcd::BCD;
 use crate::ceil_div;
 
-/// Simple big integer implementation which supports very limited number of operations 
+/// Simple big integer implementation which supports very limited number of operations
 /// necessary for the Babylon Ledger App.
 /// N - number of bits in the big integer
 #[derive(Clone, Copy, Debug)]

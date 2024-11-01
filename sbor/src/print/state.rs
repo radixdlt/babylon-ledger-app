@@ -62,9 +62,9 @@ pub struct ParameterPrinterState<T: Copy> {
     pub data: StaticVec<u8, { PARAMETER_AREA_SIZE }>,
     pub title: StaticVec<u8, { TITLE_SIZE }>, // Intermediate buffer for formatting instruction titles (instruction number)
     pub stack: StaticVec<ValueState, { STACK_DEPTH as usize }>,
-    pub nesting_level: u8,          // Active nesting level in the stack
+    pub nesting_level: u8, // Active nesting level in the stack
     pub network_id: NetworkId,
-    pub show_instructions: bool,    // Whether to show instructions or not
+    pub show_instructions: bool, // Whether to show instructions or not
     tty: TTY<T>,
 }
 

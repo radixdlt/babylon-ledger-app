@@ -1,5 +1,4 @@
 /// Streaming decoder for SBOR format
-
 use crate::decoder_error::DecoderError;
 use crate::type_info::*;
 use core::option::Option::{None, Some};
@@ -73,10 +72,10 @@ impl Flags {
 #[repr(C, packed)]
 #[derive(Copy, Clone, Debug)]
 struct State {
-    items_to_read: u32,     // How many items we need to read for arrays, tuples, enums, maps, etc.)
-    active_type_id: u8,     // The ID of the type which we're decoding at this nesting level
-    key_type_id: u8,        // Map key type ID
-    element_type_id: u8,    // Map value type ID; Array/Tuple/Enum - element type ID
+    items_to_read: u32, // How many items we need to read for arrays, tuples, enums, maps, etc.)
+    active_type_id: u8, // The ID of the type which we're decoding at this nesting level
+    key_type_id: u8,    // Map key type ID
+    element_type_id: u8, // Map value type ID; Array/Tuple/Enum - element type ID
     flags: Flags,
 }
 
@@ -92,22 +91,22 @@ pub enum DecodingOutcome {
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum SborEvent {
     Start {
-        type_id: u8,        // The type of the element that we're starting to decode
-        nesting_level: u8,  // The nesting level of the element
-        fixed_size: u8,     // Non-zero value means that element is of fixed size (e.g. u8, i32, etc.)
+        type_id: u8,       // The type of the element that we're starting to decode
+        nesting_level: u8, // The nesting level of the element
+        fixed_size: u8, // Non-zero value means that element is of fixed size (e.g. u8, i32, etc.)
     },
-    Len(u32),               // The length of the element (e.g. array length, string length, etc.)
+    Len(u32), // The length of the element (e.g. array length, string length, etc.)
     ElementType {
-        kind: SubTypeKind,  // The kind of the element (element, key, value)
-        type_id: u8,        // The type of the element
+        kind: SubTypeKind, // The kind of the element (element, key, value)
+        type_id: u8,       // The type of the element
     },
-    Discriminator(u8),      // Enum discriminator
-    Data(u8),               // Single raw data byte for the element content (e.g. u8, i32, string, array, etc.)
+    Discriminator(u8), // Enum discriminator
+    Data(u8), // Single raw data byte for the element content (e.g. u8, i32, string, array, etc.)
     End {
-        type_id: u8,        // The type of the element that we're ending to decode
-        nesting_level: u8,  // The nesting level of the element
+        type_id: u8,       // The type of the element that we're ending to decode
+        nesting_level: u8, // The nesting level of the element
     },
-    InputByte(u8),          // Plain input byte
+    InputByte(u8), // Plain input byte
 }
 
 #[repr(u8)]
@@ -127,11 +126,11 @@ pub trait SborEventHandler {
 #[repr(C, packed)]
 pub struct SborDecoder {
     stack: [State; STACK_DEPTH as usize],
-    byte_count: usize, // Number of processed bytes
-    len_acc: usize,    // Encoded length accumulator
-    head: u8,          // Decoding stack head index
-    len_shift: u8,     // Number of bits which need to be shifted in len_acc to get the final value
-    expect_leading_byte: bool,  // Expect SBOR leading byte at the beginning of the input
+    byte_count: usize,         // Number of processed bytes
+    len_acc: usize,            // Encoded length accumulator
+    head: u8,                  // Decoding stack head index
+    len_shift: u8, // Number of bits which need to be shifted in len_acc to get the final value
+    expect_leading_byte: bool, // Expect SBOR leading byte at the beginning of the input
 }
 
 impl SborDecoder {
