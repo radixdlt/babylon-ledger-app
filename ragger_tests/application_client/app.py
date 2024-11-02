@@ -1,3 +1,4 @@
+import hashlib
 from typing import Generator, Callable, Optional
 from contextlib import contextmanager
 
@@ -144,6 +145,28 @@ class App:
             navigate_sign=navigate_sign,
             path=path,
             payload=txn
+        ) as res:
+            response = res
+        return curve.unpack_signed(response=response.data)
+    
+    def sign_preauth_hash(
+        self, 
+        curve: C,
+        path: str, 
+        message_to_hash: bytes,
+        navigate_path: Callable[[], None] = lambda: None,
+        navigate_sign: Callable[[], None] = lambda: None
+    ) -> Signed:
+        hash_calculator = hashlib.blake2b(digest_size=32)
+        hash_calculator.update(message_to_hash)
+        hash = hash_calculator.digest()
+        global response
+        with self.__sign_generic(
+            ins=curve.ins_sign_pre_auth_hash(),
+            navigate_path=navigate_path,
+            navigate_sign=navigate_sign,
+            path=path,
+            payload=hash
         ) as res:
             response = res
         return curve.unpack_signed(response=response.data)

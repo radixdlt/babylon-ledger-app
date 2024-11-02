@@ -28,7 +28,7 @@ def sign_auth(
         navigator.navigate([NavInsID.RIGHT_CLICK])
 
     def navigate_sign():
-        if firmware.device.startswith("nano"):
+        if firmware.is_nano:
             navigator.navigate_and_compare(
                 path=ROOT_SCREENSHOT_PATH, 
                 test_case_name=test_name,

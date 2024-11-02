@@ -137,10 +137,9 @@ class CommandSender:
             ins=ins,
             path=path
         )
-        
         self.backend._last_async_response = None
         num_chunks = len(payload) // 255 + 1
-        print(f"🛰️ sending {num_chunks} chunks")
+        print(f"🛰️ sending #{num_chunks} chunks")
 
         for i in range(num_chunks):
             chunk = payload[i * 255:(i + 1) * 255]

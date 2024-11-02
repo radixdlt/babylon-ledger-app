@@ -21,7 +21,7 @@ def verify_address(
     path, expected_address = vector
 
     def navigate():
-        if firmware.device.startswith("nano"):
+        if firmware.is_nano:
             navigator.navigate_and_compare(
                 path=ROOT_SCREENSHOT_PATH, 
                 test_case_name=test_name,
