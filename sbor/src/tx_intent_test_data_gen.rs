@@ -135,7 +135,7 @@ pub mod tests {
     pub fn generate_binaries() {
         for blob in BLOBS {
             let mut file =
-                std::fs::File::create(format!("../test/data/{}.txn", blob.name)).unwrap();
+                std::fs::File::create(format!("../ragger_tests/data/{}.txn", blob.name)).unwrap();
             file.write_all(blob.data).unwrap();
         }
     }

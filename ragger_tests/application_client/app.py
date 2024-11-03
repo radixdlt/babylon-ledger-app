@@ -149,6 +149,25 @@ class App:
             response = res
         return curve.unpack_signed(response=response.data)
     
+    def sign_preauth_raw(
+        self, 
+        curve: C,
+        path: str, 
+        txn: bytes,
+        navigate_path: Callable[[], None] = lambda: None,
+        navigate_sign: Callable[[], None] = lambda: None
+    ) -> Signed:
+        global response
+        with self.__sign_generic(
+            ins=curve.ins_sign_pre_auth_raw(),
+            navigate_path=navigate_path,
+            navigate_sign=navigate_sign,
+            path=path,
+            payload=txn
+        ) as res:
+            response = res
+        return curve.unpack_signed(response=response.data)
+    
     def sign_preauth_hash(
         self, 
         curve: C,
