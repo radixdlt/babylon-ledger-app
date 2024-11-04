@@ -89,25 +89,6 @@ def sign_preauth_raw_with_file_name(
         blind_signing_settings=blind_signing_settings
     )
 
-def sign_preauth_raw_ed25519(
-    firmware: Firmware, 
-    backend: BackendInterface, 
-    navigator: Navigator, 
-    file_name: str, 
-    test_name: str,
-    blind_signing_settings: BlindSigningSettings = BlindSigningSettings.FAIL_IF_OFF
-):
-    sign_preauth_raw_with_file_name(
-        curve=Curve25519,
-        path="m/44'/1022'/12'/525'/1460'/0'",
-        firmware=firmware, 
-        backend=backend,
-        navigator=navigator,
-        file_name=file_name,
-        test_name=test_name,
-        blind_signing_settings=blind_signing_settings
-    )
-
 def list_files():
     dir_path = "data"
     res = []
@@ -116,10 +97,33 @@ def list_files():
             res.append(os.path.join(path))
     return res
 
-def test_sign_preauth_raw_ed25519_all(firmware, backend, navigator):
+def sign_preauth_raw_all(
+    curve: C,
+    path: str,
+    firmware: Firmware, 
+    backend: BackendInterface, 
+    navigator: Navigator, 
+):
     for file_name in list_files():
         if not file_name.endswith(".si"):
             continue
-        sign_preauth_raw_ed25519(firmware, backend, navigator, file_name, test_name=file_name)
+        sign_preauth_raw_with_file_name(
+            curve=curve,
+            path=path,
+            firmware=firmware,
+            backend=backend,
+            navigator=navigator,
+            file_name=file_name,
+            test_name="test_sign_preauth_raw_" + curve.curve_name() + "_" + file_name 
+        )
 
+
+def test_sign_preauth_raw_ed25519_all(firmware, backend, navigator):
+    sign_preauth_raw_all(
+        curve=Curve25519,
+        path="m/44'/1022'/12'/525'/1460'/0'",
+        firmware=firmware, 
+        backend=backend,
+        navigator=navigator,
+    )
 

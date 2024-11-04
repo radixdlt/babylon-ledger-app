@@ -1,8 +1,10 @@
 from ragger.backend.interface import BackendInterface
 from ragger.firmware.structs import Firmware
 from ragger.navigator.navigator import Navigator
+from ragger.backend.speculos import SpeculosBackend
 
 from ragger_tests.application_client.curve import SECP256K1
+from ragger_tests.test_sign_preauth_hash_ed25519 import enable_blind_signing
 from ragger_tests.test_sign_tx_ed25519 import BlindSigningSettings, sign_tx_with_file_name
 
 def sign_tx_secp256k1(
@@ -27,11 +29,14 @@ def sign_tx_secp256k1(
     )
 
 
-# def test_sign_tx_secp256k1_call_function(firmware, backend, navigator, test_name):
-#     sign_tx_secp256k1(
-#         firmware, backend, navigator, 0, "call_function.txn", test_name,
-#         blind_signing_settings=BlindSigningSettings.SKIP_IF_OFF
-#     )
+def test_sign_tx_secp256k1_call_function(firmware, backend, navigator, test_name):
+    if isinstance(backend, SpeculosBackend):
+        enable_blind_signing(navigator) 
+    
+    sign_tx_secp256k1(
+        firmware, backend, navigator, 0, "call_function.txn", test_name,
+        blind_signing_settings=BlindSigningSettings.SKIP_IF_OFF
+    )
 
 def test_sign_tx_secp256k1_simple_transfer(firmware, backend, navigator, test_name):
     sign_tx_secp256k1(firmware, backend, navigator, 13, "simple_transfer.txn", test_name)

@@ -8,6 +8,11 @@ class Curve(ABC):
    
     @classmethod
     @abstractmethod
+    def curve_name(cls) -> str:
+        pass
+
+    @classmethod
+    @abstractmethod
     def unpack_pubkey(cls, response: bytes) -> PK:
         pass
 
@@ -47,6 +52,10 @@ class Curve(ABC):
         pass
 
 class SECP256K1(Curve):
+
+    @classmethod
+    def curve_name(cls) -> str:
+        return "secp256k1"
     
     @classmethod
     def ins_sign_rola(cls) -> InsType:
@@ -82,6 +91,10 @@ class SECP256K1(Curve):
 
 
 class Curve25519(Curve):
+
+    @classmethod
+    def curve_name(cls) -> str:
+        return "ed25519"
     
     @classmethod
     def ins_sign_rola(cls) -> InsType:
