@@ -1,5 +1,5 @@
 use crate::app_error::AppError;
-use crate::sign::sign_mode::{ReviewType, SignMode};
+use crate::sign::sign_mode::ReviewType;
 use crate::ui::single_message::SingleMessage;
 
 #[cfg(not(target_os = "stax"))]
