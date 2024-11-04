@@ -3,10 +3,9 @@ use ledger_device_sdk::ui::bagls::{Icon, RIGHT_ARROW, RIGHT_S_ARROW};
 use ledger_device_sdk::ui::gadgets::{clear_screen, get_event};
 use ledger_device_sdk::ui::layout::Draw;
 use ledger_device_sdk::ui::screen_util::screen_update;
-use ledger_device_sdk::ui::SCREEN_WIDTH;
 
 use crate::io::UxEvent;
-use crate::ui::utils::CenteredText;
+use crate::ui::utils::{CenteredText, TopCenter};
 
 pub enum MessageFeature<'a> {
     Plain,
@@ -64,11 +63,7 @@ impl<'a> SingleMessage<'a> {
                 RIGHT_S_ARROW.display();
             }
             MessageFeature::WithIcon(icon) => {
-                Icon {
-                    icon: icon.icon,
-                    pos: ((SCREEN_WIDTH / 2) as i16, -1),
-                }
-                .display();
+                icon.draw_top_center();
             }
         }
         screen_update();
