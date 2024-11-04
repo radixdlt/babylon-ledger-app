@@ -1,3 +1,4 @@
+/// Generate test vectors as binary files for use by tests.
 #[cfg(test)]
 pub mod tests {
     use crate::si_test_data::tests::*;

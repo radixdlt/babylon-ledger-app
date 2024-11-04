@@ -1,3 +1,4 @@
+/// Simple vectors whose size is determined at compile time
 #[repr(C, align(4))]
 pub struct StaticVec<T, const N: usize> {
     length: usize,

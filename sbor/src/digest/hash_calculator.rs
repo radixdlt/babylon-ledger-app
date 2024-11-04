@@ -1,15 +1,28 @@
+/// Babylon uses quite non-traditional approach to hash calculation. Instead of hashing the whole transaction or subintent SBOR-encoded blob,
+/// it hashes individual components of the transaction/subintent. Then final hash is calculated as a hash of hashes.
+/// This approach introduces substantial complexity in case of the stream decoding and requires a state machine to handle the decoding process.
+///
+/// The general idea is to have two independent digesters - one for current element and one for final hash. Unfortunately, BLOBS require one more digester
+/// because hash of the BLOB field is calculated as hash of hashes of individual BLOBs.
+///
+/// The subintent introduces additional complexity, as hashes for fields are calculated with initial (type) byte skipped
+/// (see `radix-transactions/src/model/versioned.rs` in `radix-scrypto` repository for details of hash calculation)
+///
+/// Implementation basically consists of two decoders which share the same digesters for memory efficiency.
 use core::result::Result;
 
 use crate::digest::digest::Digest;
 use crate::digest::digester::Digester;
 use crate::sbor_decoder::SborEvent;
 
+/// Working modes for the hash calculator
 #[repr(u8)]
 pub enum HashCalculatorMode {
     Transaction,
     PreAuth,
 }
 
+/// State machine phases for the transaction hash calculator
 #[derive(Copy, Clone, PartialEq)]
 #[repr(u8)]
 enum TxHashPhase {
@@ -25,6 +38,7 @@ enum TxHashPhase {
     HashingError,
 }
 
+/// State machine phases for the subintent hash calculator
 #[derive(Copy, Clone, PartialEq, Debug)]
 #[repr(u8)]
 enum SiHashPhase {
@@ -43,6 +57,7 @@ enum SiHashPhase {
     HashingError,
 }
 
+/// Internal state machine which controls the process of finalizing/merging hashes
 #[derive(Copy, Clone, Debug)]
 #[repr(u8)]
 enum HashCommitPhase {
@@ -85,7 +100,7 @@ pub struct HashCalculator<T: Digester> {
     mode: HashCalculatorMode,
 }
 
-// Transaction intent hash calculator
+/// Transaction intent hash calculator implementation
 impl<T: Digester> HashCalculator<T> {
     fn tx_handle(&mut self, event: SborEvent) {
         match event {
@@ -229,6 +244,7 @@ impl<T: Digester> HashCalculator<T> {
     }
 }
 
+/// Subintent hash calculator implementation
 impl<T: Digester> HashCalculator<T> {
     fn si_handle(&mut self, event: SborEvent) {
         match event {
@@ -367,6 +383,10 @@ impl<T: Digester> HashCalculator<T> {
         match self.work_digester.finalize() {
             Ok(digest) => match self.output_digester.update(digest.as_bytes()) {
                 Ok(_) => {
+                    // Use it for debugging hash calculator: it prints the hash of each
+                    // processed element. Note that si_test_data.rs contains these hashes as well,
+                    // so you can compare (sorry, only visually for now) calculated hash with
+                    // expected one and find which element is calculated incorrectly.
                     #[cfg(test)]
                     {
                         let blob = digest.as_bytes();
@@ -419,14 +439,14 @@ impl<T: Digester> HashCalculator<T> {
 
     fn si_finalize(&mut self) -> Result<Digest, T::Error> {
         let digest = self.output_digester.finalize()?;
-        self.work_digester.reset();
-        self.work_digester.update(&Self::SI_INITIAL_VECTOR)?;
-        self.work_digester.update(digest.as_bytes())?;
-        self.work_digester.finalize()
+        self.output_digester.init()?;
+        self.output_digester.update(&Self::SI_INITIAL_VECTOR)?;
+        self.output_digester.update(digest.as_bytes())?;
+        self.output_digester.finalize()
     }
 }
 
-// Common part + externally visible API for both transaction and subintent hash calculators
+/// Common part + externally visible API for both transaction and subintent hash calculators
 impl<T: Digester> HashCalculator<T> {
     const PAYLOAD_PREFIX: u8 = 0x54;
     const V1_INTENT: u8 = 1;

@@ -1,5 +1,6 @@
 pub mod address;
 pub mod auth_details;
+pub mod blind_signing;
 pub mod fee;
 pub mod hash;
 pub mod introductory_screen;
