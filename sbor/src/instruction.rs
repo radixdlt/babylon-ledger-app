@@ -1,7 +1,6 @@
 /// Instructions recognized by instruction extractor
-// Keep in sync with
-// https://raw.githubusercontent.com/radixdlt/radixdlt-scrypto/develop/transaction/src/model/instruction.rs
-
+/// Keep in sync with
+/// https://raw.githubusercontent.com/radixdlt/radixdlt-scrypto/develop/transaction/src/model/instruction.rs
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Instruction {

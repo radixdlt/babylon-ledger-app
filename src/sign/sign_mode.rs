@@ -17,7 +17,33 @@ pub enum SignMode {
     PreAuthRawSecp256k1,
 }
 
+#[repr(u8)]
+#[derive(PartialEq, Copy, Clone)]
+pub enum SignType {
+    None,
+    Verbose,
+    Summary,
+}
+
+#[repr(u8)]
+#[derive(PartialEq, Copy, Clone)]
+pub enum ReviewType {
+    Transaction,
+    OwnershipProof,
+    PreAuthHash,
+    PreAuthRaw,
+}
+
 impl SignMode {
+    pub fn requires_blind_signing(&self) -> bool {
+        match self {
+            SignMode::PreAuthHashEd25519
+            | SignMode::PreAuthRawEd25519
+            | SignMode::PreAuthHashSecp256k1
+            | SignMode::PreAuthRawSecp256k1 => true,
+            _ => false,
+        }
+    }
     pub fn curve(&self) -> Curve {
         match self {
             SignMode::TxEd25519Verbose
@@ -30,6 +56,28 @@ impl SignMode {
             | SignMode::AuthSecp256k1
             | SignMode::PreAuthHashSecp256k1
             | SignMode::PreAuthRawSecp256k1 => Curve::Secp256k1,
+        }
+    }
+
+    pub fn sign_type(&self) -> SignType {
+        match self {
+            SignMode::TxEd25519Verbose | SignMode::TxSecp256k1Verbose => SignType::Verbose,
+            SignMode::TxEd25519Summary | SignMode::TxSecp256k1Summary => SignType::Summary,
+            _ => SignType::None,
+        }
+    }
+
+    pub fn review_type(&self) -> ReviewType {
+        match self {
+            SignMode::TxEd25519Verbose
+            | SignMode::TxSecp256k1Verbose
+            | SignMode::TxEd25519Summary
+            | SignMode::TxSecp256k1Summary => ReviewType::Transaction,
+            SignMode::AuthEd25519 | SignMode::AuthSecp256k1 => ReviewType::OwnershipProof,
+            SignMode::PreAuthHashEd25519 | SignMode::PreAuthHashSecp256k1 => {
+                ReviewType::PreAuthHash
+            }
+            SignMode::PreAuthRawEd25519 | SignMode::PreAuthRawSecp256k1 => ReviewType::PreAuthRaw,
         }
     }
 

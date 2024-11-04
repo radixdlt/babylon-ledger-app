@@ -1,4 +1,4 @@
-/// Streaming decoder for SBOR format
+//! Streaming decoder for SBOR format
 use crate::decoder_error::DecoderError;
 use crate::type_info::*;
 use core::option::Option::{None, Some};
@@ -8,7 +8,8 @@ use core::result::Result::{Err, Ok};
 /// Maximal nesting depth of the SBOR-encoded data
 pub const STACK_DEPTH: u8 = 25;
 
-pub const SBOR_LEADING_BYTE: u8 = 0x4d; // MANIFEST_SBOR_V1_PAYLOAD_PREFIX
+/// See MANIFEST_SBOR_V1_PAYLOAD_PREFIX in Scrypto
+pub const SBOR_LEADING_BYTE: u8 = 0x4d;
 
 /// Compact representation of the decoder flags
 /// - Skip start/end: Skip reporting start/end events for each element of the array

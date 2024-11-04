@@ -1,8 +1,8 @@
-/// Transaction summary detector is used to determine the type of the transaction intent and collect
-/// information about fees.
-/// Implementation consists of two independent state machines - one for detecting the intent type and
-/// other to collect fee information. Both of them use information about decoded instructions
-/// received from `InstructionExtractor`.
+//! Transaction summary detector is used to determine the type of the transaction intent and collect
+//! information about fees.
+//! Implementation consists of two independent state machines - one for detecting the intent type and
+//! other to collect fee information. Both of them use information about decoded instructions
+//! received from `InstructionExtractor`.
 use crate::bech32::address::Address;
 use crate::instruction::{Instruction, InstructionInfo};
 use crate::instruction_extractor::ExtractorEvent;
@@ -52,10 +52,14 @@ pub enum DecodingPhase {
 #[derive(Copy, Clone, Debug)]
 pub struct TransferDetails {
     pub fee: Option<Decimal>,
-    pub src_address: Address, // From ...
-    pub dst_address: Address, // To ...
-    pub res_address: Address, // Resource ...
-    pub amount: Decimal,      // Amount ...
+    /// From ...
+    pub src_address: Address,
+    /// To ...
+    pub dst_address: Address,
+    /// Resource ...
+    pub res_address: Address,
+    /// Amount ...
+    pub amount: Decimal,
 }
 
 #[derive(Copy, Clone, Debug)]

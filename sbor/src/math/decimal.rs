@@ -3,10 +3,10 @@ use simple_bigint::bigint::{BigInt, BigIntError};
 use crate::math::format_big_int;
 use crate::static_vec::StaticVec;
 
+/// Ledger app-specific counterpart of the Scrypto Decimal type
 #[derive(Copy, Clone, Debug)]
 pub struct Decimal(BigInt<192>);
 
-/// Ledger app-specific counterpart of the Scrypto Decimal type
 impl Decimal {
     pub const SIZE_IN_BYTES: usize = BigInt::<192>::NUM_BYTES;
     pub const ZERO: Decimal = Decimal(BigInt::from_limbs([0, 0, 0, 0, 0, 0]));

@@ -12,10 +12,11 @@ use crate::command_class::CommandClass;
 use crate::settings::Settings;
 use crate::sign::decoding_mode::DecodingMode;
 use crate::sign::instruction_processor::InstructionProcessor;
-use crate::sign::sign_mode::SignMode;
+use crate::sign::sign_mode::{SignMode, SignType};
 use crate::sign::sign_outcome::SignOutcome;
 use crate::xui::{
-    auth_details, fee, hash, introductory_screen, pre_auth_hash_details, signature, transfer,
+    auth_details, blind_signing, fee, hash, introductory_screen, pre_auth_hash_details, signature,
+    transfer,
 };
 
 const AUTH_CHALLENGE_LENGTH: usize = 32;
@@ -87,7 +88,13 @@ impl<T: Copy> TxState<T> {
             self.processor.process_sign(comm, class, sign_mode)?;
             self.processor.set_network()?;
             self.processor.set_show_instructions();
-            introductory_screen::display(sign_mode)?;
+
+            if sign_mode.requires_blind_signing() && !Settings::get().blind_signing {
+                blind_signing::error();
+                return Err(AppError::BadTxSignHashSignState);
+            }
+
+            introductory_screen::display(sign_mode.review_type())?;
         } else {
             self.processor.process_sign(comm, class, sign_mode)?;
 
@@ -170,7 +177,7 @@ impl<T: Copy> TxState<T> {
         sign_mode: SignMode,
     ) -> Result<SignOutcome, AppError> {
         let digest = self.processor.finalize()?;
-        self.display_tx_info(sign_mode, &digest)?;
+        self.display_tx_info(sign_mode.sign_type(), &digest)?;
 
         let rc = signature::ask_user(signature::SignType::TX);
 
@@ -251,16 +258,16 @@ impl<T: Copy> TxState<T> {
         }
     }
 
-    fn display_tx_info(&mut self, sign_mode: SignMode, digest: &Digest) -> Result<(), AppError> {
+    fn display_tx_info(&mut self, sign_type: SignType, digest: &Digest) -> Result<(), AppError> {
         let detected_type = self.processor.get_detected_tx_type();
 
-        match sign_mode {
-            SignMode::TxEd25519Verbose | SignMode::TxSecp256k1Verbose => {
+        match sign_type {
+            SignType::Verbose => {
                 self.display_transaction_fee(&detected_type);
 
                 Ok(())
             }
-            SignMode::TxEd25519Summary | SignMode::TxSecp256k1Summary => match detected_type {
+            SignType::Summary => match detected_type {
                 DetectedTxType::Transfer(details) => {
                     transfer::display(&details, &mut self.processor);
 
@@ -272,18 +279,13 @@ impl<T: Copy> TxState<T> {
 
                         Ok(())
                     } else {
-                        hash::error();
+                        blind_signing::error();
 
                         Err(AppError::BadTxSignHashSignState)
                     }
                 }
             },
-            SignMode::AuthEd25519
-            | SignMode::AuthSecp256k1
-            | SignMode::PreAuthHashEd25519
-            | SignMode::PreAuthHashSecp256k1
-            | SignMode::PreAuthRawEd25519
-            | SignMode::PreAuthRawSecp256k1 => Ok(()),
+            _ => Ok(()),
         }
     }
 

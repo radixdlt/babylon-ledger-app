@@ -60,11 +60,14 @@ pub const TITLE_SIZE: usize = 32;
 pub struct ParameterPrinterState<T: Copy> {
     pub display: StaticVec<u8, { DISPLAY_SIZE }>,
     pub data: StaticVec<u8, { PARAMETER_AREA_SIZE }>,
-    pub title: StaticVec<u8, { TITLE_SIZE }>, // Intermediate buffer for formatting instruction titles (instruction number)
+    /// Intermediate buffer for formatting instruction titles (instruction number)
+    pub title: StaticVec<u8, { TITLE_SIZE }>,
     pub stack: StaticVec<ValueState, { STACK_DEPTH as usize }>,
-    pub nesting_level: u8, // Active nesting level in the stack
+    /// Active nesting level in the stack
+    pub nesting_level: u8,
     pub network_id: NetworkId,
-    pub show_instructions: bool, // Whether to show instructions or not
+    /// Whether to show instructions or not
+    pub show_instructions: bool,
     tty: TTY<T>,
 }
 
