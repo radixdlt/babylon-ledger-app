@@ -4,9 +4,11 @@ from ragger.backend.interface import BackendInterface
 from ragger.firmware.structs import Firmware
 from ragger.navigator.navigator import Navigator
 from ragger.navigator import NavInsID
+from ragger.backend.speculos import SpeculosBackend
 
 from ragger_tests.application_client.app import App
 from ragger_tests.application_client.curve import C, Curve25519
+from ragger_tests.test_sign_preauth_hash_ed25519 import enable_blind_signing
 from ragger_tests.test_sign_tx_ed25519 import BlindSigningSettings
 
 DATA_PATH = str(Path(__file__).parent.joinpath("data").absolute()) + "/"
@@ -31,8 +33,6 @@ def sign_preauth_raw(
             instructions=[
                 NavInsID.RIGHT_CLICK
             ], 
-            screen_change_before_first_instruction=True,
-            snap_start_idx=0
         )
 
     def navigate_sign():
@@ -44,12 +44,12 @@ def sign_preauth_raw(
                     NavInsID.RIGHT_CLICK, NavInsID.RIGHT_CLICK,
                     NavInsID.RIGHT_CLICK, NavInsID.BOTH_CLICK
                 ],
-                screen_change_before_first_instruction=True,
-                snap_start_idx=1
             )
     
-    # if blind_signing_settings.should_abort_execution_due_to_blind_sign(backend):
-    #     return
+    if isinstance(backend, SpeculosBackend):
+        enable_blind_signing(navigator)
+    elif blind_signing_settings.should_abort_execution_due_to_blind_sign(backend):
+        return
 
     app = App(backend)
     response = app.sign_preauth_raw(
@@ -75,9 +75,8 @@ def sign_preauth_raw_with_file_name(
     navigator: Navigator, 
     file_name: str, 
     test_name: str,
-    blind_signing_settings: BlindSigningSettings
+    blind_signing_settings: BlindSigningSettings = BlindSigningSettings.FAIL_IF_OFF
 ):
-    print(f"🎃 file_name: '{file_name}'")
     txn = read_file(file=file_name)
     sign_preauth_raw(
         curve=curve,
@@ -96,7 +95,7 @@ def sign_preauth_raw_ed25519(
     navigator: Navigator, 
     file_name: str, 
     test_name: str,
-    blind_signing_settings: BlindSigningSettings = BlindSigningSettings.DONT_CHECK_SETTINGS
+    blind_signing_settings: BlindSigningSettings = BlindSigningSettings.FAIL_IF_OFF
 ):
     sign_preauth_raw_with_file_name(
         curve=Curve25519,
