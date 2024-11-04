@@ -36,13 +36,13 @@ pub enum ReviewType {
 
 impl SignMode {
     pub fn requires_blind_signing(&self) -> bool {
-        match self {
+        matches!(
+            self,
             SignMode::PreAuthHashEd25519
-            | SignMode::PreAuthRawEd25519
-            | SignMode::PreAuthHashSecp256k1
-            | SignMode::PreAuthRawSecp256k1 => true,
-            _ => false,
-        }
+                | SignMode::PreAuthRawEd25519
+                | SignMode::PreAuthHashSecp256k1
+                | SignMode::PreAuthRawSecp256k1
+        )
     }
     pub fn curve(&self) -> Curve {
         match self {
