@@ -2,6 +2,7 @@ use crate::instruction_extractor::{ExtractorEvent, InstructionHandler};
 use crate::print::instruction_printer::InstructionPrinter;
 use crate::print::tx_summary_detector::TxSummaryDetector;
 
+/// Small adapter used to distribute events to multiple handlers.
 pub struct Fanout<'a, T: Copy> {
     printer: &'a mut InstructionPrinter<T>,
     detector: &'a mut TxSummaryDetector,

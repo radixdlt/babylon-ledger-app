@@ -30,11 +30,11 @@ impl<T: Copy> ParameterPrinter<T> for ArrayParameterPrinter {
         }
     }
 
-    fn subcomponent_end(&self, state: &mut ParameterPrinterState<T>) {
-        state.print_text(b", ");
-    }
-
     fn end(&self, state: &mut ParameterPrinterState<T>) {
         state.print_byte(b')');
+    }
+
+    fn subcomponent_end(&self, state: &mut ParameterPrinterState<T>) {
+        state.print_text(b", ");
     }
 }

@@ -1,7 +1,9 @@
 use crate::bcd::BCD;
 use crate::ceil_div;
 
-// N - number of bits in the big integer
+/// Simple big integer implementation which supports very limited number of operations
+/// necessary for the Babylon Ledger App.
+/// N - number of bits in the big integer
 #[derive(Clone, Copy, Debug)]
 pub struct BigInt<const N: usize>
 where

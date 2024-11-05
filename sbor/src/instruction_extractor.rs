@@ -1,5 +1,7 @@
-// Process events received from decoder and extract data related to instructions
-
+//! Process events received from SBOR decoder and extract data related to each instruction
+//! and its parameters.
+//! Implemented as a state machine which "walks" through the transaction intent and when it reaches
+//! the instructions it starts emitting relevant events.
 use crate::instruction::{to_instruction, InstructionInfo};
 use crate::sbor_decoder::SborEvent;
 use crate::type_info::{to_type_info, TypeInfo, TYPE_ENUM, TYPE_NONE, TYPE_TUPLE};

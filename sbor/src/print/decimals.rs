@@ -2,7 +2,6 @@ use crate::math::{Decimal, PreciseDecimal};
 use crate::print::parameter_printer::ParameterPrinter;
 use crate::print::state::ParameterPrinterState;
 
-// Decimal parameter printer
 pub struct DecimalParameterPrinter {}
 
 pub const DECIMAL_PARAMETER_PRINTER: DecimalParameterPrinter = DecimalParameterPrinter {};
@@ -22,7 +21,6 @@ impl<T: Copy> ParameterPrinter<T> for DecimalParameterPrinter {
     }
 }
 
-// PreciseDecimal parameter printer
 pub struct PreciseDecimalParameterPrinter {}
 
 pub const PRECISE_DECIMAL_PARAMETER_PRINTER: PreciseDecimalParameterPrinter =

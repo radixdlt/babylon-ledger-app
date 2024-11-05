@@ -4,7 +4,7 @@ pub mod main_menu {
     use crate::ui::menu::{Menu, MenuFeature, MenuItem};
     use crate::ui::multipage_validator::MultipageValidator;
     use crate::ui::single_message::SingleMessage;
-    use crate::ui::utils::{BACK_ICON, RADIX_LOGO_ICON};
+    use crate::ui::utils::RADIX_LOGO_ICON;
     use ledger_device_sdk::ui::bagls::{
         CERTIFICATE_ICON, COGGLE_ICON, DASHBOARD_X_ICON, PROCESSING_ICON,
     };
@@ -48,11 +48,7 @@ pub mod main_menu {
                 "\nBlind Signing",
                 blind_signing_setting_action,
             ),
-            MenuItem::new(
-                MenuFeature::Icon(&BACK_ICON),
-                "\nBack",
-                back_from_setting_action,
-            ),
+            MenuItem::new(MenuFeature::Plain, "\nBack", back_from_setting_action),
         ];
 
         Menu::new(menu).event_loop();

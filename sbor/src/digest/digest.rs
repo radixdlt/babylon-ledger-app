@@ -10,6 +10,8 @@ const COPY_SIZE: usize = ADDRESS_STATIC_LEN as usize;
 const COPY_FROM: usize = BLAKE2B_DIGEST_SIZE - COPY_SIZE;
 const COPY_TO: usize = BLAKE2B_DIGEST_SIZE;
 
+/// Value Object to represent a Blake2b digest.
+/// Serves two purposes: 1 - preserves context and 2 - ensures automatic cleanup after use.
 #[repr(C, packed)]
 #[derive(Clone, Debug)]
 pub struct Digest(pub [u8; BLAKE2B_DIGEST_SIZE]);

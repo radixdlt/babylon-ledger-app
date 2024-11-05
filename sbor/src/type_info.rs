@@ -1,11 +1,11 @@
-// SBOR type information
-
+/// Various SBOR type information
 use crate::math::{Decimal, PreciseDecimal};
 use core::option::Option;
 use core::prelude::rust_2024::derive;
 
 pub const TYPE_NONE: u8 = 0x00;
-// primitive types
+
+// Primitive types
 pub const TYPE_BOOL: u8 = 0x01;
 pub const TYPE_I8: u8 = 0x02;
 pub const TYPE_I16: u8 = 0x03;
@@ -19,7 +19,7 @@ pub const TYPE_U64: u8 = 0x0a;
 pub const TYPE_U128: u8 = 0x0b;
 pub const TYPE_STRING: u8 = 0x0c;
 
-// composite types
+// Composite types
 pub const TYPE_ARRAY: u8 = 0x20;
 pub const TYPE_TUPLE: u8 = 0x21;
 pub const TYPE_ENUM: u8 = 0x22;
@@ -62,6 +62,7 @@ pub const NFL_MAX_STRING_LENG: usize = 64;
 pub const ADDRESS_STATIC: u8 = 0;
 pub const ADDRESS_NAMED: u8 = 1;
 
+/// Possible phases in decoding various SBOR types
 #[repr(u8)]
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum DecoderPhase {
@@ -76,32 +77,41 @@ pub enum DecoderPhase {
     ReadingAddressDiscriminator,
 }
 
+/// Static descriptor for SBOR type
 #[repr(C, align(4))]
 #[derive(Copy, Clone, Debug)]
 pub struct TypeInfo {
-    pub next_phases: &'static [DecoderPhase],
-    pub fixed_len: u8,
-    pub type_id: u8,
+    pub next_phases: &'static [DecoderPhase], // Decoding phases for this type
+    pub fixed_len: u8,                        // Fixed length of this type (if greater than zero)
+    pub type_id: u8,                          // Type ID
 }
 
-// Placeholder
+/// Placeholder, it is here for completeness (i.e. each type has a corresponding TypeInfo)
 const NONE_DECODING: [DecoderPhase; 1] = [DecoderPhase::ReadingTypeId];
-// id -> data -> o (fixed size types)
+
+/// Decoding phases for fixed size types. Despite different lengths, they share the same phases.
+/// id -> data -> o (fixed size types)
 const FIXED_LEN_DECODING: [DecoderPhase; 2] =
     [DecoderPhase::ReadingTypeId, DecoderPhase::ReadingData];
-// id -> len -> data -> o (String, Struct, Tuple)
+
+/// Decoding phases for variable size types like strings, structs and tuples.
+/// id -> len -> data -> o (String, Struct, Tuple)
 const VARIABLE_LEN_DECODING: [DecoderPhase; 3] = [
     DecoderPhase::ReadingTypeId,
     DecoderPhase::ReadingLen,
     DecoderPhase::ReadingData,
 ];
-// id -> name (len -> data) -> len -> data -> o (Enum)
+
+/// Decoding phases for enums.
+/// id -> name (len -> data) -> len -> data -> o (Enum)
 const ENUM_DECODING: [DecoderPhase; 4] = [
     DecoderPhase::ReadingTypeId,
     DecoderPhase::ReadingDiscriminator,
     DecoderPhase::ReadingLen,
     DecoderPhase::ReadingData,
 ];
+
+/// Decoding phases for lists.
 // id -> element_id -> len -> data -> (Array, List, Set)
 const LIST_DECODING: [DecoderPhase; 4] = [
     DecoderPhase::ReadingTypeId,
@@ -110,6 +120,7 @@ const LIST_DECODING: [DecoderPhase; 4] = [
     DecoderPhase::ReadingData,
 ];
 
+/// Decoding phases for maps.
 const MAP_DECODING: [DecoderPhase; 5] = [
     DecoderPhase::ReadingTypeId,
     DecoderPhase::ReadingKeyTypeId,
@@ -118,6 +129,7 @@ const MAP_DECODING: [DecoderPhase; 5] = [
     DecoderPhase::ReadingData,
 ];
 
+/// Decoding phases for non-fungible local IDs.
 const NON_FUNGIBLE_LOCAL_ID_ENCODING: [DecoderPhase; 4] = [
     DecoderPhase::ReadingTypeId,
     DecoderPhase::ReadingNFLDiscriminator,
@@ -125,6 +137,7 @@ const NON_FUNGIBLE_LOCAL_ID_ENCODING: [DecoderPhase; 4] = [
     DecoderPhase::ReadingData,
 ];
 
+/// Decoding phases for addresses.
 const ADDRESS_ENCODING: [DecoderPhase; 3] = [
     DecoderPhase::ReadingTypeId,
     DecoderPhase::ReadingAddressDiscriminator,
