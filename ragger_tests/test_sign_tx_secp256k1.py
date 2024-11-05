@@ -49,7 +49,7 @@ def send_tx_intent(txn, click_count, backend, navigator, firmware, test_name):
 def sign_tx_secp256k1(firmware, backend, navigator, click_count, file_name, test_name):
     send_derivation_path(backend, "m/44'/1022'/10'/525'/1238'", navigator)
     txn = read_file(file_name)
-
+    global rc
     try:
         rc = send_tx_intent(txn, click_count, backend, navigator, firmware, test_name)
     except Exception as e:
