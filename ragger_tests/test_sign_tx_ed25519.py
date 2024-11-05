@@ -47,6 +47,7 @@ def sign_tx_ed25519(firmware, backend, navigator, click_count, file_name, test_n
     send_derivation_path(backend, "m/44'/1022'/12'/525'/1460'/0'", navigator)
     txn = read_file(file_name)
 
+    global rc
     try:
         rc = send_tx_intent(txn, click_count, backend, navigator, firmware, test_name)
     except Exception as e:
