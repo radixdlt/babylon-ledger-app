@@ -52,6 +52,7 @@ def encode_bip32(path):
 def send_tx_intent(txn):
     num_chunks = len(txn) // 255 + 1
     # print("Sending txn (", len(txn), " bytes, ", num_chunks, " chunk(s))")
+    global rc
     for i in range(num_chunks):
         chunk = txn[i * 255:(i + 1) * 255]
         cls = "AC" if i == num_chunks - 1 else "AB"
