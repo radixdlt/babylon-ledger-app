@@ -1,14 +1,14 @@
 [package]
 name = "babylon-ledger-app"
-version = "0.7.28"
+version = "0.7.29"
 authors = ["siy"]
 edition = "2021"
 description = "Radix Babylon"
 
 [dependencies]
-ledger_device_sdk = "1.7.1"
-ledger_secure_sdk_sys = "1.2.0"
-include_gif = "1.0.1"
+ledger_device_sdk = "1.18.2"
+ledger_secure_sdk_sys = "1.5.2"
+include_gif = "1.2.0"
 
 sbor = { path = "./sbor", default-features = false }
 

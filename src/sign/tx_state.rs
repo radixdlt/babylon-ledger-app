@@ -1,8 +1,6 @@
 use crate::io::Comm;
-use sbor::bech32::address::Address;
 use sbor::decoder_error::DecoderError;
 use sbor::digest::digest::Digest;
-use sbor::math::Decimal;
 use sbor::print::tty::TTY;
 use sbor::print::tx_intent_type::TxIntentType;
 use sbor::print::tx_summary_detector::DetectedTxType;
@@ -16,17 +14,16 @@ use crate::settings::Settings;
 use crate::sign::instruction_processor::InstructionProcessor;
 use crate::sign::sign_mode::SignMode;
 use crate::sign::sign_outcome::SignOutcome;
-use crate::ui::multiline_scroller::MultilineMessageScroller;
-use crate::ui::multipage_validator::MultipageValidator;
-use crate::ui::single_message::SingleMessage;
-use crate::ui::utils;
+use crate::xui::{
+    auth_details, fee, hash, introductory_screen, pre_auth_hash_details, signature, transfer,
+};
 
-const CHALLENGE_LENGTH: usize = 32;
-const DAPP_ADDRESS_LENGTH: usize = 70;
-const ORIGIN_LENGTH: usize = 150;
-const MIN_DAPP_ADDRESS_LENGTH: usize = 2; // 1 byte length + 1 byte address
-const MIN_ORIGIN_LENGTH: usize = 10; // 1 byte length + "https://a"
-const MIN_VALID_LENGTH: usize = CHALLENGE_LENGTH + MIN_DAPP_ADDRESS_LENGTH + MIN_ORIGIN_LENGTH;
+const AUTH_CHALLENGE_LENGTH: usize = 32;
+const AUTH_MIN_DAPP_ADDRESS_LENGTH: usize = 2; // 1 byte length + 1 byte address
+const AUTH_MIN_ORIGIN_LENGTH: usize = 10; // 1 byte length + "https://a"
+const AUTH_MIN_VALID_LENGTH: usize =
+    AUTH_CHALLENGE_LENGTH + AUTH_MIN_DAPP_ADDRESS_LENGTH + AUTH_MIN_ORIGIN_LENGTH;
+const SUBINTENT_MESSAGE_LENGTH: usize = Digest::DIGEST_LENGTH;
 
 pub struct TxState<T: Copy> {
     decoder: SborDecoder,
@@ -52,6 +49,32 @@ impl<T: Copy> TxState<T> {
         Ok(())
     }
 
+    pub fn sign_preauth_hash_ed25519(
+        &mut self,
+        comm: &mut Comm,
+        class: CommandClass,
+    ) -> Result<SignOutcome, AppError> {
+        self.process_sign_with_mode(
+            comm,
+            class,
+            SignMode::PreAuthHashEd25519,
+            TxIntentType::General,
+        )
+    }
+
+    pub fn sign_preauth_hash_secp256k1(
+        &mut self,
+        comm: &mut Comm,
+        class: CommandClass,
+    ) -> Result<SignOutcome, AppError> {
+        self.process_sign_with_mode(
+            comm,
+            class,
+            SignMode::PreAuthHashSecp256k1,
+            TxIntentType::General,
+        )
+    }
+
     pub fn sign_auth(
         &mut self,
         comm: &mut Comm,
@@ -74,10 +97,10 @@ impl<T: Copy> TxState<T> {
         let settings = Settings::get();
 
         let sign_mode = match (curve, settings.verbose_mode) {
-            (Curve::Ed25519, true) => SignMode::Ed25519Verbose,
-            (Curve::Secp256k1, true) => SignMode::Secp256k1Verbose,
-            (Curve::Ed25519, false) => SignMode::Ed25519Summary,
-            (Curve::Secp256k1, false) => SignMode::Secp256k1Summary,
+            (Curve::Ed25519, true) => SignMode::TxEd25519Verbose,
+            (Curve::Secp256k1, true) => SignMode::TxSecp256k1Verbose,
+            (Curve::Ed25519, false) => SignMode::TxEd25519Summary,
+            (Curve::Secp256k1, false) => SignMode::TxSecp256k1Summary,
         };
 
         self.process_sign_with_mode(comm, class, sign_mode, TxIntentType::Transfer)
@@ -120,7 +143,7 @@ impl<T: Copy> TxState<T> {
             self.processor.process_sign(comm, class, sign_mode)?;
             self.processor.set_network()?;
             self.processor.set_show_instructions();
-            self.show_introductory_screen(sign_mode)?;
+            introductory_screen::display(sign_mode)?;
         } else {
             self.processor.process_sign(comm, class, sign_mode)?;
 
@@ -132,7 +155,20 @@ impl<T: Copy> TxState<T> {
                         self.process_sign_auth(comm, sign_mode)
                     }
                 }
-                _ => self.decode_tx_intent(comm.get_data()?, class)?,
+                SignMode::PreAuthHashEd25519 | SignMode::PreAuthHashSecp256k1 => {
+                    return if class != CommandClass::LastData {
+                        Err(AppError::BadSubintentSignSequence)
+                    } else if Settings::get().blind_signing {
+                        self.process_sign_pre_auth_hash(comm, sign_mode)
+                    } else {
+                        hash::error();
+                        Err(AppError::BadSubintentSignState)
+                    }
+                }
+                SignMode::TxEd25519Verbose
+                | SignMode::TxSecp256k1Verbose
+                | SignMode::TxEd25519Summary
+                | SignMode::TxSecp256k1Summary => self.decode_tx_intent(comm.get_data()?, class)?,
             }
         }
 
@@ -143,20 +179,6 @@ impl<T: Copy> TxState<T> {
         }
     }
 
-    fn show_introductory_screen(&mut self, sign_mode: SignMode) -> Result<(), AppError> {
-        let text = match sign_mode {
-            SignMode::Ed25519Verbose
-            | SignMode::Secp256k1Verbose
-            | SignMode::Ed25519Summary
-            | SignMode::Secp256k1Summary => "Review\n\nTransaction",
-            SignMode::AuthEd25519 | SignMode::AuthSecp256k1 => "Review\nOwnership\nProof",
-        };
-
-        SingleMessage::with_right_arrow(text).show_and_wait();
-
-        Ok(())
-    }
-
     fn process_sign_auth(
         &mut self,
         comm: &mut Comm,
@@ -164,46 +186,67 @@ impl<T: Copy> TxState<T> {
     ) -> Result<SignOutcome, AppError> {
         let value = comm.get_data()?;
 
-        if value.len() < MIN_VALID_LENGTH {
+        if value.len() < AUTH_MIN_VALID_LENGTH {
             return Err(AppError::BadAuthSignRequest);
         }
 
-        let challenge = &value[..CHALLENGE_LENGTH];
-        let addr_start = CHALLENGE_LENGTH + 1;
-        let addr_end = addr_start + value[CHALLENGE_LENGTH] as usize;
+        let challenge = &value[..AUTH_CHALLENGE_LENGTH];
+        let addr_start = AUTH_CHALLENGE_LENGTH + 1;
+        let addr_end = addr_start + value[AUTH_CHALLENGE_LENGTH] as usize;
         let address = &value[addr_start..addr_end];
         let origin = &value[addr_end..];
 
-        let mut nonce_hex = [0u8; CHALLENGE_LENGTH * 2];
+        let mut nonce_hex = [0u8; AUTH_CHALLENGE_LENGTH * 2];
 
-        for (i, &byte) in challenge.iter().enumerate() {
-            nonce_hex[i * 2] = upper_as_hex(byte);
-            nonce_hex[i * 2 + 1] = lower_as_hex(byte);
-        }
+        Self::to_hex(challenge, &mut nonce_hex);
 
-        utils::info_message(b"Origin:", origin);
-        utils::info_message(b"dApp Address:", address);
-        utils::info_message(b"Nonce:", &nonce_hex);
+        auth_details::display(address, origin, &nonce_hex);
 
-        let rc = MultipageValidator::new(&["Sign Proof?"], &["Sign"], &["Reject"]).ask();
+        let rc = signature::ask_user(signature::SignType::Proof);
 
         if rc {
             let digest = self.processor.auth_digest(challenge, address, origin)?;
-            self.processor.sign_tx(comm, sign_mode, &digest)
+            self.processor
+                .sign_message(comm, sign_mode, digest.as_bytes())
         } else {
             Ok(SignOutcome::SigningRejected)
         }
     }
 
-    fn fee_info_message(&mut self, fee: &Decimal) {
-        let text = self.processor.format_decimal(fee, b" XRD");
+    fn process_sign_pre_auth_hash(
+        &mut self,
+        comm: &mut Comm,
+        sign_mode: SignMode,
+    ) -> Result<SignOutcome, AppError> {
+        let message = comm.get_data()?;
 
-        MultilineMessageScroller::with_title(
-            "Max TX Fee:",
-            core::str::from_utf8(text).unwrap(),
-            true,
-        )
-        .event_loop();
+        if message.len() != SUBINTENT_MESSAGE_LENGTH {
+            return Err(AppError::BadSubintentSignRequest);
+        }
+
+        // The length is already checked above
+        let digest = Digest(message.try_into().unwrap());
+        let mut message_hex = [0u8; SUBINTENT_MESSAGE_LENGTH * 2];
+
+        Self::to_hex(message, &mut message_hex);
+
+        pre_auth_hash_details::display(&message_hex);
+
+        let rc = signature::ask_user(signature::SignType::PreAuthHash);
+
+        if rc {
+            self.processor
+                .sign_message(comm, sign_mode, digest.as_bytes())
+        } else {
+            Ok(SignOutcome::SigningRejected)
+        }
+    }
+
+    fn to_hex(message: &[u8], message_hex: &mut [u8; 64]) {
+        for (i, &byte) in message.iter().enumerate() {
+            message_hex[i * 2] = upper_as_hex(byte);
+            message_hex[i * 2 + 1] = lower_as_hex(byte);
+        }
     }
 
     fn finalize_sign_tx(
@@ -214,94 +257,61 @@ impl<T: Copy> TxState<T> {
         let digest = self.processor.finalize()?;
         self.display_tx_info(sign_mode, &digest)?;
 
-        let rc = MultipageValidator::new(&["Sign TX?"], &["Sign"], &["Reject"]).ask();
+        let rc = signature::ask_user(signature::SignType::TX);
 
         if rc {
-            self.processor.sign_tx(comm, sign_mode, &digest)
+            self.processor
+                .sign_message(comm, sign_mode, digest.as_bytes())
         } else {
             Ok(SignOutcome::SigningRejected)
         }
     }
 
-    fn show_transaction_fee(&mut self, detected_type: &DetectedTxType) {
+    fn display_transaction_fee(&mut self, detected_type: &DetectedTxType) {
         match detected_type {
-            DetectedTxType::Other(fee)
-            | DetectedTxType::Transfer { fee, .. }
-            | DetectedTxType::Error(fee) => match fee {
-                Some(fee) => self.fee_info_message(fee),
+            DetectedTxType::Transfer(details) => {
+                if let Some(fee) = details.fee {
+                    fee::display(&fee, &mut self.processor);
+                }
+            }
+            DetectedTxType::Other(fee) | DetectedTxType::Error(fee) => match fee {
+                Some(fee) => fee::display(fee, &mut self.processor),
                 None => {}
             },
         }
-    }
-
-    fn show_detected_tx_type(&mut self, detected_type: &DetectedTxType) {
-        let text: &[u8] = match detected_type {
-            DetectedTxType::Other(..) => b"Other",
-            DetectedTxType::Transfer { .. } => b"Transfer",
-            DetectedTxType::Error(..) => b"Summary Failed",
-        };
-        utils::info_message(b"TX Type:", text);
     }
 
     fn display_tx_info(&mut self, sign_mode: SignMode, digest: &Digest) -> Result<(), AppError> {
         let detected_type = self.processor.get_detected_tx_type();
 
         match sign_mode {
-            SignMode::Ed25519Verbose | SignMode::Secp256k1Verbose => {
-                self.show_transaction_fee(&detected_type);
+            SignMode::TxEd25519Verbose | SignMode::TxSecp256k1Verbose => {
+                self.display_transaction_fee(&detected_type);
+
                 Ok(())
             }
-            SignMode::Ed25519Summary | SignMode::Secp256k1Summary => match detected_type {
-                DetectedTxType::Transfer {
-                    fee: _,
-                    src_address,
-                    dst_address,
-                    res_address,
-                    amount,
-                } => {
-                    utils::info_message(b"TX Type:", b"Transfer");
-
-                    self.display_transfer_details(
-                        &src_address,
-                        &dst_address,
-                        &res_address,
-                        &amount,
-                    );
-                    self.show_transaction_fee(&detected_type);
+            SignMode::TxEd25519Summary | SignMode::TxSecp256k1Summary => match detected_type {
+                DetectedTxType::Transfer(details) => {
+                    transfer::display(&details, &mut self.processor);
 
                     Ok(())
                 }
-                DetectedTxType::Other(_) | DetectedTxType::Error(_) => {
+                DetectedTxType::Other(fee) | DetectedTxType::Error(fee) => {
                     if Settings::get().blind_signing {
-                        utils::info_message(b"TX Hash:", &digest.as_hex());
-                        self.show_transaction_fee(&detected_type);
+                        hash::display(digest, &fee, &mut self.processor);
 
                         Ok(())
                     } else {
-                        utils::error_message("\nBlind signing must\nbe enabled in Settings");
+                        hash::error();
+
                         Err(AppError::BadTxSignHashSignState)
                     }
                 }
             },
-            SignMode::AuthEd25519 | SignMode::AuthSecp256k1 => Ok(()),
-        }
-    }
-
-    fn display_transfer_details(
-        &mut self,
-        src_address: &Address,
-        dst_address: &Address,
-        res_address: &Address,
-        amount: &Decimal,
-    ) {
-        utils::info_message(b"From:", self.processor.format_address(src_address));
-        utils::info_message(b"To:", self.processor.format_address(dst_address));
-
-        if res_address.is_xrd() {
-            utils::info_message(b"Amount:", self.processor.format_decimal(amount, b" XRD"));
-        } else {
-            utils::info_message(b"Resource:", self.processor.format_address(res_address));
-            utils::info_message(b"Amount:", self.processor.format_decimal(amount, b""));
+            SignMode::AuthEd25519
+            | SignMode::AuthSecp256k1
+            | SignMode::PreAuthHashEd25519
+            | SignMode::PreAuthHashSecp256k1 => Ok(()),
         }
     }
 

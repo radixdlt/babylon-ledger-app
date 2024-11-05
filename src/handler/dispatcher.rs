@@ -10,7 +10,7 @@ pub fn dispatcher<T: Copy>(
     ins: Command,
     state: &mut TxState<T>,
 ) -> Result<(), AppError> {
-    let class = CommandClass::from_comm(comm)?;
+    let class = core::intrinsics::black_box(CommandClass::from_comm(comm))?;
 
     match ins {
         Command::GetAppVersion => get_app_version::handle(comm),
@@ -25,6 +25,9 @@ pub fn dispatcher<T: Copy>(
         Command::SignAuthSecp256k1 => sign_auth_secp256k1::handle(comm, class, state),
         Command::VerifyAddressEd25519 => verify_address_ed25519::handle(comm),
         Command::VerifyAddressSecp256k1 => verify_address_secp256k1::handle(comm),
-        Command::Unknown => Err(AppError::NotImplemented),
+        Command::SignPreAuthHashEd25519 => sign_preauth_hash_ed25519::handle(comm, class, state),
+        Command::SignPreAuthHashSecp256k1 => {
+            sign_preauth_hash_secp256k1::handle(comm, class, state)
+        }
     }
 }

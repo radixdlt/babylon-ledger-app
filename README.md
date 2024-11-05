@@ -7,8 +7,14 @@ This repository follows quite traditional branching policy:
 - `main` contains the current released version
 - `develop` collects all changes planned for inclusion into the next release
 
-## Future Version Changes Summary
-This section contains a list of changes merged into branch and planned for merging into `main`. For `main` this section is just a placeholder.
+## Changes Summary
+- Separation of the UI components. This is necessary for the future implementation of the Stax device support.
+- Fixes for UI according to the comments from Ledger team:
+  - Dashboard icon position (should be at the right)
+  - Double press on "Done" for verify address action
+  - No right arrow on the Nano S+/X on the "Review Transaction" screen
+  - Missing icon on Nano S+/X on the "Blind signing.." screen
+- Support for pre-auth subintent hash signing
 
 ## Build
 

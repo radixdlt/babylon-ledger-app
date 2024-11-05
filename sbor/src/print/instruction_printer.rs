@@ -351,7 +351,7 @@ mod tests {
     use crate::print::fanout::Fanout;
     use crate::print::tty::TTY;
     use crate::print::tx_intent_type::TxIntentType;
-    use crate::print::tx_summary_detector::{DetectedTxType, TxSummaryDetector};
+    use crate::print::tx_summary_detector::{DetectedTxType, TransferDetails, TxSummaryDetector};
     use crate::sbor_decoder::*;
     use crate::static_vec::AsSlice;
     use crate::tx_intent_test_data::tests::*;
@@ -474,7 +474,13 @@ mod tests {
                 });
 
             match expected_type {
-                DetectedTxType::Transfer { fee, .. } | DetectedTxType::Other(fee) => match fee {
+                DetectedTxType::Transfer(details) => match details.fee {
+                    Some(fee) => {
+                        println!("Expected Fee: {}", fee);
+                    }
+                    None => {}
+                },
+                DetectedTxType::Other(fee) => match fee {
                     Some(fee) => {
                         println!("Expected Fee: {}", fee);
                     }
@@ -486,7 +492,13 @@ mod tests {
             let detected = self.detector.get_detected_tx_type();
 
             match detected {
-                DetectedTxType::Transfer { fee, .. } | DetectedTxType::Other(fee) => match fee {
+                DetectedTxType::Transfer(details) => match details.fee {
+                    Some(fee) => {
+                        println!("Expected Fee: {}", fee);
+                    }
+                    None => {}
+                },
+                DetectedTxType::Other(fee) => match fee {
                     Some(fee) => {
                         println!("Detected Fee: {}", fee);
                     }
@@ -857,7 +869,7 @@ br##"
 3 of 4: TakeNonFungiblesFromWorktop Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq) Array<NonFungibleLocalId>(#1u64#, #2u64#, #3u64#, )
 4 of 4: CallMethod Address(account_loc1cyzfj6p254jy6lhr237s7pcp8qqz6c8ahq9mn6nkdjxxxat5pjq9xc) "try_deposit_or_abort" Tuple(Bucket(0u32), )
 "##,
-            &DetectedTxType::Transfer {
+            &DetectedTxType::Transfer(TransferDetails {
                 fee: Some(Decimal::whole(500)),
                 src_address: Address::from_array([
                     0xc1, 0x18, 0x83, 0x46, 0x2f, 0x39, 0x79, 0x6d, 0xa8, 0x3f, 0x2f, 0x82, 0xca,
@@ -875,7 +887,7 @@ br##"
                     0x67, 0xae, 0x09, 0x8b,
                 ]),
                 amount: Decimal::whole(3),
-            },
+            }),
             TxIntentType::Transfer,
         );
     }
@@ -888,7 +900,7 @@ br##"
 2 of 3: TakeNonFungiblesFromWorktop Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq) Array<NonFungibleLocalId>(#1u64#, #2u64#, #3u64#, )
 3 of 3: CallMethod Address(account_loc1cyzfj6p254jy6lhr237s7pcp8qqz6c8ahq9mn6nkdjxxxat5pjq9xc) "try_deposit_or_abort" Tuple(Bucket(0u32), )
 "##,
-            &DetectedTxType::Transfer {
+            &DetectedTxType::Transfer(TransferDetails {
                 fee: Some(Decimal::whole(500)),
                 src_address: Address::from_array([
                     0xc1, 0x18, 0x83, 0x46, 0x2f, 0x39, 0x79, 0x6d, 0xa8, 0x3f, 0x2f, 0x82, 0xca,
@@ -906,7 +918,7 @@ br##"
                     0x67, 0xae, 0x09, 0x8b,
                 ]),
                 amount: Decimal::whole(3),
-            },
+            }),
             TxIntentType::Transfer,
         );
     }
@@ -920,7 +932,7 @@ br##"
 3 of 4: TakeFromWorktop Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq) Decimal(2)
 4 of 4: CallMethod Address(account_loc1cyzfj6p254jy6lhr237s7pcp8qqz6c8ahq9mn6nkdjxxxat5pjq9xc) "try_deposit_or_abort" Tuple(Bucket(0u32), )
 "##,
-            &DetectedTxType::Transfer {
+            &DetectedTxType::Transfer(TransferDetails {
                 fee: Some(Decimal::whole(500)),
                 src_address: Address::from_array([
                     0xc1, 0x18, 0x83, 0x46, 0x2f, 0x39, 0x79, 0x6d, 0xa8, 0x3f, 0x2f, 0x82, 0xca,
@@ -938,7 +950,7 @@ br##"
                     0x67, 0xae, 0x09, 0x8b,
                 ]),
                 amount: Decimal::whole(2),
-            },
+            }),
             TxIntentType::Transfer,
         );
     }
@@ -951,7 +963,7 @@ br##"
 2 of 3: TakeFromWorktop Address(resource_loc1ngktvyeenvvqetnqwysevcx5fyvl6hqe36y3rkhdfdn6uzvt98ehnq) Decimal(2)
 3 of 3: CallMethod Address(account_loc1cyzfj6p254jy6lhr237s7pcp8qqz6c8ahq9mn6nkdjxxxat5pjq9xc) "try_deposit_or_abort" Tuple(Bucket(0u32), )
 "##,
-            &DetectedTxType::Transfer {
+            &DetectedTxType::Transfer(TransferDetails {
                 fee: Some(Decimal::whole(500)),
                 src_address: Address::from_array([
                     0xc1, 0x18, 0x83, 0x46, 0x2f, 0x39, 0x79, 0x6d, 0xa8, 0x3f, 0x2f, 0x82, 0xca,
@@ -969,7 +981,7 @@ br##"
                     0x67, 0xae, 0x09, 0x8b,
                 ]),
                 amount: Decimal::whole(2),
-            },
+            }),
             TxIntentType::Transfer,
         );
     }
@@ -983,7 +995,7 @@ br##"
 3 of 4: TakeFromWorktop Address(resource_loc1thvwu8dh6lk4y9mntemkvj25wllq8adq42skzufp4m8wxxue22t7al) Decimal(123)
 4 of 4: CallMethod Address(account_loc1cyzfj6p254jy6lhr237s7pcp8qqz6c8ahq9mn6nkdjxxxat5pjq9xc) "try_deposit_or_abort" Tuple(Bucket(0u32), )
 "##,
-            &DetectedTxType::Transfer {
+            &DetectedTxType::Transfer( TransferDetails {
                 fee: Some(Decimal::whole(500)),
                 src_address: Address::from_array([
                     0xc1, 0x18, 0x83, 0x46, 0x2f, 0x39, 0x79, 0x6d, 0xa8, 0x3f, 0x2f, 0x82, 0xca,
@@ -1001,7 +1013,7 @@ br##"
                     0xce, 0xe3, 0x1b, 0x99,
                 ]),
                 amount: Decimal::whole(123),
-            },
+            }),
             TxIntentType::Transfer,
         );
     }
@@ -1031,7 +1043,7 @@ br##"
 2 of 3: TakeFromWorktop Address(resource_loc1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxvq32hv) Decimal(123)
 3 of 3: CallMethod Address(account_loc1cyzfj6p254jy6lhr237s7pcp8qqz6c8ahq9mn6nkdjxxxat5pjq9xc) "try_deposit_or_abort" Tuple(Bucket(0u32), )
 "##,
-            &DetectedTxType::Transfer {
+            &DetectedTxType::Transfer(TransferDetails {
                 fee: Some(Decimal::whole(25)),
                 src_address: Address::from_array([
                     0xc1, 0x18, 0x83, 0x46, 0x2f, 0x39, 0x79, 0x6d, 0xa8, 0x3f, 0x2f, 0x82, 0xca,
@@ -1049,7 +1061,7 @@ br##"
                     0x8c, 0x63, 0x18, 0xc6,
                 ]),
                 amount: Decimal::whole(123),
-            },
+            }),
             TxIntentType::Transfer,
         );
     }
@@ -1064,7 +1076,7 @@ br##"
 4 of 5: CallMethod Address(account_loc1cyzfj6p254jy6lhr237s7pcp8qqz6c8ahq9mn6nkdjxxxat5pjq9xc) "try_deposit_or_abort" Tuple(Bucket(0u32), )
 5 of 5: CallMethod Address(account_loc1cyvgx33089ukm2pl97pv4max0x40ruvfy4lt60yvya744cveyghrta) "lock_fee" Tuple(Decimal(3.4), )
 "##,
-            &DetectedTxType::Transfer {
+            &DetectedTxType::Transfer(TransferDetails {
                 fee: Some(Decimal::new(4600000000000000000u128)),
                 src_address: Address::from_array([
                     0xc1, 0x18, 0x83, 0x46, 0x2f, 0x39, 0x79, 0x6d, 0xa8, 0x3f, 0x2f, 0x82, 0xca,
@@ -1082,7 +1094,7 @@ br##"
                     0x8c, 0x63, 0x18, 0xc6,
                 ]),
                 amount: Decimal::whole(123),
-            },
+            }),
             TxIntentType::Transfer,
         );
     }

@@ -1,10 +1,9 @@
+use crate::ui::multiline_scroller::{LINE1_Y, LINE2_Y, LINE3_Y};
 use include_gif::include_gif;
-use ledger_device_sdk::ui::bagls::{Icon, CROSSMARK_ICON};
+use ledger_device_sdk::ui::bagls::Icon;
 use ledger_device_sdk::ui::bitmaps::{Glyph, BACK};
 use ledger_device_sdk::ui::layout::{Draw, Layout, Location, StringPlace};
-
-use crate::ui::multiline_scroller::{MultilineMessageScroller, LINE1_Y, LINE2_Y, LINE3_Y};
-use crate::ui::single_message::SingleMessage;
+use ledger_device_sdk::ui::{SCREEN_HEIGHT, SCREEN_WIDTH};
 
 pub trait CenteredText {
     fn draw_centered(&self, bold: bool);
@@ -31,20 +30,17 @@ impl CenteredText for &str {
     }
 }
 
-pub trait LeftAlignedMiddle {
-    fn draw_left_aligned_middle(&self);
+pub trait TopCenter {
+    fn draw_top_center(&self);
 }
 
-pub const DEFAULT_PADDING: usize = 11;
-pub const DEFAULT_ICON_HEIGHT: usize = 14;
-
-impl LeftAlignedMiddle for Icon<'_> {
-    fn draw_left_aligned_middle(&self) {
+impl TopCenter for Icon<'_> {
+    fn draw_top_center(&self) {
         Icon {
             icon: self.icon,
             pos: (
-                DEFAULT_PADDING as i16,
-                Location::Middle.get_y(DEFAULT_ICON_HEIGHT) as i16,
+                SCREEN_WIDTH as i16 / 2 - self.icon.width as i16 / 2,
+                SCREEN_HEIGHT as i16 / 2 - self.icon.height as i16,
             ),
         }
         .display();
@@ -54,16 +50,3 @@ impl LeftAlignedMiddle for Icon<'_> {
 pub const RADIX_LOGO: Glyph = Glyph::from_include(include_gif!("icons/nanox_app_radix.gif"));
 pub const RADIX_LOGO_ICON: Icon = Icon::from(&RADIX_LOGO);
 pub const BACK_ICON: Icon = Icon::from(&BACK);
-
-pub fn info_message(title: &[u8], message: &[u8]) {
-    MultilineMessageScroller::with_title(
-        core::str::from_utf8(title).unwrap(),
-        core::str::from_utf8(message).unwrap(),
-        true,
-    )
-    .event_loop();
-}
-
-pub fn error_message(message: &str) {
-    SingleMessage::with_icon(message, CROSSMARK_ICON).show_and_wait();
-}

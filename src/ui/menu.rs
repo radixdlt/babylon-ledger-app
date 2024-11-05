@@ -1,14 +1,14 @@
 use ledger_device_sdk::buttons::{ButtonEvent, ButtonsState};
 use ledger_device_sdk::ui::bagls::{Icon, LEFT_ARROW, LEFT_S_ARROW, RIGHT_ARROW, RIGHT_S_ARROW};
 use ledger_device_sdk::ui::gadgets::{clear_screen, get_event};
-use ledger_device_sdk::ui::layout::Draw;
+use ledger_device_sdk::ui::layout::{Draw, Layout, Location, StringPlace};
 use ledger_device_sdk::ui::screen_util::screen_update;
 
 use crate::io::UxEvent;
-use crate::ui::utils::{CenteredText, LeftAlignedMiddle};
+use crate::ui::multiline_scroller::LINE2_Y;
+use crate::ui::utils::{CenteredText, TopCenter};
 
 pub enum MenuFeature<'a> {
-    Plain,
     Icon(&'a Icon<'a>),
     OnOffState(fn() -> bool),
 }
@@ -20,7 +20,7 @@ pub struct MenuItem<'a> {
 }
 
 impl<'a> MenuItem<'a> {
-    pub fn new(feature: MenuFeature<'a>, text: &'a str, action: fn() -> bool) -> Self {
+    pub const fn new(feature: MenuFeature<'a>, text: &'a str, action: fn() -> bool) -> Self {
         MenuItem {
             text,
             action,
@@ -29,18 +29,16 @@ impl<'a> MenuItem<'a> {
     }
 }
 
-pub struct Menu<'a> {
-    items: &'a [MenuItem<'a>],
+pub struct Menu<'a, const N: usize> {
+    items: [MenuItem<'a>; N],
     current: usize,
 }
-
-const HALF_ICON_WIDTH: usize = 7;
 
 const ON_TEXT: &str = "\n\nEnabled";
 const OFF_TEXT: &str = "\n\nDisabled";
 
-impl<'a> Menu<'a> {
-    pub const fn new(items: &'a [MenuItem<'a>]) -> Self {
+impl<'a, const N: usize> Menu<'a, N> {
+    pub const fn new(items: [MenuItem<'a>; N]) -> Self {
         Menu { items, current: 0 }
     }
 
@@ -49,13 +47,18 @@ impl<'a> Menu<'a> {
 
         let item = &self.items[self.current];
 
-        item.text.draw_centered(true);
-
         match item.feature {
-            MenuFeature::Plain => {}
-            MenuFeature::Icon(icon) => icon.draw_left_aligned_middle(),
+            MenuFeature::Icon(icon) => {
+                item.text.place(
+                    Location::Custom(LINE2_Y + icon.icon.height as usize / 2),
+                    Layout::Centered,
+                    true,
+                );
+                icon.draw_top_center();
+            }
             MenuFeature::OnOffState(getter) => {
-                if (getter)() { ON_TEXT } else { OFF_TEXT }.draw_centered(false)
+                item.text.draw_centered(true);
+                if (getter)() { ON_TEXT } else { OFF_TEXT }.draw_centered(false);
             }
         }
 
