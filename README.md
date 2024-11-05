@@ -79,12 +79,8 @@ Install python dependencies:
 python3 -m pip config set global.break-system-packages true && pip3 install protobuf==3.20.3 && pip3 install ledgerwallet==0.5.1 && pip3 install ledgerblue
 ```
 
-Install thumbv6m-none-eabi:
-```sh
-rustup target add thumbv6m-none-eabi
-```
 
-Export PATH:
+Install thumbv6m-none-eabi, by downloading the installer from [here](https://developer.arm.com/-/media/Files/downloads/gnu/12.2.mpacbti-rel1/binrel/arm-gnu-toolchain-12.2.mpacbti-rel1-darwin-x86_64-arm-none-eabi.pkg?rev=2f38f68c2683438e895886abee9be5fc&hash=A0BB95236291FB90466A82ED4F7B11B6). Then export its PATH:
 ```sh
 export PATH="$PATH:/Applications/ArmGNUToolchain/12.2.mpacbti-rel1/arm-none-eabi/bin"
 ```
