@@ -1,96 +1,179 @@
+from enum import Enum
 from pathlib import Path
-from ragger.bip import pack_derivation_path
+from typing import List
 from ragger.navigator import NavInsID
-from cryptography.hazmat.primitives.asymmetric import ed25519
+from ragger.backend.interface import BackendInterface
+from ragger.backend.speculos import SpeculosBackend
+from ragger.firmware.structs import Firmware
+from ragger.navigator.navigator import Navigator
 
-CLA1 = 0xAA
-CLA2 = 0xAC
-INS = 0x41
+from ragger_tests.application_client.app import App
+from ragger_tests.application_client.curve import C, Curve25519
 
 DATA_PATH = str(Path(__file__).parent.joinpath("data").absolute()) + "/"
 ROOT_SCREENSHOT_PATH = Path(__file__).parent.resolve()
 
-def read_file(file):
-    with open(DATA_PATH + file, "rb") as f:
-        return f.read()
+class BlindSigningSettings(Enum):
+    DONT_CHECK_SETTINGS = "DONT_CHECK_SETTINGS"
+    FAIL_IF_OFF         = "FAIL_IF_OFF"
+    FAIL_IF_ON          = "FAIL_IF_ON"
+    SKIP_IF_OFF         = "SKIP_IF_OFF"
+    SKIP_IF_ON          = "SKIP_IF_ON"
 
+    def should_check(self) -> bool:
+        return self != BlindSigningSettings.DONT_CHECK_SETTINGS
 
-def send_derivation_path(backend, path, navigator):
-    with backend.exchange_async(cla=CLA1, ins=INS, data=pack_derivation_path(path)) as response:
-        navigator.navigate([NavInsID.RIGHT_CLICK])
+    def should_be_off(self) -> bool:
+        return self == BlindSigningSettings.SKIP_IF_ON or self == BlindSigningSettings.FAIL_IF_ON
 
+    def should_be_on(self) -> bool:
+        return self == BlindSigningSettings.SKIP_IF_OFF or self == BlindSigningSettings.FAIL_IF_OFF
 
-def send_tx_intent(txn, click_count, backend, navigator, firmware, test_name):
-    num_chunks = len(txn) // 255 + 1
-    
+    def should_fail(self) -> bool:
+        return self == BlindSigningSettings.FAIL_IF_OFF or self == BlindSigningSettings.FAIL_IF_ON
+
+    def should_skip(self) -> bool:
+        return self == BlindSigningSettings.SKIP_IF_ON or self == BlindSigningSettings.SKIP_IF_OFF
+
+    def should_abort_execution_due_to_blind_sign(self, backend: BackendInterface) -> bool:
+        if self.should_check() and not isinstance(backend, SpeculosBackend):
+            app = App(backend)
+            app_settings = app.get_app_settings()
+            is_blind_signing_enabled = app_settings.is_blind_signing_enabled
+            if is_blind_signing_enabled and self.should_be_off():
+                errmsg = "⚙️ ❌ Blind signing is on, but required to be off."
+                print(errmsg)
+                if self.should_fail():
+                    raise ValueError(errmsg)
+                elif self.should_skip():
+                    print("🙅‍♀️ Skipping test")
+                    return True
+            elif not is_blind_signing_enabled and self.should_be_on():
+                errmsg = "⚙️ ❌ Blind signing is off, but required to be on."
+                print(errmsg)
+                if self.should_fail():
+                    raise ValueError(errmsg)
+                elif self.should_skip():
+                    print("🙅‍♀️ Skipping test")
+                    return True
+            else:
+                enabled_or_not = "ENABLED" if is_blind_signing_enabled else "DISABLED"
+                print(f"✅ Blind signing is: {enabled_or_not} which it was required to be.")
+        return False
+
+def sign_tx(
+    curve: C,
+    path: str,
+    firmware: Firmware, 
+    backend: BackendInterface, 
+    navigator: Navigator, 
+    click_count: int, 
+    txn: bytes, 
+    test_name: str,
+    blind_signing_settings: BlindSigningSettings
+):
+    clicks: List[NavInsID] = []
+
     if click_count > 0:
         clicks = [NavInsID.RIGHT_CLICK] * click_count
         clicks.append(NavInsID.BOTH_CLICK)
     else:
         clicks = [NavInsID.RIGHT_CLICK]
 
-    for i in range(num_chunks):
-        chunk = txn[i * 255:(i + 1) * 255]
+    def navigate_path():
+        navigator.navigate([NavInsID.RIGHT_CLICK])
 
-        if i != num_chunks - 1:
-            cls = 0xAB
-            backend.exchange(cla=cls, ins=INS, p1=0, p2=0, data=chunk)
-        else:
-            cls = 0xAC
-            with backend.exchange_async(cla=cls, ins=INS, p1=0, p2=0, data=chunk) as response:
-                if firmware.device.startswith("nano"):
-                    navigator.navigate_and_compare(ROOT_SCREENSHOT_PATH, test_name, clicks)
-    return backend.last_async_response.data
+    def navigate_sign():
+        if firmware.is_nano:
+            navigator.navigate_and_compare(ROOT_SCREENSHOT_PATH, test_name, clicks)
+    
+    if blind_signing_settings.should_abort_execution_due_to_blind_sign(backend):
+        return
 
+    app = App(backend)
+    response = app.sign_tx(
+        curve=curve,
+        path=path, 
+        txn=txn,
+        navigate_path=navigate_path,
+        navigate_sign=navigate_sign,
+    )
 
-def sign_tx_ed25519(firmware, backend, navigator, click_count, file_name, test_name):
-    send_derivation_path(backend, "m/44'/1022'/12'/525'/1460'/0'", navigator)
-    txn = read_file(file_name)
+    assert response.verify_signature()
 
-    global rc
-    try:
-        rc = send_tx_intent(txn, click_count, backend, navigator, firmware, test_name)
-    except Exception as e:
-        if click_count == 0:
-            return
-        print("Communication error ", e)
-        raise 
-
-    pubkey = ed25519.Ed25519PublicKey.from_public_bytes(bytes(rc[64:96]))
-    try:
-        pubkey.verify(bytes(rc[0:64]), bytes(rc[96:128]))
-    except Exception as e:
-        print("Invalid signature ", e)
-        raise 
+def read_file(file: str) -> bytes:
+    with open(DATA_PATH + file, "rb") as f:
+        return f.read()
 
 
-def test_sign_tx_ed25519_call_function(firmware, backend, navigator, test_name):
-    sign_tx_ed25519(firmware, backend, navigator, 0, "call_function.txn", test_name)
+def sign_tx_with_file_name(
+    curve: C,
+    path: str,
+    firmware: Firmware, 
+    backend: BackendInterface, 
+    navigator: Navigator, 
+    click_count: int, 
+    file_name: str, 
+    test_name: str,
+    blind_signing_settings: BlindSigningSettings
+):
+    txn = read_file(file=file_name)
+    sign_tx(
+        curve=curve,
+        path=path,
+        firmware=firmware, 
+        backend=backend,
+        navigator=navigator,
+        click_count=click_count,
+        txn=txn,
+        test_name=test_name,
+        blind_signing_settings=blind_signing_settings
+    )
 
+def sign_tx_ed25519(
+    firmware: Firmware, 
+    backend: BackendInterface, 
+    navigator: Navigator, 
+    click_count: int, 
+    file_name: str, 
+    test_name: str,
+    blind_signing_settings: BlindSigningSettings = BlindSigningSettings.DONT_CHECK_SETTINGS
+):
+    sign_tx_with_file_name(
+        curve=Curve25519,
+        path="m/44'/1022'/12'/525'/1460'/0'",
+        firmware=firmware, 
+        backend=backend,
+        navigator=navigator,
+        click_count=click_count,
+        file_name=file_name,
+        test_name=test_name,
+        blind_signing_settings=blind_signing_settings
+    )
+
+# def test_sign_tx_ed25519_call_function(firmware, backend, navigator, test_name):
+#     sign_tx_ed25519(
+#         firmware, backend, navigator, 0, "call_function.txn", test_name, 
+#         blind_signing_settings=BlindSigningSettings.SKIP_IF_OFF
+#     )
 
 def test_sign_tx_ed25519_simple_transfer(firmware, backend, navigator, test_name):
     sign_tx_ed25519(firmware, backend, navigator, 13, "simple_transfer.txn", test_name)
 
-
 def test_sign_tx_ed25519_simple_transfer_new_format(firmware, backend, navigator, test_name):
     sign_tx_ed25519(firmware, backend, navigator, 10, "simple_transfer_new_format.txn", test_name)
-
 
 def test_sign_tx_ed25519_simple_transfer_nft(firmware, backend, navigator, test_name):
     sign_tx_ed25519(firmware, backend, navigator, 13, "simple_transfer_nft.txn", test_name)
 
-
 def test_sign_tx_ed25519_simple_transfer_nft_by_id(firmware, backend, navigator, test_name):
     sign_tx_ed25519(firmware, backend, navigator, 13, "simple_transfer_nft_by_id.txn", test_name)
-
 
 def test_sign_tx_ed25519_simple_transfer_nft_new_format(firmware, backend, navigator, test_name):
     sign_tx_ed25519(firmware, backend, navigator, 13, "simple_transfer_nft_new_format.txn", test_name)
 
-
 def test_sign_tx_ed25519_simple_transfer_nft_by_id_new_format(firmware, backend, navigator, test_name):
     sign_tx_ed25519(firmware, backend, navigator, 13, "simple_transfer_nft_by_id_new_format.txn", test_name)
-
 
 def test_sign_tx_ed25519_simple_transfer_with_multiple_locked_fees(firmware, backend, navigator, test_name):
     sign_tx_ed25519(firmware, backend, navigator, 10, "simple_transfer_with_multiple_locked_fees.txn", test_name)

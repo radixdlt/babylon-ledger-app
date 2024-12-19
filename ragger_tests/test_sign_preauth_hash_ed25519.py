@@ -1,59 +1,84 @@
-from typing import Generator
 from pathlib import Path
-from ragger.bip import pack_derivation_path
 from ragger.navigator import NavInsID
-from contextlib import contextmanager
-from cryptography.hazmat.primitives.asymmetric import ed25519
-import hashlib
+from ragger.navigator import NavInsID
+from ragger.backend.interface import BackendInterface
+from ragger.firmware.structs import Firmware
+from ragger.navigator.navigator import Navigator
+from ragger.backend.speculos import SpeculosBackend
+
+from ragger_tests.application_client.app import App
+from ragger_tests.application_client.curve import C, Curve25519
+from ragger_tests.test_sign_tx_ed25519 import BlindSigningSettings
 
 ROOT_SCREENSHOT_PATH = Path(__file__).parent.resolve()
 
-CLA1 = 0xAA
-CLA2 = 0xAC
-INS = 0xA1
-
-
-def enable_blind_signing(navigator, test_name):
+def enable_blind_signing(navigator: Navigator):
     print("Enable blind signing")
-    navigator.navigate([NavInsID.RIGHT_CLICK, NavInsID.RIGHT_CLICK, NavInsID.BOTH_CLICK,  # Settings
-                        NavInsID.RIGHT_CLICK, NavInsID.BOTH_CLICK,  # Blind signing
-                        NavInsID.RIGHT_CLICK, NavInsID.BOTH_CLICK,  # Enable
-                        NavInsID.LEFT_CLICK, NavInsID.LEFT_CLICK],  # Main screen
-                       screen_change_before_first_instruction=False)
+    navigator.navigate(
+        instructions=[
+            NavInsID.RIGHT_CLICK, NavInsID.RIGHT_CLICK, NavInsID.BOTH_CLICK,  # Settings
+            NavInsID.RIGHT_CLICK, NavInsID.BOTH_CLICK,  # Blind signing
+            NavInsID.RIGHT_CLICK, NavInsID.BOTH_CLICK,  # Enable
+            NavInsID.LEFT_CLICK, NavInsID.LEFT_CLICK    # Main screen
+        ],  
+        screen_change_before_first_instruction=False
+    )
 
+def sign_preauth_hash(
+    curve: C,
+    path: str,
+    firmware: Firmware, 
+    backend: BackendInterface, 
+    navigator: Navigator,
+    test_name: str, 
+    message_to_hash: bytes
+):
+    if isinstance(backend, SpeculosBackend):
+        enable_blind_signing(navigator)
+    elif BlindSigningSettings.SKIP_IF_OFF.should_abort_execution_due_to_blind_sign(backend):
+        return
 
-def send_derivation_path(backend, path, navigator):
-    with backend.exchange_async(cla=CLA1, ins=INS, data=pack_derivation_path(path)) as response:
+    def navigate_path():
         navigator.navigate([NavInsID.RIGHT_CLICK])
 
+    def navigate_sign():
+        if firmware.is_nano:
+            navigator.navigate_and_compare(
+                path=ROOT_SCREENSHOT_PATH, 
+                test_case_name=test_name,
+                instructions=[
+                    NavInsID.RIGHT_CLICK, NavInsID.RIGHT_CLICK,
+                    NavInsID.RIGHT_CLICK, NavInsID.BOTH_CLICK
+                ]
+            )
 
-@contextmanager
-def send_preauth_hash_request(backend, vector) -> Generator[None, None, None]:
-    hash_calculator = hashlib.blake2b(digest_size=32)
-    hash_calculator.update(vector)
-    data = hash_calculator.hexdigest()
+    app = App(backend)
+    response = app.sign_preauth_hash(
+        curve=curve,
+        path=path, 
+        message_to_hash=message_to_hash,
+        navigate_path=navigate_path,
+        navigate_sign=navigate_sign,
+    )
 
-    with backend.exchange_async(cla=CLA2, ins=INS, data=bytes.fromhex(data)) as response:
-        yield response
+    assert response.verify_signature()
 
-
-def sign_preauth_hash_ed25519(firmware, backend, navigator, test_name, vector):
-    enable_blind_signing(navigator, test_name)
-    send_derivation_path(backend, "m/44'/1022'/12'/525'/1460'/0'", navigator)
-
-    with send_preauth_hash_request(backend, vector):
-        if firmware.device.startswith("nano"):
-            navigator.navigate_and_compare(ROOT_SCREENSHOT_PATH, test_name,
-                                           [NavInsID.RIGHT_CLICK, NavInsID.RIGHT_CLICK,
-                                            NavInsID.RIGHT_CLICK, NavInsID.BOTH_CLICK])
-
-    rc = backend.last_async_response.data
-    pubkey = ed25519.Ed25519PublicKey.from_public_bytes(bytes(rc[64:96]))
-    try:
-        pubkey.verify(bytes(rc[0:64]), bytes(rc[96:128]))
-    except Exception as e:
-        print("Invalid signature ", e)
-
+def sign_preauth_hash_ed25519(
+    firmware: Firmware, 
+    backend: BackendInterface, 
+    navigator: Navigator,
+    test_name: str, 
+    message_to_hash: bytes
+):
+    sign_preauth_hash(
+        curve=Curve25519,
+        path="m/44'/1022'/12'/525'/1460'/0'",
+        firmware=firmware,
+        backend=backend,
+        navigator=navigator,
+        test_name=test_name,
+        message_to_hash=message_to_hash
+    )
 
 def test_sign_preauth_hash_ed25519_0(firmware, backend, navigator, test_name):
     sign_preauth_hash_ed25519(firmware, backend, navigator, test_name, b'0')
@@ -61,34 +86,26 @@ def test_sign_preauth_hash_ed25519_0(firmware, backend, navigator, test_name):
 def test_sign_preauth_hash_ed25519_1(firmware, backend, navigator, test_name):
     sign_preauth_hash_ed25519(firmware, backend, navigator, test_name, b'1')
 
-
 def test_sign_preauth_hash_ed25519_2(firmware, backend, navigator, test_name):
     sign_preauth_hash_ed25519(firmware, backend, navigator, test_name, b'2')
-
 
 def test_sign_preauth_hash_ed25519_3(firmware, backend, navigator, test_name):
     sign_preauth_hash_ed25519(firmware, backend, navigator, test_name, b'3')
 
-
 def test_sign_preauth_hash_ed25519_4(firmware, backend, navigator, test_name):
     sign_preauth_hash_ed25519(firmware, backend, navigator, test_name, b'4')
-
 
 def test_sign_preauth_hash_ed25519_5(firmware, backend, navigator, test_name):
     sign_preauth_hash_ed25519(firmware, backend, navigator, test_name, b'5')
 
-
 def test_sign_preauth_hash_ed25519_6(firmware, backend, navigator, test_name):
     sign_preauth_hash_ed25519(firmware, backend, navigator, test_name, b'6')
-
 
 def test_sign_preauth_hash_ed25519_7(firmware, backend, navigator, test_name):
     sign_preauth_hash_ed25519(firmware, backend, navigator, test_name, b'7')
 
-
 def test_sign_preauth_hash_ed25519_8(firmware, backend, navigator, test_name):
     sign_preauth_hash_ed25519(firmware, backend, navigator, test_name, b'8')
-
 
 def test_sign_preauth_hash_ed25519_9(firmware, backend, navigator, test_name):
     sign_preauth_hash_ed25519(firmware, backend, navigator, test_name, b'9')

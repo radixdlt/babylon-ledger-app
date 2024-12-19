@@ -1,56 +1,32 @@
-from typing import Generator
 from pathlib import Path
-from ragger.bip import pack_derivation_path
-from ragger.navigator import NavInsID
-from contextlib import contextmanager
+from typing import Tuple
 from cryptography.hazmat.primitives.asymmetric import ec, utils
 from cryptography.hazmat.primitives import hashes
-
-ROOT_SCREENSHOT_PATH = Path(__file__).parent.resolve()
-
-CLA1 = 0xAA
-CLA2 = 0xAC
-INS = 0x71
-
-
-def send_derivation_path(backend, path, navigator):
-    with backend.exchange_async(cla=CLA1, ins=INS, data=pack_derivation_path(path)) as response:
-        navigator.navigate([NavInsID.RIGHT_CLICK])
+from ragger.navigator import NavInsID
+from ragger.backend.interface import BackendInterface
+from ragger.firmware.structs import Firmware
+from ragger.navigator.navigator import Navigator
+from application_client.app import App
+from ragger_tests.application_client.curve import C, SECP256K1
+from ragger_tests.test_sign_auth_ed25519 import sign_auth
 
 
-@contextmanager
-def send_auth_request(backend, daddr, origin, nonce) -> Generator[None, None, None]:
-    addr_length = len(daddr).to_bytes(1, 'little').hex()
-    data = nonce + addr_length + daddr.encode('utf-8').hex() + origin.encode('utf-8').hex()
-
-    with backend.exchange_async(cla=CLA2, ins=INS, data=bytes.fromhex(data)) as response:
-        yield response
-
-
-def sign_auth_secp256k1(firmware, backend, navigator, test_name, vector):
-    send_derivation_path(backend, "m/44'/1022'/10'/525'/1238'", navigator)
-
-    with send_auth_request(backend, vector[1], vector[2], vector[3]):
-        if firmware.device.startswith("nano"):
-            navigator.navigate_and_compare(ROOT_SCREENSHOT_PATH, test_name,
-                                           [NavInsID.RIGHT_CLICK, NavInsID.RIGHT_CLICK,
-                                            NavInsID.RIGHT_CLICK, NavInsID.RIGHT_CLICK,
-                                            NavInsID.RIGHT_CLICK, NavInsID.RIGHT_CLICK,
-                                            NavInsID.RIGHT_CLICK, NavInsID.BOTH_CLICK])
-
-    rc = backend.last_async_response.data
-    r = int.from_bytes(rc[1:33], byteorder='big', signed=False)
-    s = int.from_bytes(rc[33:65], byteorder='big', signed=False)
-    signature = utils.encode_dss_signature(int(r), int(s))
-    pubkey = ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256K1(), bytes(rc[65:98]))
-    try:
-        # Note that Prehashed parameter is irrelevant here, we just need to pass something known to the library
-        pubkey.verify(signature, bytes(rc[98:130]), ec.ECDSA(utils.Prehashed(hashes.SHA256())))
-        print("Success")
-        assert rc[98:130].hex() == vector[0], "Invalid calculated hash\nExpected: " + vector[0] + "\nReceived: " + rc[98:130].hex()
-    except Exception as e:
-        print("Invalid signature ", e)
-
+def sign_auth_secp256k1(
+    firmware: Firmware, 
+    backend: BackendInterface, 
+    navigator: Navigator,
+    test_name: str, 
+    vector: Tuple[str, str, str, str]
+):
+    sign_auth(
+        curve=SECP256K1,
+        path="m/44'/1022'/10'/525'/1238'",
+        firmware=firmware,
+        backend=backend,
+        navigator=navigator,
+        test_name=test_name,
+        vector=vector
+    )
 
 test_vectors = [
     (
@@ -113,34 +89,26 @@ test_vectors = [
 def test_sign_auth_secp256k1_0(firmware, backend, navigator, test_name):
     sign_auth_secp256k1(firmware, backend, navigator, test_name, test_vectors[0])
 
-
 def test_sign_auth_secp256k1_1(firmware, backend, navigator, test_name):
     sign_auth_secp256k1(firmware, backend, navigator, test_name, test_vectors[1])
-
 
 def test_sign_auth_secp256k1_2(firmware, backend, navigator, test_name):
     sign_auth_secp256k1(firmware, backend, navigator, test_name, test_vectors[2])
 
-
 def test_sign_auth_secp256k1_3(firmware, backend, navigator, test_name):
     sign_auth_secp256k1(firmware, backend, navigator, test_name, test_vectors[3])
-
 
 def test_sign_auth_secp256k1_4(firmware, backend, navigator, test_name):
     sign_auth_secp256k1(firmware, backend, navigator, test_name, test_vectors[4])
 
-
 def test_sign_auth_secp256k1_5(firmware, backend, navigator, test_name):
     sign_auth_secp256k1(firmware, backend, navigator, test_name, test_vectors[5])
-
 
 def test_sign_auth_secp256k1_6(firmware, backend, navigator, test_name):
     sign_auth_secp256k1(firmware, backend, navigator, test_name, test_vectors[6])
 
-
 def test_sign_auth_secp256k1_7(firmware, backend, navigator, test_name):
     sign_auth_secp256k1(firmware, backend, navigator, test_name, test_vectors[7])
-
 
 def test_sign_auth_secp256k1_8(firmware, backend, navigator, test_name):
     sign_auth_secp256k1(firmware, backend, navigator, test_name, test_vectors[8])

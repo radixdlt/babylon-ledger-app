@@ -1,93 +1,129 @@
-from typing import Generator
+import os
 from pathlib import Path
-from ragger.bip import pack_derivation_path
+from ragger.backend.interface import BackendInterface
+from ragger.firmware.structs import Firmware
+from ragger.navigator.navigator import Navigator
 from ragger.navigator import NavInsID
-from contextlib import contextmanager
-from cryptography.hazmat.primitives.asymmetric import ed25519
-import hashlib
+from ragger.backend.speculos import SpeculosBackend
+
+from ragger_tests.application_client.app import App
+from ragger_tests.application_client.curve import C, Curve25519
+from ragger_tests.test_sign_preauth_hash_ed25519 import enable_blind_signing
+from ragger_tests.test_sign_tx_ed25519 import BlindSigningSettings
 
 DATA_PATH = str(Path(__file__).parent.joinpath("data").absolute()) + "/"
 ROOT_SCREENSHOT_PATH = Path(__file__).parent.resolve()
 
-CLA1 = 0xAA
-CLA2 = 0xAC
-INS = 0xA3
 
-def read_file(file):
+def sign_preauth_raw(
+    curve: C,
+    path: str,
+    firmware: Firmware, 
+    backend: BackendInterface, 
+    navigator: Navigator, 
+    txn: bytes, 
+    test_name: str,
+    blind_signing_settings: BlindSigningSettings
+):
+
+    def navigate_path():
+        navigator.navigate_and_compare(
+            path=ROOT_SCREENSHOT_PATH, 
+            test_case_name=test_name,
+            instructions=[
+                NavInsID.RIGHT_CLICK
+            ], 
+        )
+
+    def navigate_sign():
+        if firmware.is_nano:
+            navigator.navigate_and_compare(
+                path=ROOT_SCREENSHOT_PATH, 
+                test_case_name=test_name,
+                instructions=[
+                    NavInsID.RIGHT_CLICK, NavInsID.RIGHT_CLICK,
+                    NavInsID.RIGHT_CLICK, NavInsID.BOTH_CLICK
+                ],
+            )
+    
+    if isinstance(backend, SpeculosBackend):
+        enable_blind_signing(navigator)
+    elif blind_signing_settings.should_abort_execution_due_to_blind_sign(backend):
+        return
+
+    app = App(backend)
+    response = app.sign_preauth_raw(
+        curve=curve,
+        path=path, 
+        txn=txn,
+        navigate_path=navigate_path,
+        navigate_sign=navigate_sign,
+    )
+
+    assert response.verify_signature()
+
+def read_file(file: str) -> bytes:
     with open(DATA_PATH + file, "rb") as f:
         return f.read()
 
-def enable_blind_signing(navigator, test_name):
-    print("Enable blind signing")
-    navigator.navigate([NavInsID.RIGHT_CLICK, NavInsID.RIGHT_CLICK, NavInsID.BOTH_CLICK,  # Settings
-                        NavInsID.RIGHT_CLICK, NavInsID.BOTH_CLICK,  # Blind signing
-                        NavInsID.RIGHT_CLICK, NavInsID.BOTH_CLICK,  # Enable
-                        NavInsID.LEFT_CLICK, NavInsID.LEFT_CLICK],  # Main screen
-                       screen_change_before_first_instruction=False)
+
+def sign_preauth_raw_with_file_name(
+    curve: C,
+    path: str,
+    firmware: Firmware, 
+    backend: BackendInterface, 
+    navigator: Navigator, 
+    file_name: str, 
+    test_name: str,
+    blind_signing_settings: BlindSigningSettings = BlindSigningSettings.FAIL_IF_OFF
+):
+    txn = read_file(file=file_name)
+    sign_preauth_raw(
+        curve=curve,
+        path=path,
+        firmware=firmware, 
+        backend=backend,
+        navigator=navigator,
+        txn=txn,
+        test_name=test_name,
+        blind_signing_settings=blind_signing_settings
+    )
+
+def list_files():
+    dir_path = "data"
+    res = []
+    for path in os.listdir(dir_path):
+        if os.path.isfile(os.path.join(dir_path, path)):
+            res.append(os.path.join(path))
+    return res
+
+def sign_preauth_raw_all(
+    curve: C,
+    path: str,
+    firmware: Firmware, 
+    backend: BackendInterface, 
+    navigator: Navigator, 
+):
+    for file_name in list_files():
+        if not file_name.endswith(".si"):
+            continue
+        sign_preauth_raw_with_file_name(
+            curve=curve,
+            path=path,
+            firmware=firmware,
+            backend=backend,
+            navigator=navigator,
+            file_name=file_name,
+            test_name="test_sign_preauth_raw_" + curve.curve_name() + "_" + file_name 
+        )
 
 
-def send_derivation_path(backend, path, navigator):
-    with backend.exchange_async(cla=CLA1, ins=INS, data=pack_derivation_path(path)) as response:
-        navigator.navigate([NavInsID.RIGHT_CLICK])
+def test_sign_preauth_raw_ed25519_all(firmware, backend, navigator):
+    sign_preauth_raw_all(
+        curve=Curve25519,
+        path="m/44'/1022'/12'/525'/1460'/0'",
+        firmware=firmware, 
+        backend=backend,
+        navigator=navigator,
+    )
 
-
-@contextmanager
-def send_preauth_raw_request(backend, vector) -> Generator[None, None, None]:
-    subintent = read_file(vector)
-    num_chunks = len(subintent) // 255 + 1
-
-    for i in range(num_chunks):
-        chunk = subintent[i * 255:(i + 1) * 255]
-
-        if i != num_chunks - 1:
-            cls = 0xAB
-            backend.exchange(cla=cls, ins=INS, p1=0, p2=0, data=chunk)
-        else:
-            cls = 0xAC
-            with backend.exchange_async(cla=cls, ins=INS, p1=0, p2=0, data=chunk) as response:
-                yield response
-
-
-def sign_preauth_raw_ed25519(firmware, backend, navigator, test_name, vector):
-    enable_blind_signing(navigator, test_name)
-    send_derivation_path(backend, "m/44'/1022'/12'/525'/1460'/0'", navigator)
-
-    with send_preauth_raw_request(backend, vector):
-        if firmware.device.startswith("nano"):
-            navigator.navigate_and_compare(ROOT_SCREENSHOT_PATH, test_name,
-                                           [NavInsID.RIGHT_CLICK, NavInsID.RIGHT_CLICK,
-                                            NavInsID.RIGHT_CLICK, NavInsID.BOTH_CLICK])
-
-    rc = backend.last_async_response.data
-    pubkey = ed25519.Ed25519PublicKey.from_public_bytes(bytes(rc[64:96]))
-    try:
-        pubkey.verify(bytes(rc[0:64]), bytes(rc[96:128]))
-    except Exception as e:
-        print("Invalid signature ", e)
-
-
-def test_sign_preauth_raw_ed25519_0(firmware, backend, navigator, test_name):
-    sign_preauth_raw_ed25519(firmware, backend, navigator, test_name, 'subintent_vector_0.si')
-
-def test_sign_preauth_raw_ed25519_1(firmware, backend, navigator, test_name):
-    sign_preauth_raw_ed25519(firmware, backend, navigator, test_name, 'subintent_vector_1.si')
-
-
-def test_sign_preauth_raw_ed25519_2(firmware, backend, navigator, test_name):
-    sign_preauth_raw_ed25519(firmware, backend, navigator, test_name, 'subintent_vector_2.si')
-
-
-def test_sign_preauth_raw_ed25519_3(firmware, backend, navigator, test_name):
-    sign_preauth_raw_ed25519(firmware, backend, navigator, test_name, 'subintent_vector_3.si')
-
-
-def test_sign_preauth_raw_ed25519_4(firmware, backend, navigator, test_name):
-    sign_preauth_raw_ed25519(firmware, backend, navigator, test_name, 'subintent_vector_4.si')
-
-
-def test_sign_preauth_raw_ed25519_5(firmware, backend, navigator, test_name):
-    sign_preauth_raw_ed25519(firmware, backend, navigator, test_name, 'subintent_vector_5.si')
-
-
-def test_sign_preauth_raw_ed25519_6(firmware, backend, navigator, test_name):
-    sign_preauth_raw_ed25519(firmware, backend, navigator, test_name, 'subintent_vector_6.si')

@@ -47,7 +47,8 @@ pub mod tests {
     #[test]
     pub fn generate_binaries() {
         for blob in BLOBS {
-            let mut file = std::fs::File::create(format!("../test/data/{}.si", blob.name)).unwrap();
+            let mut file =
+                std::fs::File::create(format!("../ragger_tests/data/{}.si", blob.name)).unwrap();
             file.write_all(blob.data).unwrap();
         }
     }

@@ -15,6 +15,7 @@ Cargo.lock
 # Python
 __pycache__/
 snapshots-tmp/
+**/venv/*
 
 # Binaries
 *.elf

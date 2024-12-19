@@ -11,7 +11,7 @@ ROOT_SCREENSHOT_PATH = Path(__file__).parent.resolve()
 
 
 def test_dashboard_navigation(firmware, backend, navigator, test_name):
-    if firmware.device.startswith("nano"):
+    if firmware.is_nano:
         navigator.navigate_and_compare(ROOT_SCREENSHOT_PATH, test_name,
                                        [NavInsID.RIGHT_CLICK, NavInsID.RIGHT_CLICK, NavInsID.RIGHT_CLICK,
                                         NavInsID.RIGHT_CLICK, ], screen_change_before_first_instruction=False)
