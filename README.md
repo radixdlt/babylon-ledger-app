@@ -70,10 +70,19 @@ For Nano X:
 
 You can install the locally built binaries onto your physical Ledger Nano S, or Nano S Plus by running a flash script from *host*, not from *shell*. Note that Nano X does not support this.
 
-But before doing so you must install the prerequisites on your host. This requires Python3.
+### Prerequisites
 
+In order to allow sideloading, you must install the following prerequisites on your host. This requires Python3.
+
+Install python dependencies:
 ```sh
-python3 -m pip config set global.break-system-packages true && pip3 install protobuf==3.20.3 && pip3 install ledgerwallet==0.5.1
+python3 -m pip config set global.break-system-packages true && pip3 install protobuf==3.20.3 && pip3 install ledgerwallet==0.5.1 && pip3 install ledgerblue
+```
+
+
+Install thumbv6m-none-eabi, by downloading the installer from [here](https://developer.arm.com/-/media/Files/downloads/gnu/12.2.mpacbti-rel1/binrel/arm-gnu-toolchain-12.2.mpacbti-rel1-darwin-x86_64-arm-none-eabi.pkg?rev=2f38f68c2683438e895886abee9be5fc&hash=A0BB95236291FB90466A82ED4F7B11B6). Then export its PATH:
+```sh
+export PATH="$PATH:/Applications/ArmGNUToolchain/12.2.mpacbti-rel1/arm-none-eabi/bin"
 ```
 
 > [!NOTE]
@@ -81,6 +90,8 @@ python3 -m pip config set global.break-system-packages true && pip3 install prot
 > Verified to work with Secure Elements firmware version `1.1.2` on Nano S Plus.
 
 If you get hit by the notorious [Invalid status 6512 (Unknown Reason)](https://github.com/LedgerHQ/ledgerctl/issues/65) error, then you might need to try a newer version of [`ledgerwallet`](https://github.com/LedgerHQ/ledgerctl/releases) and or newer firmware.
+
+### Sideload
 
 Then you can finally sideload the built binary, like so:
 

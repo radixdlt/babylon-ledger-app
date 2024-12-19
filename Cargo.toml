@@ -6,7 +6,7 @@ edition = "2021"
 description = "Radix Babylon"
 
 [dependencies]
-ledger_device_sdk = "1.18.2"
+ledger_device_sdk = "1.18.3"
 ledger_secure_sdk_sys = "1.5.2"
 include_gif = "1.2.0"
 

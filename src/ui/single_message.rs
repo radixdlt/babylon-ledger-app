@@ -66,7 +66,7 @@ impl<'a> SingleMessage<'a> {
             MessageFeature::WithIcon(icon) => {
                 Icon {
                     icon: icon.icon,
-                    pos: ((SCREEN_WIDTH / 2) as i16, -1),
+                    pos: (SCREEN_WIDTH as i16 / 2 - icon.icon.width as i16 / 2, -1),
                 }
                 .display();
             }
