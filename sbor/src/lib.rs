@@ -59,7 +59,9 @@
 #![feature(const_mut_refs)]
 #![feature(generic_const_exprs)]
 #![allow(incomplete_features)]
+#![allow(unexpected_cfgs)]
 #![cfg_attr(not(test), no_std)]
+
 pub mod bech32;
 pub mod decoder_error;
 pub mod digest;
@@ -74,6 +76,10 @@ pub mod utilities;
 
 pub mod debug;
 
+#[cfg(test)]
+pub mod si_test_data;
+#[cfg(test)]
+mod si_test_data_gen;
 #[cfg(test)]
 pub mod tx_intent_test_data;
 #[cfg(test)]

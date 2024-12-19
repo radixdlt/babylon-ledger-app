@@ -29,5 +29,7 @@ pub fn dispatcher<T: Copy>(
         Command::SignPreAuthHashSecp256k1 => {
             sign_preauth_hash_secp256k1::handle(comm, class, state)
         }
+        Command::SignPreAuthRawEd25519 => sign_preauth_raw_ed25519::handle(comm, class, state),
+        Command::SignPreAuthRawSecp256k1 => sign_preauth_raw_secp256k1::handle(comm, class, state),
     }
 }

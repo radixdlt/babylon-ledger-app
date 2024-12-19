@@ -1,3 +1,8 @@
+//! Transaction summary detector is used to determine the type of the transaction intent and collect
+//! information about fees.
+//! Implementation consists of two independent state machines - one for detecting the intent type and
+//! other to collect fee information. Both of them use information about decoded instructions
+//! received from `InstructionExtractor`.
 use crate::bech32::address::Address;
 use crate::instruction::{Instruction, InstructionInfo};
 use crate::instruction_extractor::ExtractorEvent;
@@ -7,7 +12,7 @@ use crate::sbor_decoder::SborEvent;
 use crate::static_vec::StaticVec;
 use crate::type_info::*;
 
-// Lock_fee: CallMethod -> Address -> Name ("lock_fee") -> TupleLockFee -> (ValueLockFee) -> DoneLockFee
+/// Transaction fee collector state machine phases.
 #[derive(Copy, Clone, PartialEq)]
 #[repr(u8)]
 pub enum FeePhase {
@@ -20,6 +25,7 @@ pub enum FeePhase {
     ValueStart,
 }
 
+/// Transaction type detector state machine phases.
 #[derive(Copy, Clone, PartialEq)]
 #[repr(u8)]
 pub enum DecodingPhase {
@@ -46,9 +52,13 @@ pub enum DecodingPhase {
 #[derive(Copy, Clone, Debug)]
 pub struct TransferDetails {
     pub fee: Option<Decimal>,
+    /// From ...
     pub src_address: Address,
+    /// To ...
     pub dst_address: Address,
+    /// Resource ...
     pub res_address: Address,
+    /// Amount ...
     pub amount: Decimal,
 }
 
@@ -132,14 +142,16 @@ impl DetectedTxType {
     }
 }
 
-//Max of address length and decimal length
+/// Size of temporary buffer for parameter data. It should be enough to store any parameter data
+/// which we're going to use. So far we're operating with addresses, decimal numbers and fixed
+/// method names. None of them exceeds 40 bytes.
 const MAX_TX_DATA_SIZE: usize = 40;
 
 pub struct TxSummaryDetector {
     intent_type: TxIntentType,
     decoding_phase: DecodingPhase,
     fee_phase: FeePhase,
-    data: StaticVec<u8, { MAX_TX_DATA_SIZE }>,
+    data: StaticVec<u8, { MAX_TX_DATA_SIZE }>, // Temporary buffer for parameter data
     fee: Decimal,
     amount: Decimal,
     src_address: Address,

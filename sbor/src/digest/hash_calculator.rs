@@ -1,15 +1,28 @@
+/// Babylon uses quite non-traditional approach to hash calculation. Instead of hashing the whole transaction or subintent SBOR-encoded blob,
+/// it hashes individual components of the transaction/subintent. Then final hash is calculated as a hash of hashes.
+/// This approach introduces substantial complexity in case of the stream decoding and requires a state machine to handle the decoding process.
+///
+/// The general idea is to have two independent digesters - one for current element and one for final hash. Unfortunately, BLOBS require one more digester
+/// because hash of the BLOB field is calculated as hash of hashes of individual BLOBs.
+///
+/// The subintent introduces additional complexity, as hashes for fields are calculated with initial (type) byte skipped
+/// (see `radix-transactions/src/model/versioned.rs` in `radix-scrypto` repository for details of hash calculation)
+///
+/// Implementation basically consists of two decoders which share the same digesters for memory efficiency.
 use core::result::Result;
 
 use crate::digest::digest::Digest;
 use crate::digest::digester::Digester;
 use crate::sbor_decoder::SborEvent;
 
+/// Working modes for the hash calculator
 #[repr(u8)]
 pub enum HashCalculatorMode {
     Transaction,
-    Subintent,
+    PreAuth,
 }
 
+/// State machine phases for the transaction hash calculator
 #[derive(Copy, Clone, PartialEq)]
 #[repr(u8)]
 enum TxHashPhase {
@@ -25,13 +38,27 @@ enum TxHashPhase {
     HashingError,
 }
 
-#[derive(Copy, Clone, PartialEq)]
+/// State machine phases for the subintent hash calculator
+#[derive(Copy, Clone, PartialEq, Debug)]
 #[repr(u8)]
 enum SiHashPhase {
     Start,
+    Core,
+    Header,
+    Blobs,
+    Message,
+    Children,
+    ChildrenContent,
+    Instructions,
+    SingleBlob,
+    SingleBlobLen,
+    SingleBlobData,
+    DecodingError,
+    HashingError,
 }
 
-#[derive(Copy, Clone)]
+/// Internal state machine which controls the process of finalizing/merging hashes
+#[derive(Copy, Clone, Debug)]
 #[repr(u8)]
 enum HashCommitPhase {
     None,
@@ -47,6 +74,7 @@ pub struct TransactionStateMachine {
 pub struct SubintentStateMachine {
     phase: SiHashPhase,
     commit_phase: HashCommitPhase,
+    input_count: u8,
 }
 
 impl TransactionStateMachine {
@@ -63,7 +91,7 @@ impl SubintentStateMachine {
     }
 }
 
-pub struct TxHashCalculator<T: Digester> {
+pub struct HashCalculator<T: Digester> {
     work_digester: T,
     blob_digester: T,
     output_digester: T,
@@ -72,21 +100,21 @@ pub struct TxHashCalculator<T: Digester> {
     mode: HashCalculatorMode,
 }
 
-// Transaction intent hash calculator
-impl<T: Digester> TxHashCalculator<T> {
-    fn handle_tx(&mut self, event: SborEvent) {
+/// Transaction intent hash calculator implementation
+impl<T: Digester> HashCalculator<T> {
+    fn tx_handle(&mut self, event: SborEvent) {
         match event {
-            SborEvent::InputByte(byte) => self.put_byte(byte),
+            SborEvent::InputByte(byte) => self.tx_put_byte(byte),
             SborEvent::Start {
                 type_id: _,
                 nesting_level,
                 ..
-            } => self.process_start(nesting_level),
+            } => self.tx_process_start(nesting_level),
             SborEvent::End {
                 type_id: _,
                 nesting_level,
                 ..
-            } => self.process_end(nesting_level),
+            } => self.tx_process_end(nesting_level),
             SborEvent::Len(_) if self.tx_state_machine.phase == TxHashPhase::SingleBlob => {
                 self.tx_state_machine.phase = TxHashPhase::SingleBlobLen
             }
@@ -94,7 +122,7 @@ impl<T: Digester> TxHashCalculator<T> {
         }
     }
 
-    fn put_byte(&mut self, byte: u8) {
+    fn tx_put_byte(&mut self, byte: u8) {
         match self.tx_state_machine.phase {
             TxHashPhase::Start
             | TxHashPhase::DecodingError
@@ -121,23 +149,23 @@ impl<T: Digester> TxHashCalculator<T> {
 
         match self.tx_state_machine.commit_phase {
             HashCommitPhase::None => {}
-            HashCommitPhase::CommitRegular => self.finalize_and_push(),
+            HashCommitPhase::CommitRegular => self.tx_finalize_and_push(),
             HashCommitPhase::CommitBlob => {
-                self.finalize_and_push_blob();
+                self.tx_finalize_and_push_blob();
                 self.tx_state_machine.phase = TxHashPhase::Blobs;
             }
         }
         self.tx_state_machine.commit_phase = HashCommitPhase::None;
     }
 
-    fn process_start(&mut self, nesting_level: u8) {
+    fn tx_process_start(&mut self, nesting_level: u8) {
         match (self.tx_state_machine.phase, nesting_level) {
             (TxHashPhase::Start, 1) => self.tx_state_machine.phase = TxHashPhase::Header,
             (TxHashPhase::Header, 1) => self.tx_state_machine.phase = TxHashPhase::Instructions,
             (TxHashPhase::Instructions, 1) => self.tx_state_machine.phase = TxHashPhase::Blobs,
             (TxHashPhase::Blobs, 2) => self.tx_state_machine.phase = TxHashPhase::SingleBlob,
             (TxHashPhase::Blobs, 1) => {
-                self.finalize_and_push();
+                self.tx_finalize_and_push();
                 self.tx_state_machine.commit_phase = HashCommitPhase::None;
                 self.tx_state_machine.phase = TxHashPhase::Attachments;
             }
@@ -148,7 +176,7 @@ impl<T: Digester> TxHashCalculator<T> {
         }
     }
 
-    fn process_end(&mut self, nesting_level: u8) {
+    fn tx_process_end(&mut self, nesting_level: u8) {
         match (self.tx_state_machine.phase, nesting_level) {
             (TxHashPhase::Header, 1) => {
                 self.tx_state_machine.commit_phase = HashCommitPhase::CommitRegular
@@ -169,7 +197,7 @@ impl<T: Digester> TxHashCalculator<T> {
         }
     }
 
-    fn finalize_and_push(&mut self) {
+    fn tx_finalize_and_push(&mut self) {
         match self.work_digester.finalize() {
             Ok(digest) => match self.output_digester.update(digest.as_bytes()) {
                 Ok(_) => {}
@@ -190,7 +218,7 @@ impl<T: Digester> TxHashCalculator<T> {
         }
     }
 
-    fn finalize_and_push_blob(&mut self) {
+    fn tx_finalize_and_push_blob(&mut self) {
         match self.blob_digester.finalize() {
             Ok(digest) => match self.work_digester.update(digest.as_bytes()) {
                 Ok(_) => {}
@@ -210,14 +238,216 @@ impl<T: Digester> TxHashCalculator<T> {
             }
         }
     }
+
+    fn tx_finalize(&mut self) -> Result<Digest, T::Error> {
+        self.output_digester.finalize()
+    }
 }
 
-impl<T: Digester> TxHashCalculator<T> {
-    fn handle_si(&mut self, _event: SborEvent) {}
+/// Subintent hash calculator implementation
+impl<T: Digester> HashCalculator<T> {
+    fn si_handle(&mut self, event: SborEvent) {
+        match event {
+            SborEvent::InputByte(byte) => self.si_put_byte(byte),
+            SborEvent::Start {
+                type_id: _,
+                nesting_level,
+                ..
+            } => self.si_process_start(nesting_level),
+            SborEvent::ElementType { .. }
+                if self.si_state_machine.phase == SiHashPhase::ChildrenContent =>
+            {
+                self.si_state_machine.input_count = 0;
+            }
+            SborEvent::End {
+                type_id: _,
+                nesting_level,
+                ..
+            } => self.si_process_end(nesting_level),
+            SborEvent::Len(_) => match self.si_state_machine.phase {
+                SiHashPhase::SingleBlob => self.si_state_machine.phase = SiHashPhase::SingleBlobLen,
+                SiHashPhase::ChildrenContent => self.si_state_machine.input_count = 0,
+                SiHashPhase::Children => {
+                    self.si_state_machine.phase = SiHashPhase::ChildrenContent;
+                    self.si_state_machine.input_count = 0;
+                }
+                _ => {}
+            },
+            _ => {}
+        }
+    }
+
+    fn si_process_start(&mut self, nesting_level: u8) {
+        let initial_phase = self.si_state_machine.phase;
+
+        match (self.si_state_machine.phase, nesting_level) {
+            (SiHashPhase::Start, 0) => self.si_state_machine.phase = SiHashPhase::Core,
+            (SiHashPhase::Core, 2) => self.si_state_machine.phase = SiHashPhase::Header,
+            (SiHashPhase::Header, 2) => self.si_state_machine.phase = SiHashPhase::Blobs,
+            (SiHashPhase::Blobs, 3) => self.si_state_machine.phase = SiHashPhase::SingleBlob,
+            (SiHashPhase::Blobs, 2) => {
+                self.si_finalize_and_push();
+                self.si_state_machine.commit_phase = HashCommitPhase::None;
+                self.si_state_machine.phase = SiHashPhase::Message
+            }
+            (SiHashPhase::Message, 2) => self.si_state_machine.phase = SiHashPhase::Children,
+            (SiHashPhase::ChildrenContent, 2) => {
+                self.si_state_machine.phase = SiHashPhase::Instructions
+            }
+            (SiHashPhase::ChildrenContent, 3) => {
+                self.si_state_machine.input_count = 0;
+            }
+            (SiHashPhase::Instructions, 2) => {
+                self.si_state_machine.phase = SiHashPhase::DecodingError
+            }
+            (_, _) => {}
+        }
+
+        if initial_phase != self.si_state_machine.phase {
+            self.si_state_machine.input_count = 0;
+        }
+    }
+
+    fn si_process_end(&mut self, nesting_level: u8) {
+        match (self.si_state_machine.phase, nesting_level) {
+            (SiHashPhase::Header, 2) => {
+                self.si_state_machine.commit_phase = HashCommitPhase::CommitRegular
+            }
+            (SiHashPhase::Instructions, 2) => {
+                self.si_state_machine.commit_phase = HashCommitPhase::CommitRegular
+            }
+            (SiHashPhase::Blobs, 2) => {
+                self.si_state_machine.commit_phase = HashCommitPhase::CommitRegular
+            }
+            (SiHashPhase::Message, 2) => {
+                self.si_state_machine.commit_phase = HashCommitPhase::CommitRegular
+            }
+            (SiHashPhase::ChildrenContent, 2) => {
+                self.si_state_machine.commit_phase = HashCommitPhase::CommitRegular
+            }
+            (SiHashPhase::SingleBlobData, 3) => {
+                self.si_state_machine.commit_phase = HashCommitPhase::CommitBlob
+            }
+            (_, _) => {}
+        }
+    }
+
+    fn si_put_byte(&mut self, byte: u8) {
+        match self.si_state_machine.phase {
+            SiHashPhase::Start
+            | SiHashPhase::Core
+            | SiHashPhase::Children
+            | SiHashPhase::DecodingError
+            | SiHashPhase::HashingError
+            | SiHashPhase::Blobs
+            | SiHashPhase::SingleBlob => return,
+            SiHashPhase::SingleBlobLen => {
+                self.si_state_machine.phase = SiHashPhase::SingleBlobData;
+                return;
+            }
+            _ => {}
+        };
+
+        let digester = if self.si_state_machine.phase == SiHashPhase::SingleBlobData {
+            &mut self.blob_digester
+        } else {
+            &mut self.work_digester
+        };
+
+        if self.si_state_machine.phase == SiHashPhase::SingleBlobData
+            || self.si_state_machine.input_count > 0
+        {
+            match digester.update(&[byte]) {
+                Err(..) => self.si_state_machine.phase = SiHashPhase::HashingError,
+                _ => {}
+            }
+        } else {
+            self.si_state_machine.input_count += 1;
+        }
+
+        match self.si_state_machine.commit_phase {
+            HashCommitPhase::None => {}
+            HashCommitPhase::CommitRegular => {
+                self.si_finalize_and_push();
+                self.si_state_machine.input_count = 0;
+            }
+            HashCommitPhase::CommitBlob => {
+                self.si_finalize_and_push_blob();
+                self.si_state_machine.phase = SiHashPhase::Blobs;
+            }
+        }
+        self.si_state_machine.commit_phase = HashCommitPhase::None;
+    }
+
+    fn si_finalize_and_push(&mut self) {
+        match self.work_digester.finalize() {
+            Ok(digest) => match self.output_digester.update(digest.as_bytes()) {
+                Ok(_) => {
+                    // Use it for debugging hash calculator: it prints the hash of each
+                    // processed element. Note that si_test_data.rs contains these hashes as well,
+                    // so you can compare (sorry, only visually for now) calculated hash with
+                    // expected one and find which element is calculated incorrectly.
+                    #[cfg(test)]
+                    {
+                        let blob = digest.as_bytes();
+                        print!("{:?} = ", self.si_state_machine.phase);
+
+                        for &byte in blob.iter() {
+                            print!("{:#04x}, ", byte);
+                        }
+
+                        println!();
+                    }
+                }
+                Err(_) => {
+                    self.si_state_machine.phase = SiHashPhase::HashingError;
+                }
+            },
+            Err(_) => {
+                self.si_state_machine.phase = SiHashPhase::HashingError;
+            }
+        }
+
+        match self.work_digester.init() {
+            Ok(_) => {}
+            Err(_) => {
+                self.si_state_machine.phase = SiHashPhase::HashingError;
+            }
+        }
+    }
+
+    fn si_finalize_and_push_blob(&mut self) {
+        match self.blob_digester.finalize() {
+            Ok(digest) => match self.work_digester.update(digest.as_bytes()) {
+                Ok(_) => {}
+                Err(_) => {
+                    self.si_state_machine.phase = SiHashPhase::HashingError;
+                }
+            },
+            Err(_) => {
+                self.si_state_machine.phase = SiHashPhase::HashingError;
+            }
+        };
+
+        match self.blob_digester.init() {
+            Ok(_) => {}
+            Err(_) => {
+                self.si_state_machine.phase = SiHashPhase::HashingError;
+            }
+        }
+    }
+
+    fn si_finalize(&mut self) -> Result<Digest, T::Error> {
+        let digest = self.output_digester.finalize()?;
+        self.output_digester.init()?;
+        self.output_digester.update(&Self::SI_INITIAL_VECTOR)?;
+        self.output_digester.update(digest.as_bytes())?;
+        self.output_digester.finalize()
+    }
 }
 
-// Common part + externally visible API for both transaction and subintent hash calculators
-impl<T: Digester> TxHashCalculator<T> {
+/// Common part + externally visible API for both transaction and subintent hash calculators
+impl<T: Digester> HashCalculator<T> {
     const PAYLOAD_PREFIX: u8 = 0x54;
     const V1_INTENT: u8 = 1;
     const V2_SUBINTENT: u8 = 11;
@@ -236,6 +466,7 @@ impl<T: Digester> TxHashCalculator<T> {
             si_state_machine: SubintentStateMachine {
                 phase: SiHashPhase::Start,
                 commit_phase: HashCommitPhase::None,
+                input_count: 0,
             },
             mode: HashCalculatorMode::Transaction,
         }
@@ -261,7 +492,10 @@ impl<T: Digester> TxHashCalculator<T> {
 
     #[inline(always)]
     pub fn finalize(&mut self) -> Result<Digest, T::Error> {
-        self.output_digester.finalize()
+        match self.mode {
+            HashCalculatorMode::Transaction => self.tx_finalize(),
+            HashCalculatorMode::PreAuth => self.si_finalize(),
+        }
     }
 
     pub fn reset(&mut self) {
@@ -280,18 +514,18 @@ impl<T: Digester> TxHashCalculator<T> {
         self.blob_digester.init()?;
         self.output_digester.init()?;
 
-        let init_vector = match self.mode {
-            HashCalculatorMode::Transaction => &Self::TX_INITIAL_VECTOR,
-            HashCalculatorMode::Subintent => &Self::SI_INITIAL_VECTOR,
-        };
-
-        self.output_digester.update(init_vector)
+        match self.mode {
+            HashCalculatorMode::Transaction => {
+                self.output_digester.update(&Self::TX_INITIAL_VECTOR)
+            }
+            HashCalculatorMode::PreAuth => Ok(()),
+        }
     }
 
     pub fn handle(&mut self, event: SborEvent) {
         match self.mode {
-            HashCalculatorMode::Transaction => self.handle_tx(event),
-            HashCalculatorMode::Subintent => self.handle_si(event),
+            HashCalculatorMode::Transaction => self.tx_handle(event),
+            HashCalculatorMode::PreAuth => self.si_handle(event),
         }
     }
 }
@@ -304,7 +538,7 @@ mod tests {
 
     use crate::digest::digest::Digest;
     use crate::digest::digester::Digester;
-    use crate::digest::tx_hash_calculator::{HashCalculatorMode, TxHashCalculator};
+    use crate::digest::hash_calculator::{HashCalculator, HashCalculatorMode};
     use crate::sbor_decoder::{SborDecoder, SborEvent, SborEventHandler};
     use crate::tx_intent_test_data::tests::*;
 
@@ -342,14 +576,14 @@ mod tests {
         }
     }
 
-    impl<T: Digester> SborEventHandler for TxHashCalculator<T> {
+    impl<T: Digester> SborEventHandler for HashCalculator<T> {
         fn handle(&mut self, evt: SborEvent) {
             self.handle(evt);
         }
     }
 
-    fn calculate_hash_and_compare(input: &[u8], expected_hash: &[u8]) {
-        let mut calculator = TxHashCalculator::<TestDigester>::new();
+    fn calculate_tx_hash_and_compare(input: &[u8], expected_hash: &[u8]) {
+        let mut calculator = HashCalculator::<TestDigester>::new();
         let mut decoder = SborDecoder::new(true);
 
         let _ = calculator.start(HashCalculatorMode::Transaction);
@@ -366,160 +600,160 @@ mod tests {
 
     #[test]
     fn test_hc_intent() {
-        calculate_hash_and_compare(&TX_HC_INTENT, &TX_HC_INTENT_HASH);
+        calculate_tx_hash_and_compare(&TX_HC_INTENT, &TX_HC_INTENT_HASH);
     }
 
     #[test]
     fn test_tx_call_function() {
-        calculate_hash_and_compare(&TX_CALL_FUNCTION, &TX_CALL_FUNCTION_HASH);
+        calculate_tx_hash_and_compare(&TX_CALL_FUNCTION, &TX_CALL_FUNCTION_HASH);
     }
     #[test]
     fn test_tx_call_method() {
-        calculate_hash_and_compare(&TX_CALL_METHOD, &TX_CALL_METHOD_HASH);
+        calculate_tx_hash_and_compare(&TX_CALL_METHOD, &TX_CALL_METHOD_HASH);
     }
     #[test]
     fn test_tx_create_access_controller() {
-        calculate_hash_and_compare(
+        calculate_tx_hash_and_compare(
             &TX_CREATE_ACCESS_CONTROLLER,
             &TX_CREATE_ACCESS_CONTROLLER_HASH,
         );
     }
     #[test]
     fn test_tx_create_account() {
-        calculate_hash_and_compare(&TX_CREATE_ACCOUNT, &TX_CREATE_ACCOUNT_HASH);
+        calculate_tx_hash_and_compare(&TX_CREATE_ACCOUNT, &TX_CREATE_ACCOUNT_HASH);
     }
     #[test]
     fn test_tx_create_fungible_resource_with_initial_supply() {
-        calculate_hash_and_compare(
+        calculate_tx_hash_and_compare(
             &TX_CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY,
             &TX_CREATE_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY_HASH,
         );
     }
     #[test]
     fn test_tx_create_fungible_resource_with_no_initial_supply() {
-        calculate_hash_and_compare(
+        calculate_tx_hash_and_compare(
             &TX_CREATE_FUNGIBLE_RESOURCE_WITH_NO_INITIAL_SUPPLY,
             &TX_CREATE_FUNGIBLE_RESOURCE_WITH_NO_INITIAL_SUPPLY_HASH,
         );
     }
     #[test]
     fn test_tx_create_identity() {
-        calculate_hash_and_compare(&TX_CREATE_IDENTITY, &TX_CREATE_IDENTITY_HASH);
+        calculate_tx_hash_and_compare(&TX_CREATE_IDENTITY, &TX_CREATE_IDENTITY_HASH);
     }
     #[test]
     fn test_tx_create_non_fungible_resource_with_initial_supply() {
-        calculate_hash_and_compare(
+        calculate_tx_hash_and_compare(
             &TX_CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY,
             &TX_CREATE_NON_FUNGIBLE_RESOURCE_WITH_INITIAL_SUPPLY_HASH,
         );
     }
     #[test]
     fn test_tx_create_non_fungible_resource_with_no_initial_supply() {
-        calculate_hash_and_compare(
+        calculate_tx_hash_and_compare(
             &TX_CREATE_NON_FUNGIBLE_RESOURCE_WITH_NO_INITIAL_SUPPLY,
             &TX_CREATE_NON_FUNGIBLE_RESOURCE_WITH_NO_INITIAL_SUPPLY_HASH,
         );
     }
     #[test]
     fn test_tx_create_validator() {
-        calculate_hash_and_compare(&TX_CREATE_VALIDATOR, &TX_CREATE_VALIDATOR_HASH);
+        calculate_tx_hash_and_compare(&TX_CREATE_VALIDATOR, &TX_CREATE_VALIDATOR_HASH);
     }
     #[test]
     fn test_tx_metadata() {
-        calculate_hash_and_compare(&TX_METADATA, &TX_METADATA_HASH);
+        calculate_tx_hash_and_compare(&TX_METADATA, &TX_METADATA_HASH);
     }
     #[test]
     fn test_tx_mint_fungible() {
-        calculate_hash_and_compare(&TX_MINT_FUNGIBLE, &TX_MINT_FUNGIBLE_HASH);
+        calculate_tx_hash_and_compare(&TX_MINT_FUNGIBLE, &TX_MINT_FUNGIBLE_HASH);
     }
     #[test]
     fn test_tx_mint_non_fungible() {
-        calculate_hash_and_compare(&TX_MINT_NON_FUNGIBLE, &TX_MINT_NON_FUNGIBLE_HASH);
+        calculate_tx_hash_and_compare(&TX_MINT_NON_FUNGIBLE, &TX_MINT_NON_FUNGIBLE_HASH);
     }
     #[test]
     fn test_tx_publish_package() {
-        calculate_hash_and_compare(&TX_PUBLISH_PACKAGE, &TX_PUBLISH_PACKAGE_HASH);
+        calculate_tx_hash_and_compare(&TX_PUBLISH_PACKAGE, &TX_PUBLISH_PACKAGE_HASH);
     }
     #[test]
     fn test_tx_resource_auth_zone() {
-        calculate_hash_and_compare(&TX_RESOURCE_AUTH_ZONE, &TX_RESOURCE_AUTH_ZONE_HASH);
+        calculate_tx_hash_and_compare(&TX_RESOURCE_AUTH_ZONE, &TX_RESOURCE_AUTH_ZONE_HASH);
     }
     #[test]
     fn test_tx_resource_recall() {
-        calculate_hash_and_compare(&TX_RESOURCE_RECALL, &TX_RESOURCE_RECALL_HASH);
+        calculate_tx_hash_and_compare(&TX_RESOURCE_RECALL, &TX_RESOURCE_RECALL_HASH);
     }
     #[test]
     fn test_tx_resource_recall_nonfungibles() {
-        calculate_hash_and_compare(
+        calculate_tx_hash_and_compare(
             &TX_RESOURCE_RECALL_NONFUNGIBLES,
             &TX_RESOURCE_RECALL_NONFUNGIBLES_HASH,
         );
     }
     #[test]
     fn test_tx_resource_worktop() {
-        calculate_hash_and_compare(&TX_RESOURCE_WORKTOP, &TX_RESOURCE_WORKTOP_HASH);
+        calculate_tx_hash_and_compare(&TX_RESOURCE_WORKTOP, &TX_RESOURCE_WORKTOP_HASH);
     }
     #[test]
     fn test_tx_royalty() {
-        calculate_hash_and_compare(&TX_ROYALTY, &TX_ROYALTY_HASH);
+        calculate_tx_hash_and_compare(&TX_ROYALTY, &TX_ROYALTY_HASH);
     }
     #[test]
     fn test_tx_simple_transfer() {
-        calculate_hash_and_compare(&TX_SIMPLE_TRANSFER, &TX_SIMPLE_TRANSFER_HASH);
+        calculate_tx_hash_and_compare(&TX_SIMPLE_TRANSFER, &TX_SIMPLE_TRANSFER_HASH);
     }
     #[test]
     fn test_tx_simple_invalid_transfer() {
-        calculate_hash_and_compare(
+        calculate_tx_hash_and_compare(
             &TX_SIMPLE_INVALID_TRANSFER,
             &TX_SIMPLE_INVALID_TRANSFER_HASH,
         );
     }
     #[test]
     fn test_tx_simple_transfer_new_format() {
-        calculate_hash_and_compare(
+        calculate_tx_hash_and_compare(
             &TX_SIMPLE_TRANSFER_NEW_FORMAT,
             &TX_SIMPLE_TRANSFER_NEW_FORMAT_HASH,
         );
     }
     #[test]
     fn test_tx_simple_transfer_nft() {
-        calculate_hash_and_compare(&TX_SIMPLE_TRANSFER_NFT, &TX_SIMPLE_TRANSFER_NFT_HASH);
+        calculate_tx_hash_and_compare(&TX_SIMPLE_TRANSFER_NFT, &TX_SIMPLE_TRANSFER_NFT_HASH);
     }
     #[test]
     fn test_tx_simple_transfer_nft_new_format() {
-        calculate_hash_and_compare(
+        calculate_tx_hash_and_compare(
             &TX_SIMPLE_TRANSFER_NFT_NEW_FORMAT,
             &TX_SIMPLE_TRANSFER_NFT_NEW_FORMAT_HASH,
         );
     }
     #[test]
     fn test_tx_simple_transfer_nft_by_id() {
-        calculate_hash_and_compare(
+        calculate_tx_hash_and_compare(
             &TX_SIMPLE_TRANSFER_NFT_BY_ID,
             &TX_SIMPLE_TRANSFER_NFT_BY_ID_HASH,
         );
     }
     #[test]
     fn test_tx_simple_transfer_nft_by_id_new_format() {
-        calculate_hash_and_compare(
+        calculate_tx_hash_and_compare(
             &TX_SIMPLE_TRANSFER_NFT_BY_ID_NEW_FORMAT,
             &TX_SIMPLE_TRANSFER_NFT_BY_ID_NEW_FORMAT_HASH,
         );
     }
     #[test]
     fn test_tx_simple_transfer_with_multiple_locked_fees() {
-        calculate_hash_and_compare(
+        calculate_tx_hash_and_compare(
             &TX_SIMPLE_TRANSFER_WITH_MULTIPLE_LOCKED_FEES,
             &TX_SIMPLE_TRANSFER_WITH_MULTIPLE_LOCKED_FEES_HASH,
         );
     }
     #[test]
     fn test_tx_access_rule() {
-        calculate_hash_and_compare(&TX_ACCESS_RULE, &TX_ACCESS_RULE_HASH);
+        calculate_tx_hash_and_compare(&TX_ACCESS_RULE, &TX_ACCESS_RULE_HASH);
     }
     #[test]
     fn test_tx_values() {
-        calculate_hash_and_compare(&TX_VALUES, &TX_VALUES_HASH);
+        calculate_tx_hash_and_compare(&TX_VALUES, &TX_VALUES_HASH);
     }
 
     //-----------------------------------------------------------------------------------
@@ -630,7 +864,7 @@ mod tests {
         let expected_hash = decode_hex(input.blake_hash_of_payload).unwrap();
         let challenge = decode_hex(input.challenge).unwrap();
 
-        let digest = TxHashCalculator::<TestDigester>::new()
+        let digest = HashCalculator::<TestDigester>::new()
             .auth_digest(
                 challenge.as_slice(),
                 input.dapp_definition_address.as_bytes(),
@@ -653,4 +887,76 @@ mod tests {
     //-----------------------------------------------------------------------------------
     // Subintent
     //-----------------------------------------------------------------------------------
+
+    use crate::si_test_data::tests::*;
+
+    fn calculate_si_hash_and_compare(input: &[u8], expected_hash: &[u8]) {
+        let mut calculator = HashCalculator::<TestDigester>::new();
+        let mut decoder = SborDecoder::new(true);
+
+        let _ = calculator.start(HashCalculatorMode::PreAuth);
+        match decoder.decode(&mut calculator, input) {
+            Ok(_) => {}
+            Err(_) => {
+                assert!(false, "Decoder failed");
+            }
+        }
+
+        let digest = calculator.finalize().unwrap();
+        {
+            let blob = digest.as_bytes();
+            print!("Final hash = ");
+
+            for &byte in blob.iter() {
+                print!("{:#04x}, ", byte);
+            }
+
+            println!();
+        }
+
+        assert_eq!(digest.0, expected_hash);
+    }
+
+    #[test]
+    fn test_si_checked_childless_subintent() {
+        calculate_si_hash_and_compare(
+            &SI_CHECKED_CHILDLESS_SUBINTENT,
+            &SI_CHECKED_CHILDLESS_SUBINTENT_HASH,
+        );
+    }
+
+    #[test]
+    fn test_si_vector_0() {
+        calculate_si_hash_and_compare(&SI_VECTOR_0, &SI_VECTOR_0_HASH);
+    }
+
+    #[test]
+    fn test_si_vector_1() {
+        calculate_si_hash_and_compare(&SI_VECTOR_1, &SI_VECTOR_1_HASH);
+    }
+
+    #[test]
+    fn test_si_vector_2() {
+        calculate_si_hash_and_compare(&SI_VECTOR_2, &SI_VECTOR_2_HASH);
+    }
+
+    #[test]
+    fn test_si_vector_3() {
+        calculate_si_hash_and_compare(&SI_VECTOR_3, &SI_VECTOR_3_HASH);
+    }
+
+    #[test]
+    fn test_si_vector_4() {
+        calculate_si_hash_and_compare(&SI_VECTOR_4, &SI_VECTOR_4_HASH);
+    }
+
+    #[test]
+    fn test_si_vector_5() {
+        calculate_si_hash_and_compare(&SI_VECTOR_5, &SI_VECTOR_5_HASH);
+    }
+
+    #[test]
+    fn test_si_vector_6() {
+        calculate_si_hash_and_compare(&SI_VECTOR_6, &SI_VECTOR_6_HASH);
+    }
 }

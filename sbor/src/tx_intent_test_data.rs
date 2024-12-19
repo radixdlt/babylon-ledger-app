@@ -1,3 +1,4 @@
+/// Transaction intents test vectors
 #[cfg(test)]
 pub mod tests {
     pub const TX_ACCESS_RULE_HASH: [u8; 32] = [
