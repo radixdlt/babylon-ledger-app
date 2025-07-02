@@ -2,8 +2,6 @@
 #![allow(dead_code)]
 use core::convert::TryFrom;
 
-#[cfg(target_os = "nanox")]
-use ledger_device_sdk::ble;
 use ledger_device_sdk::seph;
 use ledger_secure_sdk_sys::buttons::{get_button_event, ButtonEvent, ButtonsState};
 use ledger_secure_sdk_sys::seph as sys_seph;
