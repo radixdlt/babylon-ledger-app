@@ -154,7 +154,6 @@ impl Comm {
     }
 
     pub fn read_event<T: TryFrom<ApduHeader>>(&mut self) -> Option<Event<T>> {
-
         // Fetch the next message from the MCU
         let length = sys_seph::io_rx(&mut self.work_buffer, true);
         if length <= 0 {
@@ -185,29 +184,27 @@ impl Comm {
                     seph::Events::ItcEvent => {
                         #[cfg(target_os = "nanox")]
                         match seph::ItcUxEvent::from(seph_buffer[3]) {
-
-                            seph::ItcUxEvent::AskBlePairing => {
-                                unsafe {
-                                    G_ux_params.ux_id = BOLOS_UX_ASYNCHMODAL_PAIRING_REQUEST;
-                                    G_ux_params.len = 20;
-                                    G_ux_params.u.pairing_request.type_ = seph_buffer[4];
-                                    G_ux_params.u.pairing_request.pairing_info_len = (_len-2) as u32;
-                                    for i in 0..G_ux_params.u.pairing_request.pairing_info_len as usize {
-                                        G_ux_params.u.pairing_request.pairing_info[i as usize] = seph_buffer[5+i] as i8;
-                                    }
-                                    G_ux_params.u.pairing_request.pairing_info[G_ux_params.u.pairing_request.pairing_info_len as usize] = 0;
-                                    os_ux(&raw mut G_ux_params as *mut bolos_ux_params_t);
+                            seph::ItcUxEvent::AskBlePairing => unsafe {
+                                G_ux_params.ux_id = BOLOS_UX_ASYNCHMODAL_PAIRING_REQUEST;
+                                G_ux_params.len = 20;
+                                G_ux_params.u.pairing_request.type_ = seph_buffer[4];
+                                G_ux_params.u.pairing_request.pairing_info_len = (_len - 2) as u32;
+                                for i in 0..G_ux_params.u.pairing_request.pairing_info_len as usize
+                                {
+                                    G_ux_params.u.pairing_request.pairing_info[i as usize] =
+                                        seph_buffer[5 + i] as i8;
                                 }
-                            }
+                                G_ux_params.u.pairing_request.pairing_info
+                                    [G_ux_params.u.pairing_request.pairing_info_len as usize] = 0;
+                                os_ux(&raw mut G_ux_params as *mut bolos_ux_params_t);
+                            },
 
-                            seph::ItcUxEvent::BlePairingStatus => {
-                                unsafe {
-                                    G_ux_params.ux_id = BOLOS_UX_ASYNCHMODAL_PAIRING_STATUS;
-                                    G_ux_params.len = 0;
-                                    G_ux_params.u.pairing_status.pairing_ok = seph_buffer[4];
-                                    os_ux(&raw mut G_ux_params as *mut bolos_ux_params_t);
-                                }
-                            }
+                            seph::ItcUxEvent::BlePairingStatus => unsafe {
+                                G_ux_params.ux_id = BOLOS_UX_ASYNCHMODAL_PAIRING_STATUS;
+                                G_ux_params.len = 0;
+                                G_ux_params.u.pairing_status.pairing_ok = seph_buffer[4];
+                                os_ux(&raw mut G_ux_params as *mut bolos_ux_params_t);
+                            },
 
                             seph::ItcUxEvent::Redisplay => {
                                 #[cfg(feature = "nano_nbgl")]
@@ -218,43 +215,43 @@ impl Comm {
                                 }
                             }
 
-                            _ => {
-                                return None
-                            }
+                            _ => return None,
                         }
-                        return None
+                        return None;
                     }
 
                     _ => {
                         if !cfg!(feature = "nano_nbgl") {
-							unsafe {
-								G_ux_params.ux_id = BOLOS_UX_EVENT;
-								G_ux_params.len = 0;
-								os_ux(&raw mut G_ux_params as *mut bolos_ux_params_t);
-							}
-                        }
-                        else {
+                            unsafe {
+                                G_ux_params.ux_id = BOLOS_UX_EVENT;
+                                G_ux_params.len = 0;
+                                os_ux(&raw mut G_ux_params as *mut bolos_ux_params_t);
+                            }
+                        } else {
                             #[cfg(feature = "nano_nbgl")]
-                            unsafe {ux_process_default_event();}
+                            unsafe {
+                                ux_process_default_event();
+                            }
                         }
                     }
                 }
             }
 
-            seph::PacketTypes::PacketTypeRawApdu |
-            seph::PacketTypes::PacketTypeUsbHidApdu |
-            seph::PacketTypes::PacketTypeUsbWebusbApdu |
-            seph::PacketTypes::PacketTypeBleApdu=> {
+            seph::PacketTypes::PacketTypeRawApdu
+            | seph::PacketTypes::PacketTypeUsbHidApdu
+            | seph::PacketTypes::PacketTypeUsbWebusbApdu
+            | seph::PacketTypes::PacketTypeBleApdu => {
                 unsafe {
                     if os_perso_is_pin_set() == BOLOS_TRUE.try_into().unwrap()
-                    && os_global_pin_is_validated() != BOLOS_TRUE.try_into().unwrap() {
+                        && os_global_pin_is_validated() != BOLOS_TRUE.try_into().unwrap()
+                    {
                         self.reply(StatusWords::DeviceLocked);
                         return None;
                     }
                 }
                 self.apdu_buffer[0..272].copy_from_slice(&self.work_buffer[1..273]);
                 self.apdu_type = packet_type;
-                self.rx = (length-1) as usize;
+                self.rx = (length - 1) as usize;
                 // Reject incomplete APDUs
                 if self.rx < 4 {
                     self.reply(StatusWords::BadLen);
@@ -281,8 +278,7 @@ impl Comm {
                 }
             }
 
-            _ => {
-            }
+            _ => {}
         }
         None
     }
