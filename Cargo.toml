@@ -6,9 +6,9 @@ edition = "2021"
 description = "Radix Babylon"
 
 [dependencies]
-ledger_device_sdk = "1.22.10"
+ledger_device_sdk = "1.22.13"
 ledger_secure_sdk_sys = "1.8.2"
-include_gif = "1.2.0"
+include_gif = "1.2.2"
 
 sbor = { path = "./sbor", default-features = false }
 
