@@ -72,6 +72,7 @@ pub enum AppError {
     CxErrorEcInvalidPoint = 0x6f0f,
     CxErrorEcInvalidCurve = 0x6f10,
     Panic = 0xe000,
+    DeviceLocked = 0x5515,
 }
 
 impl From<AppError> for Reply {
@@ -92,6 +93,7 @@ impl From<StatusWords> for AppError {
             StatusWords::UserCancelled => AppError::UserCancelled,
             StatusWords::Unknown => AppError::Unknown,
             StatusWords::Panic => AppError::Panic,
+            StatusWords::DeviceLocked => AppError::DeviceLocked,
         }
     }
 }
