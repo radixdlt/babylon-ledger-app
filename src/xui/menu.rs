@@ -4,10 +4,7 @@ pub mod main_menu {
     use crate::ui::menu::{Menu, MenuFeature, MenuItem};
     use crate::ui::multipage_validator::MultipageValidator;
     use crate::ui::single_message::SingleMessage;
-    use crate::ui::utils::{BACK_ICON, RADIX_LOGO_ICON};
-    use ledger_device_sdk::ui::bagls::{
-        CERTIFICATE_ICON, COGGLE_ICON, DASHBOARD_X_ICON, PROCESSING_ICON,
-    };
+    use crate::ui::utils::{RADIX_LOGO_ICON};
     use ledger_device_sdk::ui::gadgets::clear_screen;
 
     const APPLICATION_ABOUT: &str = concat!(
@@ -49,7 +46,7 @@ pub mod main_menu {
                 blind_signing_setting_action,
             ),
             MenuItem::new(
-                MenuFeature::Icon(&BACK_ICON),
+                MenuFeature::Icon(&crate::ui::utils::BACK_ICON),
                 "\nBack",
                 back_from_setting_action,
             ),
@@ -117,22 +114,22 @@ pub mod main_menu {
                 app_menu_action,
             ),
             MenuItem::new(
-                MenuFeature::Icon(&PROCESSING_ICON),
+                MenuFeature::Icon(&crate::ui::utils::PROCESSING_ICON),
                 "Version",
                 version_menu_action,
             ),
             MenuItem::new(
-                MenuFeature::Icon(&COGGLE_ICON),
+                MenuFeature::Icon(&crate::ui::utils::COGGLE_ICON),
                 "Settings",
                 settings_menu_action,
             ),
             MenuItem::new(
-                MenuFeature::Icon(&CERTIFICATE_ICON),
+                MenuFeature::Icon(&crate::ui::utils::CERTIFICATE_ICON),
                 "About",
                 about_menu_action,
             ),
             MenuItem::new(
-                MenuFeature::Icon(&DASHBOARD_X_ICON),
+                MenuFeature::Icon(&crate::ui::utils::DASHBOARD_X_ICON),
                 "Quit",
                 quit_menu_action,
             ),

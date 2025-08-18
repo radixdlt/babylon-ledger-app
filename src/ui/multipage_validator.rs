@@ -1,8 +1,5 @@
 use ledger_device_sdk::buttons::{ButtonEvent, ButtonsState};
-use ledger_device_sdk::ui::bagls::{
-    Icon, CROSSMARK_ICON, LEFT_ARROW, LEFT_S_ARROW, RIGHT_ARROW, RIGHT_S_ARROW, VALIDATE_14_ICON,
-    WARNING_ICON,
-};
+use ledger_device_sdk::ui::bagls::Icon;
 use ledger_device_sdk::ui::gadgets::{clear_screen, get_event};
 use ledger_device_sdk::ui::layout::{Draw, Layout, Location, StringPlace};
 use ledger_device_sdk::ui::screen_util;
@@ -55,16 +52,16 @@ impl<'a> MultipageValidator<'a> {
         let draw = |page: usize| {
             clear_screen();
             if page == page_count - 2 {
-                draw_icon_and_text(VALIDATE_14_ICON, self.confirm, true);
-                RIGHT_ARROW.display();
+                draw_icon_and_text(crate::ui::utils::VALIDATE_14_ICON, self.confirm, true);
+                crate::ui::utils::RIGHT_ARROW_ICON.display();
             } else if page == page_count - 1 {
-                draw_icon_and_text(CROSSMARK_ICON, self.cancel, true);
+                draw_icon_and_text(crate::ui::utils::CROSSMARK_ICON, self.cancel, true);
             } else {
-                draw_icon_and_text(WARNING_ICON, self.message, false);
-                RIGHT_ARROW.display();
+                draw_icon_and_text(crate::ui::utils::WARNING_ICON, self.message, false);
+                crate::ui::utils::RIGHT_ARROW_ICON.display();
             }
             if page > 0 {
-                LEFT_ARROW.display();
+                crate::ui::utils::LEFT_ARROW_ICON.display();
             }
             screen_util::screen_update();
         };
@@ -81,18 +78,18 @@ impl<'a> MultipageValidator<'a> {
 
             match event {
                 Some(ButtonEvent::LeftButtonPress) => {
-                    LEFT_S_ARROW.instant_display();
+                    crate::ui::utils::LEFT_S_ARROW_ICON.instant_display();
                 }
                 Some(ButtonEvent::RightButtonPress) => {
-                    RIGHT_S_ARROW.instant_display();
+                    crate::ui::utils::RIGHT_S_ARROW_ICON.instant_display();
                 }
                 Some(ButtonEvent::LeftButtonRelease) => {
-                    LEFT_S_ARROW.erase();
+                    crate::ui::utils::LEFT_S_ARROW_ICON.erase();
                     cur_page = cur_page.saturating_sub(1);
                     draw(cur_page);
                 }
                 Some(ButtonEvent::RightButtonRelease) => {
-                    RIGHT_S_ARROW.erase();
+                    crate::ui::utils::RIGHT_S_ARROW_ICON.erase();
                     if cur_page < page_count - 1 {
                         cur_page += 1;
                     }
