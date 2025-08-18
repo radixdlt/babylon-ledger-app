@@ -4,7 +4,7 @@ pub mod main_menu {
     use crate::ui::menu::{Menu, MenuFeature, MenuItem};
     use crate::ui::multipage_validator::MultipageValidator;
     use crate::ui::single_message::SingleMessage;
-    use crate::ui::utils::{RADIX_LOGO_ICON};
+    use crate::ui::utils::RADIX_LOGO_ICON;
     use ledger_device_sdk::ui::gadgets::clear_screen;
 
     const APPLICATION_ABOUT: &str = concat!(

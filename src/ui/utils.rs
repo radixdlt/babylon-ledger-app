@@ -61,7 +61,8 @@ pub const LEFT_ARROW_ICON: Icon = Icon::from(&LEFT_ARROW).set_x(OUTER_PADDING as
 pub const LEFT_S_ARROW_ICON: Icon = LEFT_ARROW_ICON.shift_h(4);
 
 pub const RIGHT_ARROW: Glyph = Glyph::from_include(include_gif!("icons/icon_right.gif"));
-pub const RIGHT_ARROW_ICON: Icon = Icon::from(&RIGHT_ARROW).set_x(SCREENW - RIGHT_ARROW.width as i16);
+pub const RIGHT_ARROW_ICON: Icon =
+    Icon::from(&RIGHT_ARROW).set_x(SCREENW - RIGHT_ARROW.width as i16);
 pub const RIGHT_S_ARROW_ICON: Icon = RIGHT_ARROW_ICON.shift_h(-4);
 
 pub const CROSSMARK: Glyph = Glyph::from_include(include_gif!("icons/icon_crossmark.gif"));
