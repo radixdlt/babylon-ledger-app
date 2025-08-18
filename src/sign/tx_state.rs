@@ -274,9 +274,8 @@ impl<T: Copy> TxState<T> {
                     fee::display(&fee, &mut self.processor);
                 }
             }
-            DetectedTxType::Other(fee) | DetectedTxType::Error(fee) => match fee {
-                Some(fee) => fee::display(fee, &mut self.processor),
-                None => {}
+            DetectedTxType::Other(fee) | DetectedTxType::Error(fee) => if let Some(fee) = fee {
+                fee::display(fee, &mut self.processor);
             },
         }
     }

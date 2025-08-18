@@ -15,6 +15,10 @@ sbor = { path = "./sbor", default-features = false }
 [dev-dependencies]
 blake2 = { version = "0.10.6", default-features = false }
 
+[features]
+default = []
+nano_nbgl = []
+
 [profile.dev]
 opt-level = "z"
 lto = false
