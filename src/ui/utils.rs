@@ -53,12 +53,12 @@ pub const SCREENW: i16 = (SCREEN_WIDTH - OUTER_PADDING) as i16;
 pub const RADIX_LOGO: Glyph = Glyph::from_include(include_gif!("icons/nanox_app_radix.gif"));
 pub const RADIX_LOGO_ICON: Icon = Icon::from(&RADIX_LOGO);
 
-
 pub static BACK_ICON: Icon = Icon::from(&ledger_device_sdk::ui::bitmaps::BACK);
-pub static LEFT_ARROW_ICON: Icon = Icon::from(&ledger_device_sdk::ui::bitmaps::LEFT_ARROW).set_x(OUTER_PADDING as i16);
+pub static LEFT_ARROW_ICON: Icon =
+    Icon::from(&ledger_device_sdk::ui::bitmaps::LEFT_ARROW).set_x(OUTER_PADDING as i16);
 pub static LEFT_S_ARROW_ICON: Icon = LEFT_ARROW_ICON.shift_h(4);
-pub static RIGHT_ARROW_ICON: Icon =
-    Icon::from(&ledger_device_sdk::ui::bitmaps::RIGHT_ARROW).set_x(SCREENW - ledger_device_sdk::ui::bitmaps::RIGHT_ARROW.width as i16);
+pub static RIGHT_ARROW_ICON: Icon = Icon::from(&ledger_device_sdk::ui::bitmaps::RIGHT_ARROW)
+    .set_x(SCREENW - ledger_device_sdk::ui::bitmaps::RIGHT_ARROW.width as i16);
 pub static RIGHT_S_ARROW_ICON: Icon = RIGHT_ARROW_ICON.shift_h(-4);
 pub static CROSSMARK_ICON: Icon = Icon::from(&ledger_device_sdk::ui::bitmaps::CROSSMARK);
 pub static VALIDATE_14_ICON: Icon = Icon::from(&ledger_device_sdk::ui::bitmaps::VALIDATE_14);
