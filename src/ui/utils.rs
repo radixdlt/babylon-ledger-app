@@ -53,35 +53,17 @@ pub const SCREENW: i16 = (SCREEN_WIDTH - OUTER_PADDING) as i16;
 pub const RADIX_LOGO: Glyph = Glyph::from_include(include_gif!("icons/nanox_app_radix.gif"));
 pub const RADIX_LOGO_ICON: Icon = Icon::from(&RADIX_LOGO);
 
-pub const BACK: Glyph = Glyph::from_include(include_gif!("icons/icon_back.gif"));
-pub const BACK_ICON: Icon = Icon::from(&BACK);
-
-pub const LEFT_ARROW: Glyph = Glyph::from_include(include_gif!("icons/icon_left.gif"));
-pub const LEFT_ARROW_ICON: Icon = Icon::from(&LEFT_ARROW).set_x(OUTER_PADDING as i16);
-pub const LEFT_S_ARROW_ICON: Icon = LEFT_ARROW_ICON.shift_h(4);
-
-pub const RIGHT_ARROW: Glyph = Glyph::from_include(include_gif!("icons/icon_right.gif"));
-pub const RIGHT_ARROW_ICON: Icon =
-    Icon::from(&RIGHT_ARROW).set_x(SCREENW - RIGHT_ARROW.width as i16);
-pub const RIGHT_S_ARROW_ICON: Icon = RIGHT_ARROW_ICON.shift_h(-4);
-
-pub const CROSSMARK: Glyph = Glyph::from_include(include_gif!("icons/icon_crossmark.gif"));
-pub const CROSSMARK_ICON: Icon = Icon::from(&CROSSMARK);
-
-pub const VALIDATE_14: Glyph = Glyph::from_include(include_gif!("icons/icon_validate_14.gif"));
-pub const VALIDATE_14_ICON: Icon = Icon::from(&VALIDATE_14);
-
-pub const WARNING: Glyph = Glyph::from_include(include_gif!("icons/icon_warning.gif"));
-pub const WARNING_ICON: Icon = Icon::from(&WARNING);
-
-pub const PROCESSING: Glyph = Glyph::from_include(include_gif!("icons/icon_processing.gif"));
-pub const PROCESSING_ICON: Icon = Icon::from(&PROCESSING);
-
-pub const CERTIFICATE: Glyph = Glyph::from_include(include_gif!("icons/icon_certificate.gif"));
-pub const CERTIFICATE_ICON: Icon = Icon::from(&CERTIFICATE);
-
-pub const COGGLE: Glyph = Glyph::from_include(include_gif!("icons/icon_coggle.gif"));
-pub const COGGLE_ICON: Icon = Icon::from(&COGGLE);
-
-pub const DASHBOARD_X: Glyph = Glyph::from_include(include_gif!("icons/icon_dashboard_x.gif"));
-pub const DASHBOARD_X_ICON: Icon = Icon::from(&DASHBOARD_X);
+pub static BACK_ICON: Icon = Icon::from(&ledger_device_sdk::ui::bitmaps::BACK);
+pub static LEFT_ARROW_ICON: Icon =
+    Icon::from(&ledger_device_sdk::ui::bitmaps::LEFT_ARROW).set_x(OUTER_PADDING as i16);
+pub static LEFT_S_ARROW_ICON: Icon = LEFT_ARROW_ICON.shift_h(4);
+pub static RIGHT_ARROW_ICON: Icon = Icon::from(&ledger_device_sdk::ui::bitmaps::RIGHT_ARROW)
+    .set_x(SCREENW - ledger_device_sdk::ui::bitmaps::RIGHT_ARROW.width as i16);
+pub static RIGHT_S_ARROW_ICON: Icon = RIGHT_ARROW_ICON.shift_h(-4);
+pub static CROSSMARK_ICON: Icon = Icon::from(&ledger_device_sdk::ui::bitmaps::CROSSMARK);
+pub static VALIDATE_14_ICON: Icon = Icon::from(&ledger_device_sdk::ui::bitmaps::VALIDATE_14);
+pub static WARNING_ICON: Icon = Icon::from(&ledger_device_sdk::ui::bitmaps::WARNING);
+pub static PROCESSING_ICON: Icon = Icon::from(&ledger_device_sdk::ui::bitmaps::PROCESSING);
+pub static CERTIFICATE_ICON: Icon = Icon::from(&ledger_device_sdk::ui::bitmaps::CERTIFICATE);
+pub static COGGLE_ICON: Icon = Icon::from(&ledger_device_sdk::ui::bitmaps::COGGLE);
+pub static DASHBOARD_X_ICON: Icon = Icon::from(&ledger_device_sdk::ui::bitmaps::DASHBOARD_X);
