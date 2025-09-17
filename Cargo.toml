@@ -1,27 +1,31 @@
 [package]
 name = "babylon-ledger-app"
-version = "0.7.30"
+version = "0.7.32"
 authors = ["siy"]
 edition = "2021"
 description = "Radix Babylon"
 
 [dependencies]
-ledger_device_sdk = "1.21.5"
-ledger_secure_sdk_sys = "1.7.2"
-include_gif = "1.2.0"
+ledger_device_sdk = "1.24.0"
+ledger_secure_sdk_sys = "1.10.0"
+include_gif = "1.2.2"
 
 sbor = { path = "./sbor", default-features = false }
 
 [dev-dependencies]
 blake2 = { version = "0.10.6", default-features = false }
 
+[features]
+default = []
+nano_nbgl = []
+
 [profile.dev]
 opt-level = "z"
-lto = false
+lto = true
 
 [profile.release]
 opt-level = "z"
-lto = false
+lto = true
 
 [package.metadata.ledger]
 curve = ["ed25519", "secp256k1"]

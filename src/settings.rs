@@ -14,6 +14,7 @@ pub struct Settings {
 }
 
 impl Settings {
+    #[allow(static_mut_refs)]
     pub fn get() -> Self {
         let settings = unsafe { SETTINGS.get_mut() };
         let value = *settings.get_ref();
@@ -24,6 +25,7 @@ impl Settings {
         }
     }
 
+    #[allow(static_mut_refs)]
     pub fn update(&self) {
         let settings = unsafe { SETTINGS.get_mut() };
         let value = (!self.verbose_mode as u32 * BIT_VERBOSE_MODE)

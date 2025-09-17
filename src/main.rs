@@ -1,10 +1,8 @@
 #![no_std]
 #![no_main]
-#![feature(result_option_inspect)]
-#![feature(asm_const)]
 #![feature(cfg_version)]
-#![feature(const_mut_refs)]
 #![feature(core_intrinsics)]
+#![allow(internal_features)]
 
 use handler::dispatcher;
 
