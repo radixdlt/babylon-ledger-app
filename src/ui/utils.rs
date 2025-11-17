@@ -1,5 +1,5 @@
 use crate::ui::multiline_scroller::{LINE1_Y, LINE2_Y, LINE3_Y};
-use include_gif::include_gif;
+use ledger_device_sdk::include_gif;
 use ledger_device_sdk::ui::bagls::Icon;
 use ledger_device_sdk::ui::bitmaps::Glyph;
 use ledger_device_sdk::ui::layout::{Draw, Layout, Location, StringPlace};
