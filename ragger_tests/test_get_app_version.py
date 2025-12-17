@@ -3,4 +3,4 @@ INS = 0x10
 
 
 def test_get_version(backend):
-    assert backend.exchange(cla=CLA, ins=INS).data.hex() == "000721"
+    assert backend.exchange(cla=CLA, ins=INS).data.hex() == "000722"
