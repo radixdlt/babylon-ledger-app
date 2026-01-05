@@ -6,7 +6,7 @@ edition = "2021"
 description = "Radix Babylon"
 
 [dependencies]
-ledger_device_sdk = { version = "1.29.1", features=["sys"]}
+ledger_device_sdk = { version = "1.30.0", features=["sys"]}
 sbor = { path = "./sbor", default-features = false }
 
 [dev-dependencies]
@@ -35,6 +35,3 @@ nanosplus.icon = "icons/nanox_app_radix.gif"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("stax", "flex", "nanox", "nanosplus"))'] }
-
-[patch.crates-io]
-ledger_device_sdk = {path = "../ledger-device-rust-sdk/ledger_device_sdk"}

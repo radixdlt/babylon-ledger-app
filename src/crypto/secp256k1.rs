@@ -129,7 +129,7 @@ impl KeyPairSecp256k1 {
 
     pub fn public(&self, comm: &mut Comm) {
         // check if Y is even or odd. Assuming big-endian, just check the last byte.
-        let key_parity = if self.origin.public.W[PUB_KEY_UNCOMPRESSED_LAST_BYTE] % 2 == 0 {
+        let key_parity = if self.origin.public.W[PUB_KEY_UNCOMPRESSED_LAST_BYTE].is_multiple_of(2) {
             PUB_KEY_TYPE_COMPRESSED_Y_EVEN
         } else {
             PUB_KEY_TYPE_COMPRESSED_Y_ODD
@@ -143,7 +143,7 @@ impl KeyPairSecp256k1 {
     pub fn public_bytes(&self) -> [u8; SECP256K1_PUBLIC_KEY_LEN] {
         let mut pk = [0u8; SECP256K1_PUBLIC_KEY_LEN];
 
-        let key_parity = if self.origin.public.W[PUB_KEY_UNCOMPRESSED_LAST_BYTE] % 2 == 0 {
+        let key_parity = if self.origin.public.W[PUB_KEY_UNCOMPRESSED_LAST_BYTE].is_multiple_of(2) {
             PUB_KEY_TYPE_COMPRESSED_Y_EVEN
         } else {
             PUB_KEY_TYPE_COMPRESSED_Y_ODD
