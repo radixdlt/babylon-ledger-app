@@ -192,7 +192,7 @@ impl Comm {
                                 for i in 0..G_ux_params.u.pairing_request.pairing_info_len as usize
                                 {
                                     G_ux_params.u.pairing_request.pairing_info[i] =
-                                        seph_buffer[5 + i] as i8;
+                                        seph_buffer[5 + i] as u8;
                                 }
                                 G_ux_params.u.pairing_request.pairing_info
                                     [G_ux_params.u.pairing_request.pairing_info_len as usize] = 0;
