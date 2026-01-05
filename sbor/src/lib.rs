@@ -55,6 +55,8 @@
 // decoupling Instruction Extractor from the code which will use extracted instructions and
 // their parameters.
 
+#![feature(prelude_2024)]
+#![feature(const_mut_refs)]
 #![feature(generic_const_exprs)]
 #![allow(incomplete_features)]
 #![cfg_attr(not(test), no_std)]
