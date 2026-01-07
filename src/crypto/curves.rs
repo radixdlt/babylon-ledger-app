@@ -2,7 +2,7 @@ use core::ffi::{c_uchar, c_uint};
 use core::intrinsics::write_bytes;
 use core::ptr::null_mut;
 
-use ledger_secure_sdk_sys::{
+use ledger_device_sdk::sys::{
     cx_curve_t, cx_ecfp_private_key_t, cx_ecfp_public_key_t, cx_err_t, CX_CURVE_Ed25519,
     CX_CURVE_SECP256K1, HDW_ED25519_SLIP10, HDW_NORMAL,
 };
