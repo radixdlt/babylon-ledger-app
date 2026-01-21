@@ -5,7 +5,11 @@ use core::option::Option::{None, Some};
 use core::result::Result;
 use core::result::Result::{Err, Ok};
 
-/// Maximal nesting depth of the SBOR-encoded data
+#[cfg(target_os = "nanosplus")]
+pub const STACK_DEPTH: u8 = 25; // Nano S+ and Nano X have more memory
+#[cfg(target_os = "nanox")]
+pub const STACK_DEPTH: u8 = 25;
+#[cfg(not(any(target_os = "nanox", target_os = "nanosplus")))]
 pub const STACK_DEPTH: u8 = 25;
 
 /// See MANIFEST_SBOR_V1_PAYLOAD_PREFIX in Scrypto

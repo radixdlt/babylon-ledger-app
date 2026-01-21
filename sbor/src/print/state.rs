@@ -39,20 +39,14 @@ impl Default for ValueState {
     }
 }
 
-/// The intermediate buffer size for the individual parameters.
-#[cfg(target_os = "nanos")]
-pub const PARAMETER_AREA_SIZE: usize = 96;
 #[cfg(any(target_os = "nanox", target_os = "nanosplus"))]
 pub const PARAMETER_AREA_SIZE: usize = 256;
-#[cfg(not(any(target_os = "nanos", target_os = "nanox", target_os = "nanosplus")))]
+#[cfg(not(any(target_os = "nanox", target_os = "nanosplus")))]
 pub const PARAMETER_AREA_SIZE: usize = 256;
 
-/// The buffer size of the entire message to be displayed.
-#[cfg(target_os = "nanos")]
-pub const DISPLAY_SIZE: usize = 256; // Use smaller buffer for Nano S
 #[cfg(any(target_os = "nanox", target_os = "nanosplus"))]
 pub const DISPLAY_SIZE: usize = 1024; // Nano S+/X have more memory
-#[cfg(not(any(target_os = "nanos", target_os = "nanox", target_os = "nanosplus")))]
+#[cfg(not(any(target_os = "nanox", target_os = "nanosplus")))]
 pub const DISPLAY_SIZE: usize = 2048;
 
 pub const TITLE_SIZE: usize = 32;

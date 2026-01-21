@@ -1,5 +1,5 @@
 [unstable]
-build-std = ["core"]
+build-std = ["core", "alloc"]
 build-std-features = ["compiler-builtins-mem"]
 
 # Usefult for debugging image size issues. Uncomment line below when necessary.
