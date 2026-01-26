@@ -1,5 +1,5 @@
 use ledger_device_sdk::buttons::{ButtonEvent, ButtonsState};
-use ledger_device_sdk::ui::bagls::{Icon, LEFT_ARROW, LEFT_S_ARROW, RIGHT_ARROW, RIGHT_S_ARROW};
+use ledger_device_sdk::ui::bagls::Icon;
 use ledger_device_sdk::ui::gadgets::{clear_screen, get_event};
 use ledger_device_sdk::ui::layout::{Draw, Layout, Location, StringPlace};
 use ledger_device_sdk::ui::screen_util::screen_update;
@@ -9,6 +9,7 @@ use crate::ui::multiline_scroller::LINE2_Y;
 use crate::ui::utils::{CenteredText, TopCenter};
 
 pub enum MenuFeature<'a> {
+    Plain,
     Icon(&'a Icon<'a>),
     OnOffState(fn() -> bool),
 }
@@ -48,6 +49,9 @@ impl<'a, const N: usize> Menu<'a, N> {
         let item = &self.items[self.current];
 
         match item.feature {
+            MenuFeature::Plain => {
+                item.text.draw_centered(true);
+            }
             MenuFeature::Icon(icon) => {
                 item.text.place(
                     Location::Custom(LINE2_Y + icon.icon.height as usize / 2),
@@ -62,8 +66,8 @@ impl<'a, const N: usize> Menu<'a, N> {
             }
         }
 
-        LEFT_ARROW.display();
-        RIGHT_ARROW.display();
+        crate::ui::utils::LEFT_ARROW_ICON.display();
+        crate::ui::utils::RIGHT_ARROW_ICON.display();
 
         screen_update();
     }
@@ -88,20 +92,20 @@ impl<'a, const N: usize> Menu<'a, N> {
     pub fn handle(&mut self, event: ButtonEvent) -> bool {
         match event {
             ButtonEvent::LeftButtonPress => {
-                LEFT_S_ARROW.instant_display();
+                crate::ui::utils::LEFT_S_ARROW_ICON.instant_display();
                 false
             }
             ButtonEvent::RightButtonPress => {
-                RIGHT_S_ARROW.instant_display();
+                crate::ui::utils::RIGHT_S_ARROW_ICON.instant_display();
                 false
             }
             ButtonEvent::BothButtonsPress => {
-                LEFT_S_ARROW.instant_display();
-                RIGHT_S_ARROW.instant_display();
+                crate::ui::utils::LEFT_S_ARROW_ICON.instant_display();
+                crate::ui::utils::RIGHT_S_ARROW_ICON.instant_display();
                 false
             }
             ButtonEvent::LeftButtonRelease => {
-                LEFT_S_ARROW.erase();
+                crate::ui::utils::LEFT_S_ARROW_ICON.erase();
                 self.current = if self.current > 0 {
                     self.current - 1
                 } else {
@@ -111,7 +115,7 @@ impl<'a, const N: usize> Menu<'a, N> {
                 false
             }
             ButtonEvent::RightButtonRelease => {
-                RIGHT_S_ARROW.erase();
+                crate::ui::utils::RIGHT_ARROW_ICON.erase();
                 self.current = if self.current < self.items.len() - 1 {
                     self.current + 1
                 } else {
@@ -121,8 +125,8 @@ impl<'a, const N: usize> Menu<'a, N> {
                 false
             }
             ButtonEvent::BothButtonsRelease => {
-                LEFT_S_ARROW.erase();
-                RIGHT_S_ARROW.erase();
+                crate::ui::utils::LEFT_S_ARROW_ICON.erase();
+                crate::ui::utils::RIGHT_S_ARROW_ICON.erase();
                 let result = (self.items[self.current].action)();
                 self.display();
                 result

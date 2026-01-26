@@ -15,10 +15,6 @@ pub fn display<T: Copy>(
         fee::display(fee, processor);
     }
 }
-#[cfg(not(target_os = "stax"))]
-pub fn error() {
-    titled_message::display_error("\nBlind signing must\nbe enabled in Settings");
-}
 
 #[cfg(target_os = "stax")]
 pub fn display<T: Copy>(
@@ -27,5 +23,3 @@ pub fn display<T: Copy>(
     processor: &mut InstructionProcessor<T>,
 ) {
 }
-#[cfg(target_os = "stax")]
-pub fn error() {}

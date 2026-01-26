@@ -7,6 +7,7 @@ use crate::print::tty::TTY;
 use crate::sbor_decoder::STACK_DEPTH;
 use crate::static_vec::StaticVec;
 
+/// Element of the parameter printer nesting stack.
 #[repr(C, packed)]
 #[derive(Copy, Clone, Debug)]
 pub struct ValueState {
@@ -38,18 +39,14 @@ impl Default for ValueState {
     }
 }
 
-#[cfg(target_os = "nanos")]
-pub const PARAMETER_AREA_SIZE: usize = 96;
 #[cfg(any(target_os = "nanox", target_os = "nanosplus"))]
 pub const PARAMETER_AREA_SIZE: usize = 256;
-#[cfg(not(any(target_os = "nanos", target_os = "nanox", target_os = "nanosplus")))]
+#[cfg(not(any(target_os = "nanox", target_os = "nanosplus")))]
 pub const PARAMETER_AREA_SIZE: usize = 256;
 
-#[cfg(target_os = "nanos")]
-pub const DISPLAY_SIZE: usize = 256; // Use smaller buffer for Nano S
 #[cfg(any(target_os = "nanox", target_os = "nanosplus"))]
 pub const DISPLAY_SIZE: usize = 1024; // Nano S+/X have more memory
-#[cfg(not(any(target_os = "nanos", target_os = "nanox", target_os = "nanosplus")))]
+#[cfg(not(any(target_os = "nanox", target_os = "nanosplus")))]
 pub const DISPLAY_SIZE: usize = 2048;
 
 pub const TITLE_SIZE: usize = 32;
@@ -57,10 +54,13 @@ pub const TITLE_SIZE: usize = 32;
 pub struct ParameterPrinterState<T: Copy> {
     pub display: StaticVec<u8, { DISPLAY_SIZE }>,
     pub data: StaticVec<u8, { PARAMETER_AREA_SIZE }>,
+    /// Intermediate buffer for formatting instruction titles (instruction number)
     pub title: StaticVec<u8, { TITLE_SIZE }>,
     pub stack: StaticVec<ValueState, { STACK_DEPTH as usize }>,
+    /// Active nesting level in the stack
     pub nesting_level: u8,
     pub network_id: NetworkId,
+    /// Whether to show instructions or not
     pub show_instructions: bool,
     tty: TTY<T>,
 }
@@ -87,7 +87,7 @@ impl<T: Copy> ParameterPrinterState<T> {
             nesting_level: 0,
             network_id,
             show_instructions: true,
-            tty: tty,
+            tty,
         }
     }
 

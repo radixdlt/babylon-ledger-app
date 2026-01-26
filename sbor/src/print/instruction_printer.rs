@@ -163,6 +163,8 @@ impl<T: Copy> InstructionPrinter<T> {
     }
 }
 
+/// This structure and its implementation are a workaround for Rust compiler for STM32 not
+/// supporting dynamic traits (i.e. virtual methods).
 struct Dispatcher;
 
 // Workaround for not working vtables
