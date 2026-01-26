@@ -17,6 +17,10 @@ on:
       - develop
   pull_request:
 
+permissions:
+  actions: write
+  contents: read
+
 jobs:
   guidelines_enforcer:
     name: Call Ledger guidelines_enforcer
