@@ -2,20 +2,20 @@
 #![allow(dead_code)]
 use core::convert::TryFrom;
 
-#[cfg(target_os = "nanox")]
-use ledger_device_sdk::ble;
-#[cfg(feature = "ccid")]
-use ledger_device_sdk::ccid;
 use ledger_device_sdk::seph;
-use ledger_secure_sdk_sys::buttons::{get_button_event, ButtonEvent, ButtonsState};
-use ledger_secure_sdk_sys::seph as sys_seph;
-pub use ledger_secure_sdk_sys::BOLOS_UX_CONTINUE;
-pub use ledger_secure_sdk_sys::BOLOS_UX_IGNORE;
-pub use ledger_secure_sdk_sys::BOLOS_UX_OK;
-use ledger_secure_sdk_sys::*;
+use ledger_device_sdk::sys::buttons::{get_button_event, ButtonEvent, ButtonsState};
+use ledger_device_sdk::sys::seph as sys_seph;
+pub use ledger_device_sdk::sys::BOLOS_UX_CONTINUE;
+pub use ledger_device_sdk::sys::BOLOS_UX_IGNORE;
+pub use ledger_device_sdk::sys::BOLOS_UX_OK;
+use ledger_device_sdk::sys::*;
 
 use crate::app_error::AppError;
 use crate::command::Command;
+
+unsafe extern "C" {
+    pub unsafe static mut G_ux_params: bolos_ux_params_t;
+}
 
 // These codes are from the Ledger SDK, so we ought to support them even if they are not used
 #[derive(Copy, Clone)]
@@ -30,6 +30,7 @@ pub enum StatusWords {
     UserCancelled = 0x6e04,
     Unknown = 0x6d00,
     Panic = 0xe000,
+    DeviceLocked = 0x5515,
 }
 
 #[derive(Debug)]
@@ -99,11 +100,13 @@ pub enum Event<T> {
 }
 
 pub struct Comm {
-    pub apdu_buffer: [u8; 260],
+    pub apdu_buffer: [u8; 272],
     pub rx: usize,
     pub tx: usize,
     buttons: ButtonsState,
-    pub work_buffer: [u8; 128],
+
+    pub apdu_type: u8,
+    pub work_buffer: [u8; 273],
 }
 
 impl Default for Comm {
@@ -128,63 +131,21 @@ pub struct ApduHeader {
 impl Comm {
     pub const fn new() -> Self {
         Self {
-            apdu_buffer: [0u8; 260],
+            apdu_buffer: [0u8; 272],
             rx: 0,
             tx: 0,
             buttons: ButtonsState::new(),
-            work_buffer: [0u8; 128],
+            apdu_type: seph::PacketTypes::PacketTypeNone as u8,
+            work_buffer: [0u8; 273],
         }
     }
 
     fn apdu_send(&mut self) {
-        if !sys_seph::is_status_sent() {
-            sys_seph::send_general_status()
-        }
-
-        while sys_seph::is_status_sent() {
-            sys_seph::seph_recv(&mut self.work_buffer, 0);
-            seph::handle_event(&mut self.apdu_buffer, &self.work_buffer);
-        }
-
-        match unsafe { G_io_app.apdu_state } {
-            APDU_USB_HID => unsafe {
-                io_usb_hid_send(
-                    io_usb_send_apdu_data,
-                    self.tx as u16,
-                    self.apdu_buffer.as_ptr(),
-                );
-            },
-            APDU_RAW => {
-                let len = (self.tx as u16).to_be_bytes();
-                sys_seph::seph_send(&[sys_seph::SephTags::RawAPDU as u8, len[0], len[1]]);
-                sys_seph::seph_send(&self.apdu_buffer[..self.tx]);
-            }
-            #[cfg(feature = "ccid")]
-            APDU_USB_CCID => {
-                ccid::send(&self.apdu_buffer[..self.tx]);
-            }
-            #[cfg(target_os = "nanox")]
-            APDU_BLE => {
-                ble::send(&self.apdu_buffer[..self.tx]);
-            }
-            _ => (),
-        }
+        sys_seph::io_tx(self.apdu_type, &self.apdu_buffer, self.tx);
         self.tx = 0;
-        self.rx = 0;
-        unsafe {
-            G_io_app.apdu_state = APDU_IDLE;
-            G_io_app.apdu_media = IO_APDU_MEDIA_NONE;
-            G_io_app.apdu_length = 0;
-        }
     }
 
     pub fn next_event<T: TryFrom<ApduHeader>>(&mut self) -> Event<T> {
-        unsafe {
-            G_io_app.apdu_state = APDU_IDLE;
-            G_io_app.apdu_media = IO_APDU_MEDIA_NONE;
-            G_io_app.apdu_length = 0;
-        }
-
         loop {
             if let Some(value) = self.read_event() {
                 return value;
@@ -193,73 +154,131 @@ impl Comm {
     }
 
     pub fn read_event<T: TryFrom<ApduHeader>>(&mut self) -> Option<Event<T>> {
-        // Signal end of command stream from SE to MCU
-        // And prepare reception
-        if !sys_seph::is_status_sent() {
-            sys_seph::send_general_status();
-        }
         // Fetch the next message from the MCU
-        let _rx = sys_seph::seph_recv(&mut self.work_buffer, 0);
-
-        // message = [ tag, len_hi, len_lo, ... ]
-        let tag = self.work_buffer[0];
-        let len = u16::from_be_bytes([self.work_buffer[1], self.work_buffer[2]]);
-
-        match seph::Events::from(tag) {
-            seph::Events::ButtonPush => {
-                let button_info = self.work_buffer[3] >> 1;
-                if let Some(btn_evt) = get_button_event(&mut self.buttons, button_info) {
-                    return Some(Event::Button(btn_evt));
-                }
-            }
-            seph::Events::USBEvent => {
-                if len == 1 {
-                    seph::handle_usb_event(self.work_buffer[3]);
-                }
-            }
-            seph::Events::USBXFEREvent => {
-                if len >= 3 {
-                    seph::handle_usb_ep_xfer_event(&mut self.apdu_buffer, &self.work_buffer);
-                }
-            }
-            seph::Events::CAPDUEvent => {
-                seph::handle_capdu_event(&mut self.apdu_buffer, &self.work_buffer)
-            }
-
-            #[cfg(target_os = "nanox")]
-            seph::Events::BleReceive => ble::receive(&mut self.apdu_buffer, &self.work_buffer),
-
-            seph::Events::TickerEvent => return Some(Event::Ticker),
-            _ => (),
+        let length = sys_seph::io_rx(&mut self.work_buffer, true);
+        if length <= 0 {
+            return None;
         }
 
-        if unsafe { G_io_app.apdu_state } != APDU_IDLE && unsafe { G_io_app.apdu_length } > 0 {
-            self.rx = unsafe { G_io_app.apdu_length as usize };
+        let packet_type = self.work_buffer[0];
 
-            // Reject incomplete APDUs
-            if self.rx < 4 {
-                self.reply(StatusWords::BadLen);
-                return None;
-            }
+        match seph::PacketTypes::from(packet_type) {
+            seph::PacketTypes::PacketTypeSeph | seph::PacketTypes::PacketTypeSeEvent => {
+                // SE or SEPH event
+                let mut seph_buffer = [0u8; 272];
+                seph_buffer[0..272].copy_from_slice(&self.work_buffer[1..273]);
 
-            // Check for data length by using `get_data`
-            if let Err(sw) = self.get_data() {
-                self.reply(sw);
-                return None;
-            }
+                let tag = seph_buffer[0];
+                let _len: usize = u16::from_be_bytes([seph_buffer[1], seph_buffer[2]]) as usize;
 
-            let res = T::try_from(*self.get_apdu_metadata());
-            match res {
-                Ok(ins) => {
-                    return Some(Event::Command(ins));
+                match seph::Events::from(tag) {
+                    seph::Events::ButtonPushEvent => {
+                        let button_info = seph_buffer[3] >> 1;
+                        if let Some(btn_evt) = get_button_event(&mut self.buttons, button_info) {
+                            return Some(Event::Button(btn_evt));
+                        }
+                    }
+
+                    seph::Events::TickerEvent => return Some(Event::Ticker),
+
+                    seph::Events::ItcEvent => {
+                        #[cfg(target_os = "nanox")]
+                        match seph::ItcUxEvent::from(seph_buffer[3]) {
+                            seph::ItcUxEvent::AskBlePairing => unsafe {
+                                G_ux_params.ux_id = BOLOS_UX_ASYNCHMODAL_PAIRING_REQUEST;
+                                G_ux_params.len = 20;
+                                G_ux_params.u.pairing_request.type_ = seph_buffer[4];
+                                G_ux_params.u.pairing_request.pairing_info_len = (_len - 2) as u32;
+                                for i in 0..G_ux_params.u.pairing_request.pairing_info_len as usize
+                                {
+                                    G_ux_params.u.pairing_request.pairing_info[i] =
+                                        seph_buffer[5 + i] as u8;
+                                }
+                                G_ux_params.u.pairing_request.pairing_info
+                                    [G_ux_params.u.pairing_request.pairing_info_len as usize] = 0;
+                                os_ux(&raw mut G_ux_params as *mut bolos_ux_params_t);
+                            },
+
+                            seph::ItcUxEvent::BlePairingStatus => unsafe {
+                                G_ux_params.ux_id = BOLOS_UX_ASYNCHMODAL_PAIRING_STATUS;
+                                G_ux_params.len = 0;
+                                G_ux_params.u.pairing_status.pairing_ok = seph_buffer[4];
+                                os_ux(&raw mut G_ux_params as *mut bolos_ux_params_t);
+                            },
+
+                            seph::ItcUxEvent::Redisplay => {
+                                #[cfg(feature = "nano_nbgl")]
+                                unsafe {
+                                    nbgl_objAllowDrawing(true);
+                                    nbgl_screenRedraw();
+                                    nbgl_refresh();
+                                }
+                            }
+
+                            _ => return None,
+                        }
+                        return None;
+                    }
+
+                    _ => {
+                        if !cfg!(feature = "nano_nbgl") {
+                            unsafe {
+                                G_ux_params.ux_id = BOLOS_UX_EVENT;
+                                G_ux_params.len = 0;
+                                os_ux(&raw mut G_ux_params as *mut bolos_ux_params_t);
+                            }
+                        } else {
+                            #[cfg(feature = "nano_nbgl")]
+                            unsafe {
+                                ux_process_default_event();
+                            }
+                        }
+                    }
                 }
-                Err(_) => {
-                    // Invalid Ins code. Send automatically an error, mask
-                    // the bad instruction to the application and just
-                    // discard this event.
-                    self.reply(StatusWords::BadIns);
+            }
+
+            seph::PacketTypes::PacketTypeRawApdu
+            | seph::PacketTypes::PacketTypeUsbHidApdu
+            | seph::PacketTypes::PacketTypeUsbWebusbApdu
+            | seph::PacketTypes::PacketTypeBleApdu => {
+                unsafe {
+                    if os_perso_is_pin_set() == BOLOS_TRUE.try_into().unwrap()
+                        && os_global_pin_is_validated() != BOLOS_TRUE.try_into().unwrap()
+                    {
+                        self.reply(StatusWords::DeviceLocked);
+                        return None;
+                    }
+                }
+                self.apdu_buffer[0..272].copy_from_slice(&self.work_buffer[1..273]);
+                self.apdu_type = packet_type;
+                self.rx = (length - 1) as usize;
+                // Reject incomplete APDUs
+                if self.rx < 4 {
+                    self.reply(StatusWords::BadLen);
+                    return None;
+                }
+
+                // Check for data length by using `get_data`
+                if let Err(sw) = self.get_data() {
+                    self.reply(sw);
+                    return None;
+                }
+
+                let res = T::try_from(*self.get_apdu_metadata());
+                match res {
+                    Ok(ins) => {
+                        return Some(Event::Command(ins));
+                    }
+                    Err(_) => {
+                        // Invalid Ins code. Send automatically an error, mask
+                        // the bad instruction to the application and just
+                        // discard this event.
+                        self.reply(StatusWords::BadIns);
+                    }
                 }
             }
+
+            _ => {}
         }
         None
     }

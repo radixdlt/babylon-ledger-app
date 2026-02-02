@@ -1,9 +1,6 @@
 use sbor::utilities::conversion::bytes_to_number;
 
 // Note that CLion Rust plugin marks all choices as inactive, there is no way to configure this
-#[cfg(target_os = "nanos")]
-pub const MODEL_DATA: [u8; 1] = [0];
-
 #[cfg(target_os = "nanosplus")]
 pub const MODEL_DATA: [u8; 1] = [1];
 
