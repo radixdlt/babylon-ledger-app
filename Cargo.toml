@@ -6,7 +6,7 @@ edition = "2021"
 description = "Radix Babylon"
 
 [dependencies]
-ledger_device_sdk = { version = "1.30.0", features=["sys"]}
+ledger_device_sdk = { version = "1.31.0", features=["sys"]}
 sbor = { path = "./sbor", default-features = false }
 
 [dev-dependencies]
