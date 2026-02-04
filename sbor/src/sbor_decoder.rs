@@ -6,13 +6,11 @@ use core::option::Option::{None, Some};
 use core::result::Result;
 use core::result::Result::{Err, Ok};
 
-#[cfg(target_os = "nanos")]
-pub const STACK_DEPTH: u8 = 25; // Use minimal possible stack for Nano S
 #[cfg(target_os = "nanosplus")]
 pub const STACK_DEPTH: u8 = 25; // Nano S+ and Nano X have more memory
 #[cfg(target_os = "nanox")]
 pub const STACK_DEPTH: u8 = 25;
-#[cfg(not(any(target_os = "nanos", target_os = "nanox", target_os = "nanosplus")))]
+#[cfg(not(any(target_os = "nanox", target_os = "nanosplus")))]
 pub const STACK_DEPTH: u8 = 25;
 
 pub const SBOR_LEADING_BYTE: u8 = 0x4d; // MANIFEST_SBOR_V1_PAYLOAD_PREFIX

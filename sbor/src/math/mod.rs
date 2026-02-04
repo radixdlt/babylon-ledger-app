@@ -8,6 +8,9 @@ pub use simple_bigint::bcd::BCD;
 pub use simple_bigint::bigint::{BigInt, BigIntError};
 pub use simple_bigint::ceil_div;
 
+/// String formatting routine for Decimal and PreciseDecimal types.
+/// It converts the underlying BigInt to BCD and then formats it by putting decimal dot where necessary
+/// and stripping/adding leading/trailing zeros where necessary to achieve necessary output.
 pub fn format_big_int<const N: usize, const SCALE: usize, const DISPLAY_WIDTH: usize>(
     input: &BigInt<N>,
     output: &mut StaticVec<u8, DISPLAY_WIDTH>,

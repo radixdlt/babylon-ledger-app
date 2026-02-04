@@ -1,5 +1,5 @@
 use ledger_device_sdk::buttons::{ButtonEvent, ButtonsState};
-use ledger_device_sdk::ui::bagls::{Icon, RIGHT_ARROW, RIGHT_S_ARROW};
+use ledger_device_sdk::ui::bagls::Icon;
 use ledger_device_sdk::ui::gadgets::{clear_screen, get_event};
 use ledger_device_sdk::ui::layout::Draw;
 use ledger_device_sdk::ui::screen_util::screen_update;
@@ -60,13 +60,13 @@ impl<'a> SingleMessage<'a> {
         match &self.feature {
             MessageFeature::Plain => {}
             MessageFeature::WithRightArrow => {
-                RIGHT_ARROW.display();
-                RIGHT_S_ARROW.display();
+                crate::ui::utils::RIGHT_ARROW_ICON.display();
+                crate::ui::utils::RIGHT_S_ARROW_ICON.display();
             }
             MessageFeature::WithIcon(icon) => {
                 Icon {
                     icon: icon.icon,
-                    pos: ((SCREEN_WIDTH / 2) as i16, -1),
+                    pos: (SCREEN_WIDTH as i16 / 2 - icon.icon.width as i16 / 2, -1),
                 }
                 .display();
             }

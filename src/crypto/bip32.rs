@@ -31,6 +31,8 @@ const BIP32_KEY_KIND_MESSAGE_ENCRYPTION: u32 = 1391u32 | BIP32_HARDENED; // 5
 pub const MAX_BIP32_PATH_LEN: usize = 8;
 const BIP32_PATH_MIN_ENCODED_LEN: usize = 5;
 
+/// BIP32 path container
+/// Babylon Ledger App supports two types of paths - one for the CAP-26 and one for the Olympia mainnet.
 #[repr(C, align(4))]
 #[derive(Default, Clone)]
 pub struct Bip32Path {

@@ -1,7 +1,7 @@
 use core::cmp::min;
 
 use ledger_device_sdk::buttons::{ButtonEvent, ButtonsState};
-use ledger_device_sdk::ui::bagls::{Label, LEFT_ARROW, LEFT_S_ARROW, RIGHT_ARROW, RIGHT_S_ARROW};
+use ledger_device_sdk::ui::bagls::Label;
 use ledger_device_sdk::ui::gadgets::{clear_screen, get_event};
 use ledger_device_sdk::ui::layout::{Draw, Location};
 use ledger_device_sdk::ui::SCREEN_HEIGHT;
@@ -19,22 +19,10 @@ const CHARS_PER_LINE: usize = 16;
 
 const DEFAULT_FONT_HEIGHT: usize = 11;
 
-// Nano S with smallest screen resolution
-#[cfg(target_os = "nanos")]
-pub const LINE1_Y: usize = 0;
-#[cfg(target_os = "nanos")]
-pub const LINE2_Y: usize = (SCREEN_HEIGHT - DEFAULT_FONT_HEIGHT) / 2;
-#[cfg(target_os = "nanos")]
-pub const LINE3_Y: usize = SCREEN_HEIGHT - DEFAULT_FONT_HEIGHT;
-
 // Remaining devices
-#[cfg(not(target_os = "nanos"))]
 const VERTICAL_SPACING: usize = DEFAULT_FONT_HEIGHT + 1;
-#[cfg(not(target_os = "nanos"))]
 pub const LINE1_Y: usize = LINE2_Y - VERTICAL_SPACING;
-#[cfg(not(target_os = "nanos"))]
 pub const LINE2_Y: usize = (SCREEN_HEIGHT - VERTICAL_SPACING) / 2;
-#[cfg(not(target_os = "nanos"))]
 pub const LINE3_Y: usize = LINE2_Y + VERTICAL_SPACING;
 
 impl<'a> MultilineMessageScroller<'a> {
@@ -97,23 +85,23 @@ impl<'a> MultilineMessageScroller<'a> {
 
             if page > 0 {
                 labels[0].bold = self.title.is_some();
-                LEFT_ARROW.display();
+                crate::ui::utils::LEFT_ARROW_ICON.display();
             } else {
                 labels[0].bold = true;
-                LEFT_ARROW.erase();
+                crate::ui::utils::LEFT_ARROW_ICON.erase();
             }
 
             if page + 1 < page_count || self.show_right_arrow {
-                RIGHT_ARROW.display();
+                crate::ui::utils::RIGHT_ARROW_ICON.display();
 
                 if self.show_right_arrow && page + 1 == page_count {
-                    RIGHT_S_ARROW.display();
+                    crate::ui::utils::RIGHT_S_ARROW_ICON.display();
                 }
             } else {
-                RIGHT_ARROW.erase();
+                crate::ui::utils::RIGHT_ARROW_ICON.erase();
 
                 if page + 1 != page_count {
-                    RIGHT_S_ARROW.erase();
+                    crate::ui::utils::RIGHT_S_ARROW_ICON.erase();
                 }
             }
 
@@ -133,19 +121,19 @@ impl<'a> MultilineMessageScroller<'a> {
 
             match event {
                 Some(ButtonEvent::LeftButtonPress) => {
-                    LEFT_S_ARROW.instant_display();
+                    crate::ui::utils::LEFT_S_ARROW_ICON.instant_display();
                 }
                 Some(ButtonEvent::RightButtonPress) => {
-                    RIGHT_S_ARROW.instant_display();
+                    crate::ui::utils::RIGHT_S_ARROW_ICON.instant_display();
                 }
                 Some(ButtonEvent::LeftButtonRelease) => {
-                    LEFT_S_ARROW.erase();
+                    crate::ui::utils::LEFT_S_ARROW_ICON.erase();
                     cur_page = cur_page.saturating_sub(1);
 
                     draw(cur_page);
                 }
                 Some(ButtonEvent::RightButtonRelease) => {
-                    RIGHT_S_ARROW.erase();
+                    crate::ui::utils::RIGHT_S_ARROW_ICON.erase();
                     if cur_page + 1 < page_count {
                         cur_page += 1;
                     } else {

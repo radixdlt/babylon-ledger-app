@@ -4,6 +4,7 @@ use sbor::bech32::network::NetworkId;
 use crate::app_error::AppError;
 use crate::command_class::CommandClass;
 use crate::crypto::bip32::Bip32Path;
+use crate::crypto::curves::Curve;
 use crate::crypto::ed25519::KeyPair25519;
 use crate::crypto::secp256k1::KeyPairSecp256k1;
 use crate::sign::sign_mode::SignMode;
@@ -44,15 +45,9 @@ impl SigningFlowState {
     }
 
     pub fn init_sign(&mut self, comm: &mut Comm, sign_mode: SignMode) -> Result<(), AppError> {
-        let path = match sign_mode {
-            SignMode::TxEd25519Verbose
-            | SignMode::TxEd25519Summary
-            | SignMode::AuthEd25519
-            | SignMode::PreAuthHashEd25519 => Bip32Path::read_cap26(comm),
-            SignMode::TxSecp256k1Verbose
-            | SignMode::TxSecp256k1Summary
-            | SignMode::AuthSecp256k1
-            | SignMode::PreAuthHashSecp256k1 => Bip32Path::read_olympia(comm),
+        let path = match sign_mode.curve() {
+            Curve::Ed25519 => Bip32Path::read_cap26(comm),
+            Curve::Secp256k1 => Bip32Path::read_olympia(comm),
         }?;
 
         self.start(sign_mode, path);
@@ -129,18 +124,11 @@ impl SigningFlowState {
         sign_mode: SignMode,
         message: &[u8],
     ) -> Result<SignOutcome, AppError> {
-        match sign_mode {
-            SignMode::TxEd25519Verbose
-            | SignMode::TxEd25519Summary
-            | SignMode::AuthEd25519
-            | SignMode::PreAuthHashEd25519 => {
+        match sign_mode.curve() {
+            Curve::Ed25519 => {
                 KeyPair25519::derive(&self.path).and_then(|keypair| keypair.sign(comm, message))
             }
-
-            SignMode::TxSecp256k1Verbose
-            | SignMode::TxSecp256k1Summary
-            | SignMode::AuthSecp256k1
-            | SignMode::PreAuthHashSecp256k1 => {
+            Curve::Secp256k1 => {
                 KeyPairSecp256k1::derive(&self.path).and_then(|keypair| keypair.sign(comm, message))
             }
         }
