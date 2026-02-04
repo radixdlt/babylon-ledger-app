@@ -189,10 +189,11 @@ impl Comm {
                                 G_ux_params.len = 20;
                                 G_ux_params.u.pairing_request.type_ = seph_buffer[4];
                                 G_ux_params.u.pairing_request.pairing_info_len = (_len - 2) as u32;
+                                #[allow(clippy::manual_memcpy)]
                                 for i in 0..G_ux_params.u.pairing_request.pairing_info_len as usize
                                 {
                                     G_ux_params.u.pairing_request.pairing_info[i] =
-                                        seph_buffer[5 + i] as u8;
+                                        seph_buffer[5 + i];
                                 }
                                 G_ux_params.u.pairing_request.pairing_info
                                     [G_ux_params.u.pairing_request.pairing_info_len as usize] = 0;
